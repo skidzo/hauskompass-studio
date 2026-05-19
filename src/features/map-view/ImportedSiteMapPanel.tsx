@@ -339,6 +339,28 @@ export function ImportedSiteMapPanel({
         return geojson;
     }, [candidates, confirmedIds]);
 
+    // Initial map bounds: fit all candidates (confirmed + surrounding)
+    const initialBounds = useMemo((): BBox => {
+        // Use ALL candidates to calculate bounds, not just confirmed
+        const allPts = candidates.flatMap((c) =>
+            c.surfaces.ground.flatMap((s) => s.points),
+        );
+        if (allPts.length === 0) {
+            const ctr = utm32ToWgs84(geocode.utm32.easting, geocode.utm32.northing);
+            return [
+                [ctr.lon - 0.0015, ctr.lat - 0.001],
+                [ctr.lon + 0.0015, ctr.lat + 0.001],
+            ];
+        }
+        const wgs = allPts.map((p) => utm32ToWgs84(p.e, p.n));
+        const lons = wgs.map((p) => p.lon);
+        const lats = wgs.map((p) => p.lat);
+        return [
+            [Math.min(...lons), Math.min(...lats)],
+            [Math.max(...lons), Math.max(...lats)],
+        ];
+    }, [candidates, geocode]);
+
     // Set up MapLibre source and layers directly via API (not react-map-gl components)
     // This bypasses potential react-map-gl bugs with Source/Layer components
     useEffect(() => {
@@ -421,39 +443,17 @@ export function ImportedSiteMapPanel({
         }
     }, [mapLoaded, allCandidatesGeoJSON]);
 
-    // Initial map bounds: fit all candidates (confirmed + surrounding)
-    const initialBounds = useMemo((): BBox => {
-        // Use ALL candidates to calculate bounds, not just confirmed
-        const allPts = candidates.flatMap((c) =>
-            c.surfaces.ground.flatMap((s) => s.points),
-        );
-        if (allPts.length === 0) {
-            const ctr = utm32ToWgs84(geocode.utm32.easting, geocode.utm32.northing);
-            return [
-                [ctr.lon - 0.0015, ctr.lat - 0.001],
-                [ctr.lon + 0.0015, ctr.lat + 0.001],
-            ];
-        }
-        const wgs = allPts.map((p) => utm32ToWgs84(p.e, p.n));
-        const lons = wgs.map((p) => p.lon);
-        const lats = wgs.map((p) => p.lat);
-        return [
-            [Math.min(...lons), Math.min(...lats)],
-            [Math.max(...lons), Math.max(...lats)],
-        ];
-    }, [candidates, geocode]);
-
-    // After sources/layers are created, re-fit bounds to ensure all buildings are visible
+    // Re-fit bounds after layers have been created/updated (e.g., on state change)
     useEffect(() => {
         if (!mapLoaded || !mapRef.current) return;
         const map = mapRef.current.getMap?.();
         if (!map || !map.getSource('buildings')) return;
 
-        // Use a small delay to ensure layers have actually rendered
+        // Small delay to ensure MapLibre has rendered the new layers
         const timer = setTimeout(() => {
-            console.log('[Map] Re-fitting bounds after layers created');
+            console.log('[Map] Fitting bounds');
             map.fitBounds(initialBounds, { padding: 80, maxZoom: 19 });
-        }, 100);
+        }, 150);
 
         return () => clearTimeout(timer);
     }, [mapLoaded, allCandidatesGeoJSON, initialBounds]);
@@ -481,27 +481,11 @@ export function ImportedSiteMapPanel({
             <div className="imported-map-gl">
                 <Map
                     ref={mapRef}
-                    initialViewState={{
-                        bounds: initialBounds,
-                        fitBoundsOptions: { padding: 80, maxZoom: 19 },
-                    }}
                     mapStyle={MAP_STYLE}
                     style={{ width: '100%', height: '100%', cursor }}
                     interactiveLayerIds={['buildings-fill']}
                     onClick={handleMapClick}
-                    onLoad={() => {
-                        console.log('[Map] onLoad event fired');
-                        setMapLoaded(true);
-                        // Ensure map re-fits bounds after data is rendered
-                        const map = mapRef.current?.getMap?.();
-                        if (map) {
-                            // Use requestAnimationFrame to ensure rendering has occurred
-                            requestAnimationFrame(() => {
-                                console.log('[Map] Fitting bounds after render');
-                                map.fitBounds(initialBounds, { padding: 80, maxZoom: 19 });
-                            });
-                        }
-                    }}
+                    onLoad={() => setMapLoaded(true)}
                     onMouseEnter={() => setCursor('pointer')}
                     onMouseLeave={() => setCursor('auto')}
                 >

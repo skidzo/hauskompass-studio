@@ -1,12 +1,33 @@
 import type { ImportedTerrainData } from '@/features/lod2-derived/fetchTerrainProfile';
 import { utm32ToWgs84 } from '@/features/new-project/geocode';
 import type { ImportedProject, Lod2Candidate } from '@/features/project-store/types';
+import type { Feature } from 'geojson';
+import type { StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 
-// OpenFreeMap Bright — free, no API key required
-const MAP_STYLE = 'https://tiles.openfreemap.org/styles/bright';
+// Stable raster fallback style without external sprite dependencies.
+const MAP_STYLE = {
+    version: 8,
+    sources: {
+        osm: {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors',
+        },
+    },
+    layers: [
+        {
+            id: 'osm-raster',
+            type: 'raster',
+            source: 'osm',
+            minzoom: 0,
+            maxzoom: 22,
+        },
+    ],
+} as StyleSpecification;
 
 type LngLat = [number, number];
 type BBox = [LngLat, LngLat];
@@ -32,14 +53,20 @@ function toRing(pts: readonly { e: number; n: number }[]): LngLat[] {
         console.warn(`[toRing] Skipped ${invalidCount} invalid points out of ${pts.length}`);
     }
 
-    if (ring.length > 0) ring.push(ring[0]); // close ring
+    if (ring.length > 0) {
+        const first = ring[0];
+        const last = ring[ring.length - 1];
+        if (first[0] !== last[0] || first[1] !== last[1]) {
+            ring.push(first); // close ring
+        }
+    }
     return ring;
 }
 
 function buildPolygonFeature(
     c: Lod2Candidate,
     properties: Record<string, unknown>,
-) {
+): { feature: Feature | null; rejectionReason?: string } {
     // Use the single largest ground surface by AREA (not point count) — 
     // do NOT flatMap multiple surfaces into one ring, that creates a 
     // self-intersecting polygon which can cover the entire viewport as 
@@ -54,7 +81,7 @@ function buildPolygonFeature(
             selectedSurface: surface?.id,
             pointsInSurface: surface?.points.length,
         });
-        return null;
+        return { feature: null, rejectionReason: 'no_surface_or_<3_points' };
     }
 
     const pts = surface.points;
@@ -73,11 +100,29 @@ function buildPolygonFeature(
             surfaceId: surface.id,
             points: pts.length,
         });
-        return null;
+        return { feature: null, rejectionReason: 'utm_span_>1000m' };
     }
 
     // Convert to WGS84 ring
     const ring = toRing(pts);
+
+    // Reject degenerate rings early (MapLibre can produce rendering artifacts for these)
+    if (ring.length < 4) {
+        console.warn(`[buildPolygonFeature] ${c.id}: REJECTED (degenerate ring)`, {
+            ringLength: ring.length,
+            sourcePoints: pts.length,
+        });
+        return { feature: null, rejectionReason: 'degenerate_ring' };
+    }
+
+    const uniqueVertices = new Set(ring.slice(0, -1).map(([lon, lat]) => `${lon.toFixed(9)}:${lat.toFixed(9)}`));
+    if (uniqueVertices.size < 3) {
+        console.warn(`[buildPolygonFeature] ${c.id}: REJECTED (too few unique vertices)`, {
+            uniqueVertices: uniqueVertices.size,
+            ringLength: ring.length,
+        });
+        return { feature: null, rejectionReason: 'too_few_unique_vertices' };
+    }
 
     // Validate polygon geometry using Shoelace formula to detect self-intersecting rings
     // A ring that is self-intersecting will have areas that cancel out or be deformed
@@ -96,6 +141,24 @@ function buildPolygonFeature(
     const expectedAreaM2 = surface?.areaM2 || 0;
     const areaRatio = expectedAreaM2 > 0 ? wgs84Area / expectedAreaM2 : 0;
 
+    // Check WGS84 bounding box span — single building should NEVER exceed ~0.01°
+    // (which is ~1.1 km in latitude). Anything larger is corrupted geometry.
+    const lons = ring.map(p => p[0]);
+    const lats = ring.map(p => p[1]);
+    const lonSpan = Math.max(...lons) - Math.min(...lons);
+    const latSpan = Math.max(...lats) - Math.min(...lats);
+    const maxSpan = Math.max(lonSpan, latSpan);
+
+    if (maxSpan > 0.01) {
+        console.warn(`[buildPolygonFeature] ${c.id}: REJECTED (WGS84 span too large)`, {
+            lonSpan: lonSpan.toFixed(6),
+            latSpan: latSpan.toFixed(6),
+            maxSpan: maxSpan.toFixed(6),
+            reason: `Span ${maxSpan.toFixed(6)}° is >0.01° (~1km) — suspected corrupted geometry`,
+        });
+        return { feature: null, rejectionReason: `wgs84_span_${maxSpan.toFixed(4)}°_>0.01°` };
+    }
+
     // REJECT self-intersecting rings: if WGS84 area is massively different from UTM area, 
     // the ring is likely self-intersecting or corrupted
     if (areaRatio > 100) {
@@ -106,7 +169,7 @@ function buildPolygonFeature(
             ringLength: ring.length,
             reason: 'Area mismatch suggests self-intersecting polygon',
         });
-        return null;
+        return { feature: null, rejectionReason: 'self_intersecting_geometry' };
     }
 
     // DEBUG: For the problematic building, dump everything
@@ -163,35 +226,31 @@ function buildPolygonFeature(
         });
     }
 
-    // Verify properties don't contain null values (could cause MapLibre errors)
-    const nullProps = Object.entries(properties)
-        .filter(([, v]) => v === null || v === undefined)
-        .map(([k]) => k);
-    if (nullProps.length > 0) {
-        console.warn(`[buildPolygonFeature] ${c.id}: HAS NULL PROPERTIES — SANITIZING`, {
-            nullProps,
-            before: properties
+    // Guarantee ALL properties have safe values FIRST (defensive initialization)
+    // This MUST come before any usage to prevent null errors in MapLibre
+    const confirmedRaw = Number(properties.confirmed ?? 0);
+    const safeProperties = {
+        id: String(properties.id ?? ''),
+        confirmed: Number.isFinite(confirmedRaw) && confirmedRaw > 0 ? 1 : 0,
+        label: String(properties.label ?? ''),
+    };
+
+    // FINAL VALIDATION: All properties must be non-null
+    if (!safeProperties.id || safeProperties.confirmed === null || safeProperties.label === null) {
+        console.warn(`[buildPolygonFeature] ${c.id}: FAILED SANITIZATION`, {
+            before: properties,
+            after: safeProperties,
         });
-        // Sanitize: Replace null/undefined with safe defaults for numeric properties
-        if (nullProps.includes('confirmed')) properties.confirmed = 0;
-        if (nullProps.includes('label')) properties.label = '';
-        console.warn(`[buildPolygonFeature] ${c.id}: After sanitize`, { after: properties });
+        return { feature: null, rejectionReason: 'sanitization_failed' };
     }
 
-    // Guarantee ALL properties have safe values (defensive initialization)
-    const safeProperties = {
-        id: properties.id ?? '',
-        confirmed: properties.confirmed ?? 0,
-        label: properties.label ?? '',
-    };
-
-    const feature = {
-        type: 'Feature' as const,
+    const feature: Feature = {
+        type: 'Feature',
         properties: safeProperties,
-        geometry: { type: 'Polygon' as const, coordinates: [ring] },
+        geometry: { type: 'Polygon', coordinates: [ring] },
     };
 
-    return feature;
+    return { feature, rejectionReason: undefined };
 }
 
 export function ImportedSiteMapPanel({
@@ -231,6 +290,8 @@ export function ImportedSiteMapPanel({
             accepted: 0,
             rejected: 0,
             rejectionReasons: {} as Record<string, number>,
+            rejectedDetails: [] as Array<{ id: string; reason: string }>,
+            rejectedIds: [] as string[],
             suspiciousRectangles: [] as Array<{
                 id: string;
                 reason: string;
@@ -248,13 +309,13 @@ export function ImportedSiteMapPanel({
                 .map((c) => {
                     const isConfirmed = confirmedSet.has(c.id);
                     const rank = confirmedIds.indexOf(c.id);
-                    const feature = buildPolygonFeature(c, {
+                    const result = buildPolygonFeature(c, {
                         id: c.id,
                         confirmed: isConfirmed ? 1 : 0,
                         label: isConfirmed && rank >= 0 ? `T${rank + 1}` : '',
                     });
 
-                    if (feature) {
+                    if (result.feature) {
                         stats.accepted++;
                         // Check if this might be the problematic rectangle
                         const selectedSurface = c.surfaces.ground.reduce<(typeof c.surfaces.ground)[0] | null>(
@@ -285,24 +346,29 @@ export function ImportedSiteMapPanel({
                         }
                     } else {
                         stats.rejected++;
+                        stats.rejectedIds.push(c.id);
+                        if (result.rejectionReason) {
+                            stats.rejectionReasons[result.rejectionReason] = (stats.rejectionReasons[result.rejectionReason] ?? 0) + 1;
+                            stats.rejectedDetails.push({ id: c.id, reason: result.rejectionReason });
+                        }
                     }
 
-                    return feature;
+                    return result.feature;
                 })
-                .filter((f): f is NonNullable<typeof f> => f !== null),
+                .filter((f): f is Feature => f !== null),
         };
 
         // SPECIAL DIAGNOSTIC: Dump selected building geometry
         if (selectedId) {
             const selectedFeature = geojson.features.find(f => f.properties?.id === selectedId);
             const selectedCandidate = allCandidatesToProcess.find(c => c.id === selectedId);
-            if (selectedFeature && selectedCandidate) {
-                const ring = selectedFeature.geometry.coordinates[0] || [];
+            if (selectedFeature && selectedCandidate && selectedFeature.geometry.type === 'Polygon') {
+                const ring = (selectedFeature.geometry.coordinates[0] as LngLat[]) || [];
                 const suspRectangle = stats.suspiciousRectangles.find(sr => sr.id === selectedId);
 
                 // Get min/max bounds of WGS84 ring
-                const lons = ring.map(p => p[0]);
-                const lats = ring.map(p => p[1]);
+                const lons = ring.map((p: LngLat) => p[0]);
+                const lats = ring.map((p: LngLat) => p[1]);
                 const lonMin = Math.min(...lons);
                 const lonMax = Math.max(...lons);
                 const latMin = Math.min(...lats);
@@ -324,42 +390,47 @@ export function ImportedSiteMapPanel({
         }
 
         console.log('[allCandidatesGeoJSON] ANALYSIS:', {
-            stats,
+            stats: {
+                total: stats.total,
+                accepted: stats.accepted,
+                rejected: stats.rejected,
+                rejectionReasons: stats.rejectionReasons,
+                firstFewRejections: stats.rejectedDetails.slice(0, 10),
+            },
             selectedId,
-            confirmedIds,
+            confirmedIds: confirmedIds.slice(0, 5) + (confirmedIds.length > 5 ? `... +${confirmedIds.length - 5} more` : ''),
             totalFeatures: geojson.features.length,
             confirmedBuildings: geojson.features.filter(f => f.properties?.confirmed === 1).length,
             sampleFeatures: geojson.features.slice(0, 3).map(f => ({
                 id: f.properties?.id,
                 confirmed: f.properties?.confirmed,
-                coordsLength: f.geometry.coordinates[0]?.length,
+                coordsLength: f.geometry.type === 'Polygon' ? (f.geometry.coordinates[0]?.length) : undefined,
             })),
         });
 
         return geojson;
     }, [candidates, confirmedIds]);
 
-    // Initial map bounds: fit all candidates (confirmed + surrounding)
+    // Initial map bounds: fit only validated, rendered features
     const initialBounds = useMemo((): BBox => {
-        // Use ALL candidates to calculate bounds, not just confirmed
-        const allPts = candidates.flatMap((c) =>
-            c.surfaces.ground.flatMap((s) => s.points),
-        );
-        if (allPts.length === 0) {
+        const allRenderedCoords = allCandidatesGeoJSON.features
+            .flatMap((f) => (f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : []))
+            .filter(([lon, lat]) => Number.isFinite(lon) && Number.isFinite(lat));
+
+        if (allRenderedCoords.length === 0) {
             const ctr = utm32ToWgs84(geocode.utm32.easting, geocode.utm32.northing);
             return [
                 [ctr.lon - 0.0015, ctr.lat - 0.001],
                 [ctr.lon + 0.0015, ctr.lat + 0.001],
             ];
         }
-        const wgs = allPts.map((p) => utm32ToWgs84(p.e, p.n));
-        const lons = wgs.map((p) => p.lon);
-        const lats = wgs.map((p) => p.lat);
+        const lons = allRenderedCoords.map(([lon]) => lon);
+        const lats = allRenderedCoords.map(([, lat]) => lat);
         return [
             [Math.min(...lons), Math.min(...lats)],
             [Math.max(...lons), Math.max(...lats)],
         ];
-    }, [candidates, geocode]);
+    }, [allCandidatesGeoJSON, geocode]);
 
     // Set up MapLibre source and layers directly via API (not react-map-gl components)
     // This bypasses potential react-map-gl bugs with Source/Layer components
@@ -377,7 +448,6 @@ export function ImportedSiteMapPanel({
         // This seems to avoid a MapLibre rendering bug that happens with setData()
         try {
             // Remove layers (must remove in correct order due to dependencies)
-            if (map.getLayer('buildings-labels')) map.removeLayer('buildings-labels');
             if (map.getLayer('buildings-outline')) map.removeLayer('buildings-outline');
             if (map.getLayer('buildings-fill')) map.removeLayer('buildings-fill');
 
@@ -420,24 +490,6 @@ export function ImportedSiteMapPanel({
             });
             console.log('[MapLibre] Layer "buildings-outline" created');
 
-            map.addLayer({
-                id: 'buildings-labels',
-                type: 'symbol',
-                source: 'buildings',
-                filter: ['==', ['get', 'confirmed'], 1],
-                layout: {
-                    'text-field': ['get', 'label'],
-                    'text-size': 13,
-                    'text-font': ['Noto Sans Bold', 'Arial Unicode MS Bold'],
-                    'text-anchor': 'center',
-                },
-                paint: {
-                    'text-color': '#174837',
-                    'text-halo-color': '#ffffff',
-                    'text-halo-width': 1.5,
-                },
-            });
-            console.log('[MapLibre] Layer "buildings-labels" created');
         } catch (err) {
             console.error('[MapLibre] Error adding source/layers:', err);
         }

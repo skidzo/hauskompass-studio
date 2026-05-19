@@ -221,9 +221,9 @@ export function ImportedSiteMapPanel({
     // to avoid stale-closure issues; avoids visual flash when toggling
     const allCandidatesGeoJSON = useMemo(() => {
         const confirmedSet = new Set(confirmedIds);
-        // Always include all confirmed + up to 120 surrounding (performance)
-        const surrounding = candidates.filter((c) => !confirmedSet.has(c.id)).slice(0, 120);
+        // Include ALL candidates (no 120-limit) to ensure consistent rendering
         const confirmed = candidates.filter((c) => confirmedSet.has(c.id));
+        const surrounding = candidates.filter((c) => !confirmedSet.has(c.id));
         const allCandidatesToProcess = [...confirmed, ...surrounding];
 
         const stats = {
@@ -421,9 +421,10 @@ export function ImportedSiteMapPanel({
         }
     }, [mapLoaded, allCandidatesGeoJSON]);
 
-    // Initial map bounds: fit all confirmed buildings
+    // Initial map bounds: fit all candidates (confirmed + surrounding)
     const initialBounds = useMemo((): BBox => {
-        const allPts = confirmedCandidates.flatMap((c) =>
+        // Use ALL candidates to calculate bounds, not just confirmed
+        const allPts = candidates.flatMap((c) =>
             c.surfaces.ground.flatMap((s) => s.points),
         );
         if (allPts.length === 0) {
@@ -440,7 +441,7 @@ export function ImportedSiteMapPanel({
             [Math.min(...lons), Math.min(...lats)],
             [Math.max(...lons), Math.max(...lats)],
         ];
-    }, [confirmedCandidates, geocode]);
+    }, [candidates, geocode]);
 
     /** Toggle a building's confirmed status and persist via onUpdateProject. */
     function handleMapClick(e: { features?: Array<{ properties?: Record<string, unknown> }> }) {

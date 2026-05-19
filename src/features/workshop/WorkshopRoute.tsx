@@ -70,7 +70,9 @@ export function WorkshopRoute({
 
     useEffect(() => {
         if (!PROJECT_ID) return;
-        seedProject(PROJECT_ID).then(() => setSeeded(true));
+        seedProject(PROJECT_ID)
+            .then(() => setSeeded(true))
+            .catch((err) => { console.error('seedProject failed:', err); setSeeded(true); });
     }, [PROJECT_ID]);
 
     const zones = useZones(SITE_ID);

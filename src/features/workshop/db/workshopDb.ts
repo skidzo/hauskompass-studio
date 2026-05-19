@@ -549,3 +549,49 @@ export async function createQuickStartWorkshop(name: string): Promise<QuickStart
 
     return { projectId: pid, siteId: sid, title: trimmed };
 }
+
+// ---------------------------------------------------------------------------
+// Import: Backup-JSON vollständig in IndexedDB schreiben
+// ---------------------------------------------------------------------------
+
+/**
+ * Import a previously exported WorkshopBundleExport into IndexedDB.
+ * Overwrites any existing records for the same projectId.
+ * Does NOT import binary blobs (photos) — only metadata.
+ */
+export async function importWorkshopBundle(bundle: WorkshopBundleExport): Promise<void> {
+    const { project, site, zones = [], places = [], assets = [],
+        observations = [], interpretations = [], claims = [],
+        questions = [], memories = [], eventPhases = [],
+        assessments = [], scenarios = [], workshopScenes = [],
+        seedVersion,
+    } = bundle;
+
+    if (!project || !site) throw new Error('Backup enthält kein gültiges Projekt oder keinen Standort.');
+
+    await workshopDb.transaction('rw', [
+        workshopDb.projects, workshopDb.sites, workshopDb.zones,
+        workshopDb.places, workshopDb.assets, workshopDb.observations,
+        workshopDb.interpretations, workshopDb.claims, workshopDb.questions,
+        workshopDb.memories, workshopDb.eventPhases, workshopDb.assessments,
+        workshopDb.scenarios, workshopDb.workshopScenes,
+    ], async () => {
+        await workshopDb.projects.put(project);
+        await workshopDb.sites.put(site);
+        if (zones.length) await workshopDb.zones.bulkPut(zones);
+        if (places.length) await workshopDb.places.bulkPut(places);
+        if (assets.length) await workshopDb.assets.bulkPut(assets);
+        if (observations.length) await workshopDb.observations.bulkPut(observations);
+        if (interpretations.length) await workshopDb.interpretations.bulkPut(interpretations);
+        if (claims.length) await workshopDb.claims.bulkPut(claims);
+        if (questions.length) await workshopDb.questions.bulkPut(questions);
+        if (memories.length) await workshopDb.memories.bulkPut(memories);
+        if (eventPhases.length) await workshopDb.eventPhases.bulkPut(eventPhases);
+        if (assessments.length) await workshopDb.assessments.bulkPut(assessments);
+        if (scenarios.length) await workshopDb.scenarios.bulkPut(scenarios);
+        if (workshopScenes.length) await workshopDb.workshopScenes.bulkPut(workshopScenes);
+    });
+
+    // Store seed version so seedProject() won't overwrite imported data
+    localStorage.setItem(getWorkshopSeedVersionKey(project.id), seedVersion ?? QUICK_START_MARKER);
+}

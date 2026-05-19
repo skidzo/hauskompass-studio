@@ -8653,6 +8653,48 @@ td {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   ProjectHome: Backup-Import
+───────────────────────────────────────────────────────────────────────────── */
+
+.ph-import-hint {
+  font-size: 0.88rem;
+  color: #8fa8a0;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.ph-import-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #1e2a35;
+  border: 1.5px solid #3a5068;
+  border-radius: 8px;
+  color: #a8c8e0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.55rem 1.1rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.ph-import-btn:hover:not(:disabled) {
+  background: #253444;
+  border-color: #5a88a8;
+}
+
+.ph-import-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ph-import-error {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #e07070;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    ObservationPanel: Advanced-Toggle
 ───────────────────────────────────────────────────────────────────────────── */
 

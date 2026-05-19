@@ -1,114 +1,184 @@
 # Hauskompass Studio
 
-Ein lokales, source-gebundenes Arbeitsstudio für die Analyse, Dokumentation und workshopfähige Aufbereitung komplexer Gebäude- und Campusorte.
+**Ein digitales Notizbuch für Gebäude-Workshops** — für Architekten, Denkmalpfleger, Stadtplaner und alle, die ein komplexes Gebäude oder Gelände gemeinsam verstehen, dokumentieren und weiterentwickeln wollen.
 
-## Zweck
+> Keine Anmeldung. Keine Cloud. Alle Notizen und Fotos bleiben auf Ihrem Computer.
 
-Das System verbindet räumliche, historische, ökologische, soziale und organisatorische Informationen über einen Ort so, dass er in Workshops besser verstanden, diskutiert und weiterentwickelt werden kann.
+---
 
-**Workshop-Anwendungsfall:** Strukturierte Dokumentation von Campusorten, Baudenkmälern und komplexen Gebäuden — Zonen, Beobachtungen, Szenen, interaktiver Export.
+## Was ist Hauskompass Studio?
 
-**Renovierungs-Anwendungsfall:** Evidenzbasiertes Sanierungsmodell mit LoD2-Geometrie, Geländeschnitt, Bestandsbefund und lokaler Renovierungsplanung.
+Stellen Sie sich vor, Sie gehen mit einer Gruppe durch ein altes Schulgebäude, ein Baudenkmal oder einen Gewerbekomplex. Jeder sieht etwas anderes: die abblätternde Fassade, das feuchte Kellergewölbe, den ungenutzten Dachboden. Bis jetzt wurden solche Eindrücke auf Notizzetteln oder in verstreuten E-Mails festgehalten — und gingen oft verloren.
 
-## Bring Your Own Data
+**Hauskompass Studio** löst genau das: Es ist eine Browser-Anwendung, die Sie auf einem Laptop mitnehmen können. Im Workshop tragen alle Teilnehmer ihre Beobachtungen, Fotos und Einschätzungen direkt ein — sortiert nach Gebäudebereichen, jederzeit wieder auffindbar.
 
-Das Projekt enthält keine Projektdaten im Repository. Eigene Projekte werden über eine `project.config.json` eingebunden:
+Das Tool eignet sich für zwei Hauptzwecke:
+
+- **Workshop-Dokumentation:** Gemeinsam vor Ort dokumentieren — Beobachtungen, Fotos, Fragen zu einzelnen Zonen eines Gebäudes oder Geländes.
+- **Sanierungsplanung:** Evidenzbasierte Aufbereitung von Bestandsbefund, Sanierungsoptionen und Planungsstand für ein konkretes Projekt.
+
+---
+
+## Schnellstart für Workshop-Teilnehmer
+
+Sie nehmen an einem Workshop teil und möchten sofort loslegen? So geht es:
+
+### Schritt 1 — App starten
+
+Jemand hat die App bereits für Sie gestartet und gibt Ihnen eine Adresse wie `http://localhost:5173`. Öffnen Sie diese Adresse in Chrome, Firefox oder Edge.
+
+*Falls Sie die App selbst starten müssen, siehe Abschnitt „Installation" weiter unten.*
+
+### Schritt 2 — Workshop anlegen
+
+Auf der Startseite sehen Sie ein grünes Banner: **„Workshop dokumentieren?"**
+
+Klicken Sie auf **„Workshop starten"**, geben Sie einen Namen ein (z. B. *„Workshop Hauptgebäude 12. Juni"*) und bestätigen Sie. Das war es — Ihr Projekt ist fertig.
+
+### Schritt 3 — Gebäudebereiche erkunden
+
+Es erscheinen automatisch sechs Gebäudebereiche:
+
+| Bereich | Beispiele |
+|---|---|
+| Dach & Dachstuhl | Dachdeckung, Dachfenster, Entwässerung |
+| Fassade & Außenhülle | Putz, Fenster, Türen |
+| Keller & Fundament | Feuchte, Mauerwerk, Zugänge |
+| Erdgeschoss & Haustechnik | Heizung, Elektrik, Leitungen |
+| Obergeschosse & Innenräume | Decken, Böden, Treppen |
+| Außenanlage & Erschließung | Wege, Grünflächen, Parkplätze |
+
+Klicken Sie auf einen Bereich, der Sie interessiert.
+
+### Schritt 4 — Beobachtung hinzufügen
+
+Klicken Sie auf **„Beobachtung hinzufügen"** und schreiben Sie, was Sie sehen — ganz formlos, wie eine Notiz. Optional können Sie ein Foto anhängen. Klicken Sie auf **Speichern**.
+
+Unter **„Weitere Optionen"** finden Sie zusätzliche Felder (Wichtigkeit, Vertraulichkeit), die Sie in den meisten Fällen nicht brauchen.
+
+### Schritt 5 — Alles wiederfinden
+
+Alle Ihre Einträge bleiben gespeichert, solange Sie denselben Browser und denselben Computer verwenden. Sie können jederzeit zurückgehen und nachlesen oder ergänzen.
+
+---
+
+## Wohin gehen meine Daten?
+
+**Nirgendwo hin.** Alle Notizen und Fotos werden ausschließlich im Speicher Ihres Browsers abgelegt (sogenannte „IndexedDB" — unsichtbar, aber sicher auf Ihrer Festplatte). Es gibt keinen Server, keine Cloud, keine Anmeldung. Niemand außer Ihnen kann auf diese Daten zugreifen.
+
+Das bedeutet auch: Wenn Sie den Browser-Cache löschen oder einen anderen Computer verwenden, sind die Daten weg. Machen Sie rechtzeitig einen Export (Funktion folgt).
+
+---
+
+## Installation (für Personen, die die App selbst betreiben)
+
+Sie brauchen dazu zwei kostenlose Programme:
+
+1. **Node.js** (Version 22 oder neuer) — Download: [nodejs.org](https://nodejs.org)
+2. **Git** — Download: [git-scm.com](https://git-scm.com)
+
+Öffnen Sie ein Terminal (unter Windows: „PowerShell" oder „Eingabeaufforderung", unter Mac/Linux: „Terminal") und geben Sie folgende Befehle ein — einen nach dem anderen, jeweils mit Enter bestätigen:
 
 ```bash
-export HAUSKOMPASS_PROJECT_CONFIG=$HOME/projekte/<mein-projekt>/project.config.json
+git clone https://github.com/skidzo/hauskompass-studio.git
+cd hauskompass-studio
+npm install
 npm run dev
 ```
 
-Projektdaten (Seed-JSONs, Mediendateien) liegen lokal in `public/projects/<slug>/` — dieses Verzeichnis ist gitignored.
+Nach dem letzten Befehl erscheint eine Adresse wie `http://localhost:5173`. Öffnen Sie diese im Browser. Die App ist bereit.
 
-## Kein fertiges BIM-Modell
+**Die App läuft nur, solange das Terminal-Fenster offen ist.** Schließen Sie es mit `Strg+C`.
 
-Das System ist kein vollständiges BIM-Modell, kein AAS-Server und keine Baukonstruktionsplanung. Es ist ein quellenbewusstes Erkenntnissystem, das Unsicherheiten sichtbar macht statt sie zu glätten.
+---
 
-## Datenschutz & Sensitivität
+## Für Fortgeschrittene: Eigenes Projekt einbinden
 
-Adressdaten, Fotos, Scans, Messdaten und Nachlassmaterial bleiben lokal und sind aus git ausgeschlossen. `.env.local`, `private/` und `cache/` für reale Projektdaten. Jedes Datenobjekt hat einen `sensitivityLevel` (`public | internal | sensitive_personal | restricted | unknown`) und einen `publicationStatus`.
+Wenn Sie bereits ein vorkonfiguriertes Projekt mit eigenen Gebäudedaten haben (JSON-Seed-Dateien, Medien), können Sie es über eine Konfigurationsdatei einbinden:
 
-## Domain-Modell
-
-Das Fachmodell folgt diesem Evidenz-Fluss:
-
-```
-Ort (Zone/Place) → Asset → Observation → Interpretation → Claim → Question
-                 → Assessment → Scenario → WorkshopScene → Export
+```bash
+export HAUSKOMPASS_PROJECT_CONFIG=$HOME/projekte/mein-projekt/project.config.json
+npm run dev
 ```
 
-Vollständige Typen: `src/domain/workshop/types.ts`  
-Fachmodell-Dokumentation: `docs/domain_model.md`
+Projektdaten liegen lokal in `public/projects/<slug>/` — dieses Verzeichnis ist aus git ausgeschlossen und wird nicht synchronisiert.
 
-## Architectural References
+---
 
-OpenPV and simshady are references for map, 3D geometry and shading/PV analysis patterns. OpenPV website code must not be copied directly because of AGPL-3.0 license implications. `@openpv/simshady` can be evaluated later as an isolated optional dependency.
+## Was das Tool nicht ist
 
-## Development
+- Kein vollständiges BIM-System (kein Revit-Ersatz, keine IFC-Erstellung)
+- Keine Baukonstruktionsplanung oder Statik
+- Kein Cloud-Dienst — ohne lokale Installation läuft nichts
+- Keine fertige App im App Store
+
+Es ist ein **Werkzeug für den Erkenntnisprozess**: Was wissen wir sicher? Was ist eine Vermutung? Was müssen wir noch herausfinden? Jede Beobachtung bleibt als Beobachtung erkennbar und wird nicht zu einer Tatsache hochgeschrieben.
+
+---
+
+## Lizenz
+
+MIT License — siehe [LICENSE](LICENSE)
+
+---
+
+## Für Entwicklerinnen und Entwickler
+
+<details>
+<summary>Technische Details aufklappen</summary>
+
+### Stack
+
+- React 18 + TypeScript + Vite
+- Dexie.js (IndexedDB-Wrapper) für lokale Datenhaltung
+- Three.js (3D-Viewer) + MapLibre (Karte)
+- Node.js `node:test` für Tests (keine externen Test-Frameworks)
+
+### Entwicklung
 
 ```bash
 npm install
-npm run dev             # Dev-Server (http://localhost:5173 oder nächster freier Port)
-npm test                # Unit-Tests
-npm run validate:metadata   # JSON-Schema-Validierung
-npm run handoff:codex   # Codex-Handoff generieren
+npm run dev               # Dev-Server (http://localhost:5173)
+npm test                  # Unit-Tests
+npm run validate:metadata # JSON-Schema-Validierung
+npm run handoff:codex     # Codex-Handoff generieren
 ```
 
-## Struktur
+### Projektstruktur
 
 ```txt
-src/domain/workshop/types.ts   — Domain-Typen für Workshop-Assessment (Zone, Asset, Claim, ...)
+src/domain/workshop/types.ts   — Domain-Typen (Zone, Asset, Claim, Observation …)
 src/domain/                    — Shared-Typen (DataConfidence, EvidenceItem, Geometrie)
-src/features/                  — Feature-Module (assessment, renovation, map-view, ...)
-examples/                      — Beispiel-Schemata und JSON-Vorlagen
-docs/domain_model.md           — Domain-Modell-Dokumentation
-docs/project_vision.md         — Projektvision
-docs/implementation_plan.md    — Iterationsplan
-schemas/                       — JSON-Schemas (BIM/AAS-inspiriert, Sanierungsobjekte)
+src/features/                  — Feature-Module (workshop, renovation, map-view …)
+src/app/                       — App-Shell, Routing, globale Styles
+tests/                         — Integrations- und Usability-Tests (.mjs)
+utils/tests/                   — Utility-Tests
+schemas/                       — JSON-Schemas
+docs/                          — Architekturdokumentation
 ```
 
-## Architektur-Kernprinzipien
+### Architektur-Kernprinzipien
 
-- **Quellengebundenheit**: Jeder Claim braucht mindestens eine Quellreferenz
-- **Epistemic-Typen**: `verified_fact | observation | interpretation | memory | hypothesis | disputed_claim | open_question` — keine Glättung
-- **Sensitivity-Level**: `public | internal | sensitive_personal | restricted | unknown` — jedes Objekt
-- **Capture-first**: Vor-Ort-Material hat Vorrang vor technischer Ausarbeitung
-- **Local-first**: kein Cloud-Zwang, persönliche Daten bleiben lokal
+- **Quellengebundenheit** — jeder Claim braucht mindestens eine Quellreferenz
+- **Epistemic-Typen** — `verified_fact | observation | interpretation | memory | hypothesis | disputed_claim | open_question`
+- **Sensitivity-Level** — `public | internal | sensitive_personal | restricted | unknown` pro Objekt
+- **Local-first** — kein Cloud-Zwang, persönliche Daten bleiben lokal
+- **Capture-first** — Vor-Ort-Material hat Vorrang vor technischer Ausarbeitung
 
-Key architecture documents:
+Schlüsseldokumente:
 
 ```txt
-docs/sources/README.md
-docs/concepts/bim-aas-integration-for-renovation.md
+docs/domain_model.md
 docs/adrs/ADR-0001-separate-building-model-from-asset-data.md
 docs/architecture/asset-data-model.md
 ```
 
-Future IFC, BCF, IDS and AAS support is treated as a standards-informed backlog, not as a first-sprint implementation requirement.
+### Smoke Test
 
-## Showcase PDF
+1. `npm run validate:metadata`
+2. `npm test`
+3. `npm run dev` → Browser öffnen
+4. Sidebar zeigt: `Planning`, `Site`, `Building`, `Assessment & Reuse`, `Data`
+5. Geschätzte Werte sind als solche gekennzeichnet
 
-Run `npm run generate:showcase-pdf` to regenerate the sanitized public-facing prototype extract at `docs/showcase/renovation_planning_prototype_5page.pdf` from the app route `/showcase`.
-
-The showcase source lives in `src/features/showcase/` as typed data plus a dedicated React route. It maps selected Planning seed data into the showcase panels instead of duplicating full content. The browser view can opt into local register data with `/showcase?includeLocalRegisters=1`, but the generated public PDF uses sanitized seed data only. It must not include private addresses, coordinates, land-record identifiers, private photos or exact property identifiers, and generated or estimated values must remain labeled as such.
-
-## Lokale Projektordner
-
-Reale Projektmaterialien liegen außerhalb dieses Git-Repositories in einem lokalen Projektordner deiner Wahl. Konfiguration über Umgebungsvariable:
-
-```bash
-export HAUSKOMPASS_PROJECT_CONFIG=$HOME/projekte/<mein-projekt>/project.config.json
-npm run dev
-```
-
-Ohne diese Umgebungsvariable nutzen die Python-Skripte `project.config.example.json`.
-
-## Manual Smoke Test
-
-1. Run `npm run validate:metadata`.
-2. Run `npm test -- --run`.
-3. Run `npm run dev`.
-4. Open the local Vite URL and verify the sidebar shows `Planning`, `Site`, `Building`, `Assessment & Reuse`, and `Data`.
-5. In `Planning`, check that facts, assumptions, missing measurements, decisions, local registers, site-visit import and agentic reasoning are shown as separate tabs.
-6. Confirm generated or estimated values are visibly labeled and not presented as measured reality.
+</details>

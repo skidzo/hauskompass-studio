@@ -9,8 +9,9 @@
 
 import { listProjects, loadProject } from '@/features/project-store/projectStore';
 import type { ImportedProject } from '@/features/project-store/types';
-import { Building2, FolderOpen, Home, Layers, MapPin, Plus, Wrench } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { importWorkshopBundle, type WorkshopBundleExport } from '@/features/workshop/db/workshopDb';
+import { Building2, FolderOpen, Home, Layers, MapPin, Plus, Upload, Wrench } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 // ── Built-in pre-existing projects ──────────────────────────────────────────
 
@@ -49,12 +50,36 @@ interface ProjectHomeProps {
     onSelectRenovation: (slug: string) => void;
     onNewProject: () => void;
     onStartWorkshop: () => void;
+    onImportBackup: (projectId: string, siteId: string, title: string) => void;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject, onStartWorkshop }: ProjectHomeProps) {
+export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject, onStartWorkshop, onImportBackup }: ProjectHomeProps) {
     const builtinProjects = useBuiltinProjects();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [importError, setImportError] = useState<string | null>(null);
+    const [importing, setImporting] = useState(false);
+
+    async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImporting(true);
+        setImportError(null);
+        try {
+            const text = await file.text();
+            const bundle = JSON.parse(text) as WorkshopBundleExport;
+            if (!bundle.project?.id || !bundle.site?.id) throw new Error('Keine gültige Backup-Datei.');
+            await importWorkshopBundle(bundle);
+            onImportBackup(bundle.project.id, bundle.site.id, bundle.project.title ?? bundle.project.id);
+        } catch (err) {
+            setImportError(err instanceof Error ? err.message : 'Import fehlgeschlagen.');
+        } finally {
+            setImporting(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    }
+
     const savedProjects = useMemo<ImportedProject[]>(() => {
         return listProjects()
             .map((slug) => loadProject(slug))
@@ -175,6 +200,31 @@ export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject,
                             </div>
                         </button>
                     </div>
+                </section>
+
+                {/* ── Section: Backup import ── */}
+                <section className="ph-section">
+                    <h2 className="ph-section-title">Projekt aus Backup wiederherstellen</h2>
+                    <p className="ph-import-hint">
+                        Sie haben eine zuvor exportierte JSON-Backup-Datei? Laden Sie sie hier hoch — alle Notizen und Daten werden sofort wiederhergestellt.
+                    </p>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".json,application/json"
+                        style={{ display: 'none' }}
+                        onChange={handleFileChange}
+                    />
+                    <button
+                        className="ph-import-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={importing}
+                        type="button"
+                    >
+                        <Upload size={16} />
+                        {importing ? 'Wird importiert …' : 'JSON-Backup auswählen'}
+                    </button>
+                    {importError && <p className="ph-import-error">{importError}</p>}
                 </section>
 
                 {/* ── Section: Supported regions info ── */}

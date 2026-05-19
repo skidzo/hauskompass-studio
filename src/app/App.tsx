@@ -110,6 +110,20 @@ function HauskompassApp() {
     setAppMode('workshop');
   };
 
+  const handleImportBackup = (projectId: string, siteId: string, title: string) => {
+    setActiveWorkshopProject({
+      id: projectId,
+      projectId,
+      siteId,
+      title,
+      subtitle: 'Aus Backup importiert',
+      type: 'workshop',
+      location: '',
+      description: '',
+    });
+    setAppMode('workshop');
+  };
+
   // Workshop full-screen mode
   if (appMode === 'workshop') {
     return <WorkshopApp onGoHome={goHome} project={activeWorkshopProject} />;
@@ -140,6 +154,7 @@ function HauskompassApp() {
           onSelectRenovation={handleSelectRenovation}
           onNewProject={() => setShowNewProject(true)}
           onStartWorkshop={() => setShowWorkshopQuickStart(true)}
+          onImportBackup={handleImportBackup}
         />
       </>
     );
@@ -673,7 +688,9 @@ function WorkshopApp({ onGoHome, project }: { onGoHome: () => void; project: Bui
     setSelectedMapZoneId(null);
     setSelectedMapAssetId(null);
     setWorkshopFocus(null);
-    if (workshopProjectId) seedProject(workshopProjectId).then(() => setWsSeeded(true));
+    if (workshopProjectId) seedProject(workshopProjectId)
+      .then(() => setWsSeeded(true))
+      .catch((err) => { console.error('seedProject failed:', err); setWsSeeded(true); });
   }, [workshopProjectId]);
 
   const zones = useZones(workshopSiteId);

@@ -12,10 +12,26 @@ type LngLat = [number, number];
 type BBox = [LngLat, LngLat];
 
 function toRing(pts: readonly { e: number; n: number }[]): LngLat[] {
-    const ring = pts.map((p): LngLat => {
+    const ring: LngLat[] = [];
+    let invalidCount = 0;
+    
+    for (const p of pts) {
         const w = utm32ToWgs84(p.e, p.n);
-        return [w.lon, w.lat];
-    });
+        
+        // Check for invalid coordinates (NaN, Infinity, or out-of-bounds)
+        if (!isFinite(w.lon) || !isFinite(w.lat) || Math.abs(w.lon) > 180 || Math.abs(w.lat) > 90) {
+            console.warn(`[toRing] Invalid coordinate from UTM (${p.e}, ${p.n}):`, w);
+            invalidCount++;
+            continue; // Skip invalid points
+        }
+        
+        ring.push([w.lon, w.lat]);
+    }
+    
+    if (invalidCount > 0) {
+        console.warn(`[toRing] Skipped ${invalidCount} invalid points out of ${pts.length}`);
+    }
+    
     if (ring.length > 0) ring.push(ring[0]); // close ring
     return ring;
 }

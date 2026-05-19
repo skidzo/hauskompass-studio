@@ -14,24 +14,24 @@ type BBox = [LngLat, LngLat];
 function toRing(pts: readonly { e: number; n: number }[]): LngLat[] {
     const ring: LngLat[] = [];
     let invalidCount = 0;
-    
+
     for (const p of pts) {
         const w = utm32ToWgs84(p.e, p.n);
-        
+
         // Check for invalid coordinates (NaN, Infinity, or out-of-bounds)
         if (!isFinite(w.lon) || !isFinite(w.lat) || Math.abs(w.lon) > 180 || Math.abs(w.lat) > 90) {
             console.warn(`[toRing] Invalid coordinate from UTM (${p.e}, ${p.n}):`, w);
             invalidCount++;
             continue; // Skip invalid points
         }
-        
+
         ring.push([w.lon, w.lat]);
     }
-    
+
     if (invalidCount > 0) {
         console.warn(`[toRing] Skipped ${invalidCount} invalid points out of ${pts.length}`);
     }
-    
+
     if (ring.length > 0) ring.push(ring[0]); // close ring
     return ring;
 }
@@ -289,8 +289,16 @@ export function ImportedSiteMapPanel({
                     <ScaleControl position="bottom-left" unit="metric" />
 
                     {/* Alle LoD2-Gebäude — promoteId='id' sorgt für stabile Feature-Identität
-                        beim setData()-Update, verhindert Re-Render-Flash */}
-                    <Source id="buildings" type="geojson" data={allCandidatesGeoJSON} promoteId="id">
+                        beim setData()-Update, verhindert Re-Render-Flash.
+                        Key-based Re-Mount: Ändert sich wenn confirmedIds sich ändert,
+                        erzwingt MapLibre-Neurendering der grauen Gebäudehüllen */}
+                    <Source
+                        key={`buildings-${confirmedIds.length}`}
+                        id="buildings"
+                        type="geojson"
+                        data={allCandidatesGeoJSON}
+                        promoteId="id"
+                    >
                         <Layer
                             id="buildings-fill"
                             type="fill"

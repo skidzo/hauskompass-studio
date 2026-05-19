@@ -132,7 +132,7 @@ export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject,
 
                 {/* ── Section: Pre-existing / built-in projects ── */}
                 <section className="ph-section">
-                    <h2 className="ph-section-title">Vorhandene Projekte</h2>
+                    <h2 className="ph-section-title">Projekte</h2>
                     <div className="ph-project-grid">
                         {builtinProjects.map((proj) => (
                             <button

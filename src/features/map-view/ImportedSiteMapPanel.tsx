@@ -3,7 +3,7 @@ import { utm32ToWgs84 } from '@/features/new-project/geocode';
 import type { ImportedProject, Lod2Candidate } from '@/features/project-store/types';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Map, { Layer, NavigationControl, ScaleControl, Source } from 'react-map-gl/maplibre';
+import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 
 // OpenFreeMap Bright — free, no API key required
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/bright';
@@ -174,7 +174,6 @@ function buildPolygonFeature(
         });
         // Sanitize: Replace null/undefined with safe defaults for numeric properties
         if (nullProps.includes('confirmed')) properties.confirmed = 0;
-        if (nullProps.includes('selected')) properties.selected = 0;
         if (nullProps.includes('label')) properties.label = '';
         console.warn(`[buildPolygonFeature] ${c.id}: After sanitize`, { after: properties });
     }
@@ -183,7 +182,6 @@ function buildPolygonFeature(
     const safeProperties = {
         id: properties.id ?? '',
         confirmed: properties.confirmed ?? 0,
-        selected: properties.selected ?? 0,
         label: properties.label ?? '',
     };
 
@@ -340,6 +338,76 @@ export function ImportedSiteMapPanel({
         return geojson;
     }, [candidates, confirmedIds]);
 
+    // Set up MapLibre source and layers directly via API (not react-map-gl components)
+    // This bypasses potential react-map-gl bugs with Source/Layer components
+    useEffect(() => {
+        if (!mapRef.current) return;
+        const map = mapRef.current.getMap?.();
+        if (!map || !map.isStyleLoaded()) return;
+
+        // Add or update source
+        if (!map.getSource('buildings')) {
+            map.addSource('buildings', {
+                type: 'geojson',
+                data: allCandidatesGeoJSON,
+                promoteId: 'id',
+            });
+            console.log('[MapLibre] Source "buildings" created');
+        } else {
+            // Update existing source data
+            (map.getSource('buildings') as any).setData(allCandidatesGeoJSON);
+            console.log('[MapLibre] Source "buildings" updated');
+        }
+
+        // Add layers if they don't exist
+        if (!map.getLayer('buildings-fill')) {
+            map.addLayer({
+                id: 'buildings-fill',
+                type: 'fill',
+                source: 'buildings',
+                paint: {
+                    'fill-color': '#3d9465',
+                    'fill-opacity': 0.4,
+                },
+            });
+            console.log('[MapLibre] Layer "buildings-fill" created');
+        }
+
+        if (!map.getLayer('buildings-outline')) {
+            map.addLayer({
+                id: 'buildings-outline',
+                type: 'line',
+                source: 'buildings',
+                paint: {
+                    'line-color': '#1a5c38',
+                    'line-width': 1.5,
+                },
+            });
+            console.log('[MapLibre] Layer "buildings-outline" created');
+        }
+
+        if (!map.getLayer('buildings-labels')) {
+            map.addLayer({
+                id: 'buildings-labels',
+                type: 'symbol',
+                source: 'buildings',
+                filter: ['==', ['get', 'confirmed'], 1],
+                layout: {
+                    'text-field': ['get', 'label'],
+                    'text-size': 13,
+                    'text-font': ['Noto Sans Bold', 'Arial Unicode MS Bold'],
+                    'text-anchor': 'center',
+                },
+                paint: {
+                    'text-color': '#174837',
+                    'text-halo-color': '#ffffff',
+                    'text-halo-width': 1.5,
+                },
+            });
+            console.log('[MapLibre] Layer "buildings-labels" created');
+        }
+    }, [allCandidatesGeoJSON]);
+
     // Initial map bounds: fit all confirmed buildings
     const initialBounds = useMemo((): BBox => {
         const allPts = confirmedCandidates.flatMap((c) =>
@@ -397,70 +465,6 @@ export function ImportedSiteMapPanel({
                 >
                     <NavigationControl position="top-right" showCompass visualizePitch />
                     <ScaleControl position="bottom-left" unit="metric" />
-
-                    {/* Alle LoD2-Gebäude — promoteId='id' sorgt für stabile Feature-Identität.
-                        WICHTIG: KEIN key prop!
-                        React-map-gl ruft automatisch MapLibre's setData() auf wenn data prop ändert.
-                        Das ist zuverlässiger als remounting mit key. */}
-                    <Source
-                        id="buildings"
-                        type="geojson"
-                        data={allCandidatesGeoJSON}
-                        promoteId="id"
-                    >
-                        <Layer
-                            id="buildings-fill"
-                            type="fill"
-                            paint={{
-                                'fill-color': [
-                                    'case',
-                                    ['==', ['coalesce', ['get', 'confirmed'], 0], 1],
-                                    '#3d9465',  // Green for confirmed only
-                                    '#b8c5b2',  // Gray for surrounding
-                                ],
-                                'fill-opacity': [
-                                    'case',
-                                    ['==', ['coalesce', ['get', 'confirmed'], 0], 1],
-                                    0.6,
-                                    0.3,
-                                ],
-                            }}
-                        />
-                        <Layer
-                            id="buildings-outline"
-                            type="line"
-                            paint={{
-                                'line-color': [
-                                    'case',
-                                    ['==', ['coalesce', ['get', 'confirmed'], 0], 1],
-                                    '#1a5c38',
-                                    '#7a9084',
-                                ],
-                                'line-width': [
-                                    'case',
-                                    ['==', ['coalesce', ['get', 'confirmed'], 0], 1],
-                                    2.5,  // Confirmed buildings have thicker outline
-                                    1,    // Surrounding have thin outline
-                                ],
-                            }}
-                        />
-                        <Layer
-                            id="buildings-labels"
-                            type="symbol"
-                            filter={['==', ['coalesce', ['get', 'confirmed'], 0], 1]}
-                            layout={{
-                                'text-field': ['coalesce', ['get', 'label'], ''],
-                                'text-size': 13,
-                                'text-font': ['Noto Sans Bold', 'Arial Unicode MS Bold'],
-                                'text-anchor': 'center',
-                            }}
-                            paint={{
-                                'text-color': '#174837',
-                                'text-halo-color': '#ffffff',
-                                'text-halo-width': 1.5,
-                            }}
-                        />
-                    </Source>
                 </Map>
 
                 {onUpdateProject && (

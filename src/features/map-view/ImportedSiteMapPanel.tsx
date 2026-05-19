@@ -209,6 +209,7 @@ export function ImportedSiteMapPanel({
 }) {
     const { candidates, confirmedIds, address, geocode } = project;
     const [cursor, setCursor] = useState<'auto' | 'pointer'>('auto');
+    const [mapLoaded, setMapLoaded] = useState(false);
     const mapRef = useRef<any>(null);
 
     const confirmedCandidates = useMemo(
@@ -341,9 +342,14 @@ export function ImportedSiteMapPanel({
     // Set up MapLibre source and layers directly via API (not react-map-gl components)
     // This bypasses potential react-map-gl bugs with Source/Layer components
     useEffect(() => {
-        if (!mapRef.current) return;
+        if (!mapLoaded || !mapRef.current) return;
         const map = mapRef.current.getMap?.();
-        if (!map || !map.isStyleLoaded()) return;
+        if (!map) return;
+
+        console.log('[useEffect] Setting up buildings source and layers', {
+            mapLoaded,
+            allCandidatesGeoJSON: allCandidatesGeoJSON.features.length,
+        });
 
         // Add or update source
         if (!map.getSource('buildings')) {
@@ -356,7 +362,7 @@ export function ImportedSiteMapPanel({
         } else {
             // Update existing source data
             (map.getSource('buildings') as any).setData(allCandidatesGeoJSON);
-            console.log('[MapLibre] Source "buildings" updated');
+            console.log('[MapLibre] Source "buildings" updated with', allCandidatesGeoJSON.features.length, 'features');
         }
 
         // Add layers if they don't exist
@@ -406,7 +412,7 @@ export function ImportedSiteMapPanel({
             });
             console.log('[MapLibre] Layer "buildings-labels" created');
         }
-    }, [allCandidatesGeoJSON]);
+    }, [mapLoaded, allCandidatesGeoJSON]);
 
     // Initial map bounds: fit all confirmed buildings
     const initialBounds = useMemo((): BBox => {
@@ -460,6 +466,10 @@ export function ImportedSiteMapPanel({
                     style={{ width: '100%', height: '100%', cursor }}
                     interactiveLayerIds={['buildings-fill']}
                     onClick={handleMapClick}
+                    onLoad={() => {
+                        console.log('[Map] onLoad event fired');
+                        setMapLoaded(true);
+                    }}
                     onMouseEnter={() => setCursor('pointer')}
                     onMouseLeave={() => setCursor('auto')}
                 >

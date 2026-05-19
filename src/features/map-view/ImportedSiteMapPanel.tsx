@@ -122,9 +122,17 @@ function buildPolygonFeature(
         console.warn(`[buildPolygonFeature] ${c.id}: After sanitize`, { after: properties });
     }
 
+    // Guarantee ALL properties have safe values (defensive initialization)
+    const safeProperties = {
+        id: properties.id ?? '',
+        confirmed: properties.confirmed ?? 0,
+        selected: properties.selected ?? 0,
+        label: properties.label ?? '',
+    };
+
     const feature = {
         type: 'Feature' as const,
-        properties,
+        properties: safeProperties,
         geometry: { type: 'Polygon' as const, coordinates: [ring] },
     };
 

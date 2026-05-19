@@ -1,6 +1,18 @@
 # Changelog
 
-- **Laien-Usability: Workshop-Schnellstart**: "Workshop starten"-CTA auf Startseite, `WorkshopQuickStartDialog` (nur Name → sofort Zonen + Struktur, keine Pipeline), `createQuickStartWorkshop()` in IndexedDB, ObservationForm vereinfacht (Konfidenz/Sensitivität hinter "Weitere Optionen"), 14 neue Usability-Tests (LW-01–LW-06). Build: 0 TS-Fehler, 1705 Module.
+## v0.1.0 — 2026-05-19
+
+- **ZIP-Backup mit Fotos**: `exportWorkshopBundleZip()` / `importWorkshopBundleZip()` via fflate; DataBackupBar bietet "ZIP-Backup (mit Fotos)" und "JSON (nur Metadaten)"; Startseite akzeptiert .zip und .json beim Import
+
+- **Backup-Import auf Startseite**: `importWorkshopBundle()`, Datei-Picker-Button "Aus Backup wiederherstellen", kein Neustart und keine Umgebungsvariable nötig
+
+- **Robustheit**: `.catch()`-Handler auf allen `seedProject()`-Aufrufen — Ladeanzeige friert nicht mehr ein wenn Seed-Dateien fehlen
+
+- **README neu**: vollständige Laien-Anleitung (Schnellstart, Datenschutz, Installation, Backup/Restore), technische Details in aufklappbarem `<details>`-Block
+
+- **Laien-Usability: Workshop-Schnellstart**: "Workshop starten"-CTA auf Startseite, `WorkshopQuickStartDialog`, `createQuickStartWorkshop()`, `QUICK_START_MARKER` verhindert seedProject-Überschreibung, ObservationForm vereinfacht, 18 Usability-Tests (LW-01–LW-07)
+
+ "Workshop starten"-CTA auf Startseite, `WorkshopQuickStartDialog` (nur Name → sofort Zonen + Struktur, keine Pipeline), `createQuickStartWorkshop()` in IndexedDB, ObservationForm vereinfacht (Konfidenz/Sensitivität hinter "Weitere Optionen"), 14 neue Usability-Tests (LW-01–LW-06). Build: 0 TS-Fehler, 1705 Module.
 
 - **GitHub-Readiness**: Standalone Git-Repo in `apps/hauskompass-studio/` initialisiert (Branch `main`), erster öffentlicher Commit `5d243b9` mit 272 Dateien. Alle privaten Strings aus src/ + docs/ bereinigt (0 Treffer), project-spezifische Scripts (find-local-media-eiermann, generate-eiermann-spatial-context) gitignored, build_output-Logs gitignored, docs/RELEASE_DECISION.md + initial_repository_assessment.md + ADR-0003 generalisiert.
 

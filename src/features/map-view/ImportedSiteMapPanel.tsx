@@ -56,15 +56,6 @@ function buildPolygonFeature(
         geometry: { type: 'Polygon' as const, coordinates: [toRing(pts)] },
     };
     
-    console.log(`[buildPolygonFeature] ${c.id}: OK`, { 
-        surfaces: c.surfaces.ground.length, 
-        selectedSurface: surface.id, 
-        areaM2: surface.areaM2,
-        points: pts.length, 
-        eSpan, 
-        nSpan 
-    });
-    
     return feature;
 }
 
@@ -111,19 +102,6 @@ export function ImportedSiteMapPanel({
                 })
                 .filter((f): f is NonNullable<typeof f> => f !== null),
         };
-        
-        // DEBUG: Log features for inspection
-        console.log('allCandidatesGeoJSON built:', {
-            confirmed: confirmed.length,
-            surrounding: surrounding.length,
-            features: geojson.features.length,
-            sampleFeatures: geojson.features.slice(0, 3).map(f => ({
-                id: f.properties?.id,
-                confirmed: f.properties?.confirmed,
-                geomType: f.geometry.type,
-                coordsLength: (f.geometry.coordinates[0]?.length ?? 0),
-            })),
-        });
         
         return geojson;
     }, [candidates, confirmedIds, selectedId]);

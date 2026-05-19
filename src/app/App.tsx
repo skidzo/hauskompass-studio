@@ -547,6 +547,8 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
                         confirmedIds={activeProject.confirmedIds}
                         selectedId={effectiveCandidateId}
                         onSelect={setSelectedCandidateId}
+                        project={activeProject}
+                        onUpdateProject={updateProject}
                       />
                     ) : (
                       <BuildingEvidencePanel candidate={selectedCandidate!} summary={fetchedGeodataSummary} />
@@ -863,17 +865,73 @@ function ImportedCandidatePanel({
   confirmedIds,
   selectedId,
   onSelect,
+  project,
+  onUpdateProject,
 }: {
   candidates: Lod2Candidate[];
   confirmedIds: string[];
   selectedId: string;
   onSelect: (id: string) => void;
+  project: ImportedProject;
+  onUpdateProject: (project: ImportedProject) => void;
 }) {
+  const isSelectedConfirmed = confirmedIds.includes(selectedId);
+  
+  const handleToggleSelected = () => {
+    if (!selectedId) return;
+    const newConfirmedIds = isSelectedConfirmed
+      ? confirmedIds.filter((id) => id !== selectedId)
+      : [...confirmedIds, selectedId];
+    onUpdateProject({ ...project, confirmedIds: newConfirmedIds });
+  };
+
+  const handleClearAll = () => {
+    onUpdateProject({ ...project, confirmedIds: [] });
+  };
+
   return (
     <div className="imported-candidate-panel">
       <p className="imported-candidate-heading">
         {candidates.length} Gebäude aus GML · {confirmedIds.length} ausgewählt
       </p>
+      
+      {/* Action Bar */}
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '12px',
+        padding: '8px',
+        backgroundColor: '#f5f5f5',
+        borderRadius: '4px',
+      }}>
+        <button
+          className="btn btn-sm"
+          onClick={handleToggleSelected}
+          disabled={!selectedId}
+          type="button"
+          style={{
+            minWidth: '120px',
+            padding: '6px 12px',
+            fontSize: '12px',
+          }}
+        >
+          {isSelectedConfirmed ? '✕ Abwählen' : '✓ Auswählen'}
+        </button>
+        <button
+          className="btn btn-sm"
+          onClick={handleClearAll}
+          disabled={confirmedIds.length === 0}
+          type="button"
+          style={{
+            minWidth: '120px',
+            padding: '6px 12px',
+            fontSize: '12px',
+          }}
+        >
+          Alle abwählen
+        </button>
+      </div>
+
       <div className="imported-candidate-list">
         {candidates.slice(0, 20).map((c) => {
           const confirmed = confirmedIds.includes(c.id);

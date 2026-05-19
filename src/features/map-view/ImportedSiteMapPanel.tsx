@@ -2,7 +2,7 @@ import type { ImportedTerrainData } from '@/features/lod2-derived/fetchTerrainPr
 import { utm32ToWgs84 } from '@/features/new-project/geocode';
 import type { ImportedProject, Lod2Candidate } from '@/features/project-store/types';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Map, { Layer, NavigationControl, ScaleControl, Source } from 'react-map-gl/maplibre';
 
 // OpenFreeMap Bright — free, no API key required
@@ -79,30 +79,87 @@ function buildPolygonFeature(
     // Convert to WGS84 ring
     const ring = toRing(pts);
 
-    // Additional check: Ring coordinates in WGS84 — verify they're not pathological
-    if (ring.length > 3) {
+    // Validate polygon geometry using Shoelace formula to detect self-intersecting rings
+    // A ring that is self-intersecting will have areas that cancel out or be deformed
+    function calculatePolygonArea(ring: LngLat[]): number {
+        if (ring.length < 3) return 0;
+        let area = 0;
+        for (let i = 0; i < ring.length - 1; i++) {
+            area += (ring[i + 1][0] - ring[i][0]) * (ring[i + 1][1] + ring[i][1]);
+        }
+        // Close the ring
+        area += (ring[0][0] - ring[ring.length - 1][0]) * (ring[0][1] + ring[ring.length - 1][1]);
+        return Math.abs(area) / 2;
+    }
+
+    const wgs84Area = calculatePolygonArea(ring);
+    const expectedAreaM2 = surface?.areaM2 || 0;
+    const areaRatio = expectedAreaM2 > 0 ? wgs84Area / expectedAreaM2 : 0;
+
+    // REJECT self-intersecting rings: if WGS84 area is massively different from UTM area, 
+    // the ring is likely self-intersecting or corrupted
+    if (areaRatio > 100) {
+        console.warn(`[buildPolygonFeature] ${c.id}: REJECTED (self-intersecting geometry)`, {
+            expectedAreaM2: expectedAreaM2.toFixed(2),
+            wgs84Area: wgs84Area.toFixed(8),
+            areaRatio: areaRatio.toFixed(2),
+            ringLength: ring.length,
+            reason: 'Area mismatch suggests self-intersecting polygon',
+        });
+        return null;
+    }
+
+    // DEBUG: For the problematic building, dump everything
+    if (c.id === 'DEBY_LOD2_6945465') {
+        const eValsAll = pts.map((p) => p.e);
+        const nValsAll = pts.map((p) => p.n);
         const lons = ring.map((p) => p[0]);
         const lats = ring.map((p) => p[1]);
         const lonSpan = Math.max(...lons) - Math.min(...lons);
         const latSpan = Math.max(...lats) - Math.min(...lats);
 
-        // If WGS84 span is huge (likely a wrapped/problematic polygon)
-        if (lonSpan > 0.05 || latSpan > 0.05) {
-            console.log(`[buildPolygonFeature] ${c.id}: SUSPICIOUS (huge WGS84 span)`, {
+        // Also dump ALL point conversions to see if any are suspicious
+        const pointConversions = pts.slice(0, 10).map((p, i) => {
+            const w = utm32ToWgs84(p.e, p.n);
+            return {
+                idx: i,
+                utm: { e: p.e, n: p.n },
+                wgs84: { lon: w.lon.toFixed(6), lat: w.lat.toFixed(6) },
+                valid: isFinite(w.lon) && isFinite(w.lat) && Math.abs(w.lon) <= 180 && Math.abs(w.lat) <= 90,
+            };
+        });
+
+        console.warn('[PROBLEM-BUILDING-DEBUG] DEBY_LOD2_6945465 RAW DATA', {
+            totalPoints: pts.length,
+            utmBounds: {
+                eMin: Math.min(...eValsAll),
+                eMax: Math.max(...eValsAll),
+                nMin: Math.min(...nValsAll),
+                nMax: Math.max(...nValsAll),
+                eSpan: eSpan.toFixed(0),
+                nSpan: nSpan.toFixed(0),
+            },
+            firstPoint: pts[0],
+            secondPoint: pts[1],
+            lastPoint: pts[pts.length - 1],
+            pointConversions,
+            wgs84RingLength: ring.length,
+            wgs84Bounds: {
+                lonMin: Math.min(...lons).toFixed(6),
+                lonMax: Math.max(...lons).toFixed(6),
+                latMin: Math.min(...lats).toFixed(6),
+                latMax: Math.max(...lats).toFixed(6),
                 lonSpan: lonSpan.toFixed(6),
                 latSpan: latSpan.toFixed(6),
-                lonRange: `[${Math.min(...lons).toFixed(6)}, ${Math.max(...lons).toFixed(6)}]`,
-                latRange: `[${Math.min(...lats).toFixed(6)}, ${Math.max(...lats).toFixed(6)}]`,
-                points: pts.length,
-            });
-        }
-
-        // Also log first 3 and last point in WGS84 to spot coordinate issues
-        console.log(`[buildPolygonFeature] ${c.id}: WGS84 samples`, {
-            first: ring[0],
-            second: ring[1],
-            third: ring[2],
-            last: ring[ring.length - 2],
+            },
+            wgs84First3: ring.slice(0, 3),
+            wgs84Last2: ring.slice(-2),
+            geometryAnalysis: {
+                wgs84Area: wgs84Area.toFixed(8),
+                expectedAreaM2: expectedAreaM2.toFixed(2),
+                areaRatio: areaRatio.toFixed(4),
+                suspiciousIfRatioBig: areaRatio > 100 ? 'YES — would be REJECTED!' : 'normal',
+            },
         });
     }
 
@@ -154,6 +211,7 @@ export function ImportedSiteMapPanel({
 }) {
     const { candidates, confirmedIds, address, geocode } = project;
     const [cursor, setCursor] = useState<'auto' | 'pointer'>('auto');
+    const mapRef = useRef<any>(null);
 
     const confirmedCandidates = useMemo(
         () => candidates.filter((c) => confirmedIds.includes(c.id)),
@@ -236,16 +294,76 @@ export function ImportedSiteMapPanel({
                 .filter((f): f is NonNullable<typeof f> => f !== null),
         };
 
+        // SPECIAL DIAGNOSTIC: Dump selected building geometry
+        if (selectedId) {
+            const selectedFeature = geojson.features.find(f => f.properties?.id === selectedId);
+            const selectedCandidate = allCandidatesToProcess.find(c => c.id === selectedId);
+            if (selectedFeature && selectedCandidate) {
+                const ring = selectedFeature.geometry.coordinates[0] || [];
+                const suspRectangle = stats.suspiciousRectangles.find(sr => sr.id === selectedId);
+
+                // Get min/max bounds of WGS84 ring
+                const lons = ring.map(p => p[0]);
+                const lats = ring.map(p => p[1]);
+                const lonMin = Math.min(...lons);
+                const lonMax = Math.max(...lons);
+                const latMin = Math.min(...lats);
+                const latMax = Math.max(...lats);
+                const lonSpan = lonMax - lonMin;
+                const latSpan = latMax - latMin;
+
+                console.warn('[DEBUG-SELECTED-BUILDING] ' + selectedId, {
+                    isConfirmed: selectedCandidate && confirmedIds.includes(selectedCandidate.id),
+                    ringLength: ring.length,
+                    wgs84Bounds: { lonMin: lonMin.toFixed(6), lonMax: lonMax.toFixed(6), latMin: latMin.toFixed(6), latMax: latMax.toFixed(6) },
+                    spanDegrees: { lon: lonSpan.toFixed(6), lat: latSpan.toFixed(6) },
+                    isSuspicious: !!suspRectangle,
+                    suspiciousReason: suspRectangle?.reason || 'none',
+                    firstRingPoints: ring.slice(0, 5),
+                    lastRingPoints: ring.slice(-3),
+                });
+            }
+        }
+
         console.log('[allCandidatesGeoJSON] ANALYSIS:', {
             stats,
+            selectedId,
+            confirmedIds,
+            totalFeatures: geojson.features.length,
+            confirmedBuildings: geojson.features.filter(f => f.properties?.confirmed === 1).length,
+            selectedBuilding: geojson.features.filter(f => f.properties?.selected === 1).length,
             sampleFeatures: geojson.features.slice(0, 3).map(f => ({
                 id: f.properties?.id,
+                confirmed: f.properties?.confirmed,
+                selected: f.properties?.selected,
                 coordsLength: f.geometry.coordinates[0]?.length,
             })),
         });
 
         return geojson;
     }, [candidates, confirmedIds, selectedId]);
+
+    // Force MapLibre to update the GeoJSON data when it changes
+    // This ensures selected/confirmed properties are reflected immediately
+    useEffect(() => {
+        if (!mapRef.current) return;
+        const map = mapRef.current.getMap?.();
+        if (!map) return;
+
+        try {
+            const source = map.getSource('buildings');
+            if (source && 'setData' in source) {
+                (source as any).setData(allCandidatesGeoJSON);
+                console.log('[useEffect] GeoJSON updated via setData()', {
+                    selectedId,
+                    confirmedCount: confirmedIds.length,
+                    totalFeatures: allCandidatesGeoJSON.features.length,
+                });
+            }
+        } catch (err) {
+            console.error('[useEffect] Failed to update source:', err);
+        }
+    }, [allCandidatesGeoJSON, confirmedIds.length, selectedId]);
 
     // Initial map bounds: fit all confirmed buildings
     const initialBounds = useMemo((): BBox => {
@@ -290,6 +408,7 @@ export function ImportedSiteMapPanel({
         <div className="imported-map-wrap">
             <div className="imported-map-gl">
                 <Map
+                    ref={mapRef}
                     initialViewState={{
                         bounds: initialBounds,
                         fitBoundsOptions: { padding: 80, maxZoom: 19 },
@@ -304,12 +423,11 @@ export function ImportedSiteMapPanel({
                     <NavigationControl position="top-right" showCompass visualizePitch />
                     <ScaleControl position="bottom-left" unit="metric" />
 
-                    {/* Alle LoD2-Gebäude — promoteId='id' sorgt für stabile Feature-Identität
-                        beim setData()-Update, verhindert Re-Render-Flash.
-                        Key-based Re-Mount: Ändert sich wenn confirmedIds sich ändert,
-                        erzwingt MapLibre-Neurendering der grauen Gebäudehüllen */}
+                    {/* Alle LoD2-Gebäude — promoteId='id' sorgt für stabile Feature-Identität.
+                        WICHTIG: KEIN key prop!
+                        React-map-gl ruft automatisch MapLibre's setData() auf wenn data prop ändert.
+                        Das ist zuverlässiger als remounting mit key. */}
                     <Source
-                        key={`buildings-${confirmedIds.length}`}
                         id="buildings"
                         type="geojson"
                         data={allCandidatesGeoJSON}
@@ -321,11 +439,9 @@ export function ImportedSiteMapPanel({
                             paint={{
                                 'fill-color': [
                                     'case',
-                                    ['all', ['==', ['coalesce', ['get', 'confirmed'], 0], 1], ['==', ['coalesce', ['get', 'selected'], 0], 1]],
-                                    '#2d7a52',
                                     ['==', ['coalesce', ['get', 'confirmed'], 0], 1],
-                                    '#3d9465',
-                                    '#b8c5b2',
+                                    '#3d9465',  // Green for confirmed only
+                                    '#b8c5b2',  // Gray for surrounding
                                 ],
                                 'fill-opacity': [
                                     'case',
@@ -347,11 +463,9 @@ export function ImportedSiteMapPanel({
                                 ],
                                 'line-width': [
                                     'case',
-                                    ['all', ['==', ['coalesce', ['get', 'confirmed'], 0], 1], ['==', ['coalesce', ['get', 'selected'], 0], 1]],
-                                    4,
                                     ['==', ['coalesce', ['get', 'confirmed'], 0], 1],
-                                    2.5,
-                                    1,
+                                    2.5,  // Confirmed buildings have thicker outline
+                                    1,    // Surrounding have thin outline
                                 ],
                             }}
                         />

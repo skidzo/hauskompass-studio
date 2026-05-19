@@ -1,0 +1,13 @@
+[
+  {
+    "id": "observation://example-renovation/basement-humidity-placeholder",
+    "name": "Basement humidity placeholder",
+    "sensorType": "humidity",
+    "unit": "%RH",
+    "relatedObjectRefs": ["building://example-renovation/element/north-wall"],
+    "source": "fictional future sensor",
+    "samplingInterval": "15 minutes",
+    "dataPath": "private/local-only/example-humidity.csv",
+    "status": "draft"
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/observation-stream.schema.json",
+  "title": "ObservationStream",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "sensorType", "unit", "relatedObjectRefs", "source", "status"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^observation://[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$" },
+    "name": { "type": "string", "minLength": 1 },
+    "sensorType": { "type": "string", "minLength": 1 },
+    "unit": { "type": "string", "minLength": 1 },
+    "relatedObjectRefs": { "type": "array", "items": { "type": "string" } },
+    "source": { "type": "string", "minLength": 1 },
+    "samplingInterval": { "type": "string" },
+    "dataPath": { "type": "string" },
+    "status": { "type": "string", "enum": ["draft", "needs_review", "verified", "superseded", "rejected", "archived"] }
+  }
+}

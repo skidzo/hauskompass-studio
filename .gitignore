@@ -1,0 +1,90 @@
+# Dependencies / build
+node_modules/
+dist/
+.vite/
+coverage/
+*.tsbuildinfo
+
+# Build output logs (local artifacts, not needed in repo)
+build_output.txt
+build_output_full.txt
+
+# Project-specific utilities (contain hardcoded GPS coordinates for private sites)
+utils/find-local-media-eiermann.mjs
+utils/tests/find-local-media-eiermann.test.mjs
+scripts/generate-eiermann-spatial-context.mjs
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Private house data
+private/**
+!private/.gitkeep
+
+# Generated output (contains local filesystem paths)
+output/
+
+# Local workbench project data — bring your own, not committed
+public/local-media/*
+!public/local-media/.gitkeep
+public/projects/eiermann-campus-pascalstrasse-100/*
+!public/projects/eiermann-campus-pascalstrasse-100/.gitkeep
+
+# Eiermann example data
+examples/eiermann/*
+!examples/eiermann/.gitkeep
+
+# Private field and session docs
+docs/handoffs/
+docs/FOTOLISTE_BEGEHUNG_S01_S20.md
+docs/PART1_FIRST_SITE_VISIT_GUIDE.md
+docs/NEXT_SITE_VISIT_TODOS.md
+docs/eiermann_spatial_data_needed.md
+docs/eiermann_spatial_grounding_report.md
+docs/first_real_scene_review.*
+docs/CODEX_HANDOFF.md
+docs/CODEX_HANDOFF_STATE.json
+
+# Generated project-specific source data (replace locally with your project's data)
+# These stubs are committed as empty placeholders; override locally without tracking
+src/features/map-view/generated/siteContextData.ts
+src/features/building-hull-import/fetchedGeodataSummary.ts
+src/features/assessment/generated/alkisParcelData.ts
+
+# Downloaded/cached geodata
+cache/**
+!cache/.gitkeep
+
+# Heavy geodata / geometry artifacts
+*.gml
+*.citygml
+*.glb
+*.gltf
+*.obj
+*.stl
+*.ply
+*.ifc
+*.tif
+*.tiff
+*.geotiff
+*.zip
+*.7z
+*.las
+*.laz
+
+# Photos / scans / generated documents
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.webp
+*.pdf
+!docs/showcase/*.pdf
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json

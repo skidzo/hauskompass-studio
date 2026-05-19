@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/assessment-finding.schema.json",
+  "title": "AssessmentFinding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "findingType",
+    "description",
+    "status",
+    "severity",
+    "priority",
+    "relatedBuildingElementIds",
+    "relatedAssetInstanceIds",
+    "evidenceIds",
+    "requirementIds",
+    "decisionIds",
+    "location",
+    "viewpoint",
+    "createdAt",
+    "updatedAt",
+    "sourceIds"
+  ],
+  "properties": {
+    "id": { "type": "string", "pattern": "^finding://[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$" },
+    "title": { "type": "string", "minLength": 1 },
+    "findingType": {
+      "type": "string",
+      "enum": ["defect", "risk", "missing_information", "requirement_gap", "design_issue", "maintenance_issue", "deconstruction_issue", "observation", "other"]
+    },
+    "description": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["open", "in_review", "resolved", "deferred", "rejected", "superseded"] },
+    "severity": { "type": "string", "enum": ["critical", "high", "medium", "low", "informational"] },
+    "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+    "relatedBuildingElementIds": { "type": "array", "items": { "type": "string" } },
+    "relatedAssetInstanceIds": { "type": "array", "items": { "type": "string" } },
+    "evidenceIds": { "type": "array", "items": { "type": "string" } },
+    "requirementIds": { "type": "array", "items": { "type": "string" } },
+    "decisionIds": { "type": "array", "items": { "type": "string" } },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "geometryRef"],
+      "properties": {
+        "description": { "type": "string" },
+        "geometryRef": { "type": "string" }
+      }
+    },
+    "viewpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "snapshotRef"],
+      "properties": {
+        "description": { "type": "string" },
+        "snapshotRef": { "type": "string" },
+        "cameraRef": { "type": "string" }
+      }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "assignedTo": { "type": "string" },
+    "notes": { "type": "array", "items": { "type": "string" } },
+    "sourceIds": { "type": "array", "items": { "type": "string" } }
+  }
+}

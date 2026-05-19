@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/asset-type.schema.json",
+  "title": "AssetType",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "manufacturer", "model", "category", "technicalData", "documentationRefs", "environmentalData", "serviceLife", "warrantyTemplate", "sourceIds"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^asset-type://[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$" },
+    "name": { "type": "string", "minLength": 1 },
+    "manufacturer": { "type": "string" },
+    "model": { "type": "string" },
+    "category": {
+      "type": "string",
+      "enum": ["insulation", "vapor_barrier", "roof_window", "pv_module", "inverter", "mounting_system", "humidity_sensor", "temperature_sensor", "heating", "ventilation", "electrical", "water", "drainage", "material", "other"]
+    },
+    "technicalData": { "type": "object" },
+    "documentationRefs": { "type": "array", "items": { "type": "string" } },
+    "environmentalData": { "type": "object" },
+    "serviceLife": { "type": "object" },
+    "warrantyTemplate": { "type": "object" },
+    "sourceIds": { "type": "array", "items": { "type": "string" } }
+  }
+}

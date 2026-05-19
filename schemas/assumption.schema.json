@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/assumption.schema.json",
+  "title": "Assumption",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "statement", "reason", "relatedObjectRefs", "evidenceRefs", "confidence", "reviewStatus", "needsExpertReview", "createdAt", "updatedAt"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^assumption://[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$" },
+    "statement": { "type": "string", "minLength": 1 },
+    "reason": { "type": "string", "minLength": 1 },
+    "relatedObjectRefs": { "type": "array", "items": { "type": "string" } },
+    "evidenceRefs": { "type": "array", "items": { "type": "string" } },
+    "confidence": { "type": "string", "enum": ["confirmed", "high", "medium", "low", "unknown"] },
+    "reviewStatus": { "type": "string", "enum": ["draft", "needs_review", "verified", "superseded", "rejected", "archived"] },
+    "needsExpertReview": { "type": "boolean" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

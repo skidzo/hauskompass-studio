@@ -1,0 +1,24 @@
+[
+  {
+    "id": "evidence://example-renovation/roof-note-001",
+    "title": "Fictional roof inspection note",
+    "evidenceType": "user_note",
+    "filePath": "private/local-only/example-roof-note.md",
+    "source": "fictional example",
+    "createdAt": "2026-05-12T10:00:00Z",
+    "relatedObjectRefs": ["building://example-renovation/element/main-roof", "building://example-renovation/element/east-roof-surface"],
+    "reliability": "low",
+    "notes": "Placeholder note for validating evidence links. Contains no real project data."
+  },
+  {
+    "id": "evidence://example-renovation/site-visit-note-001",
+    "title": "Fictional site visit note",
+    "evidenceType": "inspection",
+    "filePath": "private/local-only/example-site-visit-note.md",
+    "source": "fictional example",
+    "createdAt": "2026-05-12T10:05:00Z",
+    "relatedObjectRefs": ["building://example-renovation/element/north-wall"],
+    "reliability": "low",
+    "notes": "Placeholder field observation for validating wall and moisture-control decisions."
+  }
+]

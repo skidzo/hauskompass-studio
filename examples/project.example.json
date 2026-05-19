@@ -1,0 +1,9 @@
+{
+  "id": "project://example-renovation",
+  "name": "Example Renovation Baseline",
+  "description": "Fictional placeholder project for metadata validation and documentation examples.",
+  "locationPrivacyMode": "fictional-placeholder",
+  "coordinateReferenceSystem": "not-committed",
+  "createdAt": "2026-05-12T10:00:00Z",
+  "updatedAt": "2026-05-12T10:00:00Z"
+}

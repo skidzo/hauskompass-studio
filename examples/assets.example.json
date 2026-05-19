@@ -1,0 +1,21 @@
+[
+  {
+    "id": "asset://example-renovation/material/reusable-timber-placeholder",
+    "assetType": "material",
+    "name": "Reusable timber placeholder",
+    "manufacturer": "unknown",
+    "model": "unknown",
+    "relatedBuildingElementRefs": ["building://example-renovation/element/main-roof"],
+    "documents": ["evidence://example-renovation/roof-note-001"],
+    "aasLiteSubmodels": [
+      {
+        "id": "submodel-technical-placeholder",
+        "semanticId": "aas-lite://example/material-technical-data",
+        "description": "Fictional AAS-lite submodel placeholder for later product data."
+      }
+    ],
+    "evidenceRefs": ["evidence://example-renovation/roof-note-001"],
+    "confidence": "unknown",
+    "status": "draft"
+  }
+]

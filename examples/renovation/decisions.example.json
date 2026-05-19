@@ -1,0 +1,19 @@
+[
+  {
+    "id": "decision://example-renovation/roof-insulation-strategy",
+    "title": "Choose roof insulation strategy",
+    "decisionArea": "roof insulation",
+    "description": "Fictional building-assessment decision linking the roof element, planned insulation instance, roof evidence and the moisture-monitoring finding.",
+    "alternatives": ["Exterior insulation", "Interior insulation", "Defer until roof opening and monitoring evidence"],
+    "selectedOption": "Defer until roof opening and monitoring evidence",
+    "relatedObjectRefs": [
+      "building://example-renovation/element/part1-main-roof-existing",
+      "asset://example-renovation/instance/planned-roof-insulation-part1",
+      "finding://example-renovation/roof-moisture-monitoring-gap"
+    ],
+    "evidenceRefs": ["evidence://example-renovation/photo-roof-overview-001"],
+    "assumptionRefs": [],
+    "risks": ["Selecting the insulation build-up before ventilation and moisture risk are verified may create condensation risk."],
+    "status": "draft"
+  }
+]

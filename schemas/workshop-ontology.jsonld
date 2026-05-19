@@ -1,0 +1,400 @@
+{
+    "@context": {
+        "@version": 1.1,
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+        "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+        "owl": "http://www.w3.org/2002/07/owl#",
+        "skos": "http://www.w3.org/2004/02/skos/core#",
+        "dc": "http://purl.org/dc/elements/1.1/",
+        "dcterms": "http://purl.org/dc/terms/",
+        "prov": "http://www.w3.org/ns/prov#",
+        "foaf": "http://xmlns.com/foaf/0.1/",
+        "schema": "https://schema.org/",
+        "geo": "http://www.opengis.net/ont/geosparql#",
+        "bot": "https://w3id.org/bot#",
+        "bot_zone": "https://w3id.org/bot#Zone",
+        "ifcowl": "https://standards.buildingsmart.org/IFC/DEV/IFC4/ADD2_TC1/OWL#",
+        "cidoc": "http://www.cidoc-crm.org/cidoc-crm/",
+        "hk": "https://hauskompass.nucos.de/ontology/workshop#",
+        "Project": {
+            "@id": "hk:Project",
+            "@type": "@id"
+        },
+        "Site": {
+            "@id": "hk:Site",
+            "@type": "@id"
+        },
+        "Zone": {
+            "@id": "hk:Zone",
+            "@type": "@id"
+        },
+        "Place": {
+            "@id": "hk:Place",
+            "@type": "@id"
+        },
+        "Asset": {
+            "@id": "hk:Asset",
+            "@type": "@id"
+        },
+        "Observation": {
+            "@id": "hk:Observation",
+            "@type": "@id"
+        },
+        "Interpretation": {
+            "@id": "hk:Interpretation",
+            "@type": "@id"
+        },
+        "Claim": {
+            "@id": "hk:Claim",
+            "@type": "@id"
+        },
+        "Question": {
+            "@id": "hk:Question",
+            "@type": "@id"
+        },
+        "Memory": {
+            "@id": "hk:Memory",
+            "@type": "@id"
+        },
+        "EventPhase": {
+            "@id": "hk:EventPhase",
+            "@type": "@id"
+        },
+        "Assessment": {
+            "@id": "hk:Assessment",
+            "@type": "@id"
+        },
+        "Scenario": {
+            "@id": "hk:Scenario",
+            "@type": "@id"
+        },
+        "WorkshopScene": {
+            "@id": "hk:WorkshopScene",
+            "@type": "@id"
+        },
+        "id": {
+            "@id": "@id"
+        },
+        "label": {
+            "@id": "rdfs:label"
+        },
+        "description": {
+            "@id": "dcterms:description"
+        },
+        "title": {
+            "@id": "dcterms:title"
+        },
+        "createdAt": {
+            "@id": "dcterms:created",
+            "@type": "xsd:dateTime"
+        },
+        "updatedAt": {
+            "@id": "dcterms:modified",
+            "@type": "xsd:dateTime"
+        },
+        "source": {
+            "@id": "dcterms:source"
+        },
+        "projectId": {
+            "@id": "hk:belongsToProject",
+            "@type": "@id"
+        },
+        "siteId": {
+            "@id": "hk:belongsToSite",
+            "@type": "@id"
+        },
+        "zoneId": {
+            "@id": "hk:locatedInZone",
+            "@type": "@id"
+        },
+        "placeId": {
+            "@id": "hk:locatedAtPlace",
+            "@type": "@id"
+        },
+        "eventId": {
+            "@id": "hk:relatedToEvent",
+            "@type": "@id"
+        },
+        "linkedAssetIds": {
+            "@id": "hk:hasAsset",
+            "@container": "@set",
+            "@type": "@id"
+        },
+        "basedOnObservationIds": {
+            "@id": "hk:basedOnObservation",
+            "@container": "@set",
+            "@type": "@id"
+        },
+        "sourceRefs": {
+            "@id": "hk:hasSourceRef",
+            "@container": "@set"
+        },
+        "linkedClaimIds": {
+            "@id": "hk:hasClaim",
+            "@container": "@set",
+            "@type": "@id"
+        },
+        "linkedQuestionIds": {
+            "@id": "hk:hasQuestion",
+            "@container": "@set",
+            "@type": "@id"
+        },
+        "linkedZoneIds": {
+            "@id": "hk:encompassesZone",
+            "@container": "@set",
+            "@type": "@id"
+        },
+        "selectedAssetIds": {
+            "@id": "hk:featuresAsset",
+            "@container": "@set",
+            "@type": "@id"
+        },
+        "confirmedIds": {
+            "@id": "hk:confirmedPart",
+            "@container": "@set",
+            "@type": "@id"
+        },
+        "statement": {
+            "@id": "hk:statement",
+            "@type": "xsd:string"
+        },
+        "text": {
+            "@id": "hk:text",
+            "@type": "xsd:string"
+        },
+        "summary": {
+            "@id": "hk:summary",
+            "@type": "xsd:string"
+        },
+        "guidingQuestion": {
+            "@id": "hk:guidingQuestion",
+            "@type": "xsd:string"
+        },
+        "contextText": {
+            "@id": "hk:contextText",
+            "@type": "xsd:string"
+        },
+        "discussionPrompt": {
+            "@id": "hk:discussionPrompt",
+            "@type": "xsd:string"
+        },
+        "epistemic": {
+            "@id": "hk:epistemicType",
+            "@type": "xsd:string"
+        },
+        "confidence": {
+            "@id": "hk:confidenceLevel",
+            "@type": "xsd:string"
+        },
+        "reviewStatus": {
+            "@id": "hk:reviewStatus",
+            "@type": "xsd:string"
+        },
+        "sensitivityLevel": {
+            "@id": "hk:sensitivityLevel",
+            "@type": "xsd:string"
+        },
+        "publicationStatus": {
+            "@id": "hk:publicationStatus",
+            "@type": "xsd:string"
+        },
+        "documentationStatus": {
+            "@id": "hk:documentationStatus",
+            "@type": "xsd:string"
+        },
+        "documentationPriority": {
+            "@id": "hk:documentationPriority",
+            "@type": "xsd:string"
+        },
+        "assetType": {
+            "@id": "hk:assetType",
+            "@type": "xsd:string"
+        },
+        "claimType": {
+            "@id": "hk:claimType",
+            "@type": "xsd:string"
+        },
+        "questionType": {
+            "@id": "hk:questionType",
+            "@type": "xsd:string"
+        },
+        "phaseType": {
+            "@id": "hk:phaseType",
+            "@type": "xsd:string"
+        },
+        "citability": {
+            "@id": "hk:citability",
+            "@type": "xsd:string"
+        },
+        "geocode": {
+            "@id": "schema:geo",
+            "@context": {
+                "lat": {
+                    "@id": "schema:latitude",
+                    "@type": "xsd:decimal"
+                },
+                "lon": {
+                    "@id": "schema:longitude",
+                    "@type": "xsd:decimal"
+                }
+            }
+        },
+        "startYear": {
+            "@id": "schema:startDate",
+            "@type": "xsd:gYear"
+        },
+        "endYear": {
+            "@id": "schema:endDate",
+            "@type": "xsd:gYear"
+        },
+        "sortOrder": {
+            "@id": "hk:sortOrder",
+            "@type": "xsd:integer"
+        },
+        "embedding": {
+            "@id": "hk:vectorEmbedding",
+            "@type": "xsd:string",
+            "@comment": "Float32 base64 — for semantic search via transformers.js"
+        },
+        "filePath": {
+            "@id": "hk:filePath",
+            "@type": "xsd:string"
+        },
+        "mimeType": {
+            "@id": "hk:mimeType",
+            "@type": "xsd:string"
+        },
+        "capturedAt": {
+            "@id": "dcterms:created",
+            "@type": "xsd:dateTime"
+        },
+        "heritageStatus": {
+            "@id": "hk:heritageStatus"
+        },
+        "currentAccess": {
+            "@id": "hk:currentAccess"
+        },
+        "observations": {
+            "@id": "hk:hasObservationText",
+            "@container": "@list"
+        },
+        "interpretations": {
+            "@id": "hk:hasInterpretationText",
+            "@container": "@list"
+        },
+        "openQuestions": {
+            "@id": "hk:hasOpenQuestionText",
+            "@container": "@list"
+        },
+        "counterArguments": {
+            "@id": "hk:hasCounterArgument",
+            "@container": "@list"
+        },
+        "themes": {
+            "@id": "hk:hasTheme",
+            "@container": "@set"
+        },
+        "tags": {
+            "@id": "hk:hasTag",
+            "@container": "@set"
+        }
+    },
+    "@graph": [
+        {
+            "@id": "hk:WorkshopAssessmentOntology",
+            "@type": "owl:Ontology",
+            "rdfs:label": "Hauskompass Workshop-Assessment-Ontologie",
+            "dc:description": "Ontologie für quellengebundene, workshopfähige Campus- und Gebäude-Assessments. Erster Anwendungsfall: Eiermann-Campus Stuttgart-Vaihingen.",
+            "owl:versionInfo": "0.1.0",
+            "dcterms:created": "2026-05-17",
+            "dc:creator": "NuCOS"
+        },
+        {
+            "@id": "hk:EpistemicType",
+            "@type": "owl:Class",
+            "rdfs:label": "Erkenntnistyp",
+            "rdfs:comment": "Klassifizierung des epistemischen Status einer Aussage.",
+            "skos:hasTopConcept": [
+                {
+                    "@id": "hk:EpistemicType/verified_fact",
+                    "skos:prefLabel": "Geprüfte Tatsache"
+                },
+                {
+                    "@id": "hk:EpistemicType/observation",
+                    "skos:prefLabel": "Beobachtung"
+                },
+                {
+                    "@id": "hk:EpistemicType/interpretation",
+                    "skos:prefLabel": "Deutung"
+                },
+                {
+                    "@id": "hk:EpistemicType/memory",
+                    "skos:prefLabel": "Erinnerung"
+                },
+                {
+                    "@id": "hk:EpistemicType/hypothesis",
+                    "skos:prefLabel": "Hypothese"
+                },
+                {
+                    "@id": "hk:EpistemicType/disputed_claim",
+                    "skos:prefLabel": "Strittige These"
+                },
+                {
+                    "@id": "hk:EpistemicType/open_question",
+                    "skos:prefLabel": "Offene Prüffrage"
+                }
+            ]
+        },
+        {
+            "@id": "hk:SensitivityLevel",
+            "@type": "owl:Class",
+            "rdfs:label": "Sensitivitätsstufe",
+            "skos:hasTopConcept": [
+                {
+                    "@id": "hk:SensitivityLevel/public",
+                    "skos:prefLabel": "Öffentlich"
+                },
+                {
+                    "@id": "hk:SensitivityLevel/internal",
+                    "skos:prefLabel": "Intern"
+                },
+                {
+                    "@id": "hk:SensitivityLevel/sensitive_personal",
+                    "skos:prefLabel": "Personenbezogen sensibel"
+                },
+                {
+                    "@id": "hk:SensitivityLevel/restricted",
+                    "skos:prefLabel": "Beschränkt"
+                },
+                {
+                    "@id": "hk:SensitivityLevel/unknown",
+                    "skos:prefLabel": "Unklassifiziert"
+                }
+            ]
+        },
+        {
+            "@id": "hk:vectorEmbedding",
+            "@type": "owl:DatatypeProperty",
+            "rdfs:label": "Vector Embedding",
+            "rdfs:comment": "Float32-Vektor (Base64-kodiert) zur semantischen Suche. Generiert via transformers.js (Modell: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 oder äquivalent). Lokal im Browser berechnet, kein Cloud-API-Aufruf. Geeignet für HNSW-basierte In-Memory-Nearest-Neighbour-Suche über IndexedDB-Inhalte.",
+            "rdfs:domain": [
+                {
+                    "@id": "hk:Asset"
+                },
+                {
+                    "@id": "hk:Claim"
+                },
+                {
+                    "@id": "hk:Observation"
+                }
+            ]
+        },
+        {
+            "@id": "hk:AlignmentNote",
+            "@type": "rdfs:Comment",
+            "rdfs:label": "Alignment-Hinweise",
+            "rdfs:comment": "Zone aligniert mit bot:Zone (Building Topology Ontology). Place aligniert mit cidoc:E53_Place. Asset aligniert mit cidoc:E73_Information_Object. EventPhase aligniert mit cidoc:E4_Period. Memory aligniert mit cidoc:E31_Document + prov:Entity. Claim aligniert mit prov:Statement. Assessment aligniert mit schema:Review."
+        }
+    ]
+}

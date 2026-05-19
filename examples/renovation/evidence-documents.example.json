@@ -1,0 +1,57 @@
+[
+  {
+    "id": "evidence://example-renovation/photo-roof-overview-001",
+    "type": "photo",
+    "title": "Fictional roof overview photo reference",
+    "filePath": "private/local-only/photos/fictional-roof-overview-001.jpg",
+    "sourceDate": "2026-05-12",
+    "capturedAt": "2026-05-12T11:00:00Z",
+    "relatedBuildingElementIds": [
+      "building://example-renovation/element/part1-main-roof-existing",
+      "building://example-renovation/element/retained-visible-timber-beam-01"
+    ],
+    "relatedAssetInstanceIds": [
+      "asset://example-renovation/instance/planned-roof-insulation-part1",
+      "asset://example-renovation/instance/planned-pv-array-east-roof",
+      "asset://example-renovation/instance/planned-attic-humidity-sensor-01"
+    ],
+    "notes": "Fictional photo evidence reference. No real file, address, coordinates or private image data is committed.",
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"]
+  },
+  {
+    "id": "evidence://example-renovation/datasheet-insulation-placeholder",
+    "type": "datasheet",
+    "title": "Fictional insulation datasheet placeholder",
+    "filePath": "private/local-only/datasheets/fictional-insulation.pdf",
+    "sourceDate": "2026-05-12",
+    "capturedAt": "2026-05-12T11:05:00Z",
+    "relatedBuildingElementIds": ["building://example-renovation/element/part1-main-roof-existing"],
+    "relatedAssetInstanceIds": ["asset://example-renovation/instance/planned-roof-insulation-part1"],
+    "notes": "Placeholder only. Real product datasheets stay local until explicitly approved.",
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"]
+  },
+  {
+    "id": "evidence://example-renovation/datasheet-pv-placeholder",
+    "type": "datasheet",
+    "title": "Fictional PV module datasheet placeholder",
+    "filePath": "private/local-only/datasheets/fictional-pv-module.pdf",
+    "sourceDate": "2026-05-12",
+    "capturedAt": "2026-05-12T11:06:00Z",
+    "relatedBuildingElementIds": ["building://example-renovation/element/part1-main-roof-existing"],
+    "relatedAssetInstanceIds": ["asset://example-renovation/instance/planned-pv-array-east-roof"],
+    "notes": "Placeholder only. Real product datasheets stay local until explicitly approved.",
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"]
+  },
+  {
+    "id": "evidence://example-renovation/datasheet-sensor-placeholder",
+    "type": "datasheet",
+    "title": "Fictional sensor datasheet placeholder",
+    "filePath": "private/local-only/datasheets/fictional-humidity-sensor.pdf",
+    "sourceDate": "2026-05-12",
+    "capturedAt": "2026-05-12T11:07:00Z",
+    "relatedBuildingElementIds": ["building://example-renovation/element/part1-main-roof-existing"],
+    "relatedAssetInstanceIds": ["asset://example-renovation/instance/planned-attic-humidity-sensor-01"],
+    "notes": "Placeholder only. Real sensor datasheets stay local until explicitly approved.",
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"]
+  }
+]

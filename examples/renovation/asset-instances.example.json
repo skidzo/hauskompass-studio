@@ -1,0 +1,53 @@
+[
+  {
+    "id": "asset://example-renovation/instance/planned-roof-insulation-part1",
+    "assetTypeId": "asset-type://example-renovation/mineral-roof-insulation-placeholder",
+    "name": "Planned Part 1 roof insulation layer",
+    "status": "planned",
+    "locationRef": "zone://example-renovation/part1-attic-monitoring-zone",
+    "buildingElementRefs": ["building://example-renovation/element/part1-main-roof-existing"],
+    "serialNumber": "not_applicable_planned_example",
+    "installationDate": "unknown",
+    "warrantyStart": "unknown",
+    "warrantyEnd": "unknown",
+    "condition": "planned candidate, not installed",
+    "maintenanceEvents": [],
+    "measurementRefs": [],
+    "evidenceIds": ["evidence://example-renovation/photo-roof-overview-001"],
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"]
+  },
+  {
+    "id": "asset://example-renovation/instance/planned-pv-array-east-roof",
+    "assetTypeId": "asset-type://example-renovation/pv-module-placeholder",
+    "name": "Planned PV module group on roof surface",
+    "status": "planned",
+    "locationRef": "geometry://example-renovation/part1/main-roof/pv-zone-east",
+    "buildingElementRefs": ["building://example-renovation/element/part1-main-roof-existing"],
+    "serialNumber": "not_applicable_planned_example",
+    "installationDate": "unknown",
+    "warrantyStart": "unknown",
+    "warrantyEnd": "unknown",
+    "condition": "planned candidate, module count not final",
+    "maintenanceEvents": [],
+    "measurementRefs": [],
+    "evidenceIds": ["evidence://example-renovation/photo-roof-overview-001"],
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"]
+  },
+  {
+    "id": "asset://example-renovation/instance/planned-attic-humidity-sensor-01",
+    "assetTypeId": "asset-type://example-renovation/humidity-sensor-placeholder",
+    "name": "Planned attic humidity sensor 01",
+    "status": "planned",
+    "locationRef": "zone://example-renovation/part1-attic-monitoring-zone",
+    "buildingElementRefs": ["building://example-renovation/element/part1-main-roof-existing"],
+    "serialNumber": "unknown",
+    "installationDate": "unknown",
+    "warrantyStart": "unknown",
+    "warrantyEnd": "unknown",
+    "condition": "planned monitoring point",
+    "maintenanceEvents": [],
+    "measurementRefs": ["measurement://example-renovation/attic-rh-example-001"],
+    "evidenceIds": ["evidence://example-renovation/photo-roof-overview-001"],
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"]
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/evidence-item.schema.json",
+  "title": "EvidenceItem",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "title", "evidenceType", "filePath", "source", "createdAt", "relatedObjectRefs", "reliability", "notes"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^evidence://[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$" },
+    "title": { "type": "string", "minLength": 1 },
+    "evidenceType": {
+      "type": "string",
+      "enum": ["photo", "measurement", "geodata", "document", "expert_note", "user_note", "climate_data", "quote", "permit", "drawing", "inspection"]
+    },
+    "filePath": { "type": "string", "minLength": 1 },
+    "source": { "type": "string", "minLength": 1 },
+    "capturedAt": { "type": "string", "format": "date-time" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "relatedObjectRefs": { "type": "array", "items": { "type": "string" } },
+    "reliability": { "type": "string", "enum": ["confirmed", "high", "medium", "low", "unknown"] },
+    "notes": { "type": "string" }
+  }
+}

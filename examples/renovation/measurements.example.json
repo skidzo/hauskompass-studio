@@ -1,0 +1,13 @@
+[
+  {
+    "id": "measurement://example-renovation/attic-rh-example-001",
+    "assetInstanceId": "asset://example-renovation/instance/planned-attic-humidity-sensor-01",
+    "measurementType": "relative_humidity",
+    "timestamp": "2026-05-12T12:00:00Z",
+    "value": 62,
+    "unit": "percent_relative_humidity",
+    "method": "fictional placeholder reading for schema validation; not real sensor data",
+    "confidence": "unknown",
+    "sourceId": "source://uploaded/bim-aas-renovation-guideline"
+  }
+]

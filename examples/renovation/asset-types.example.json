@@ -1,0 +1,79 @@
+[
+  {
+    "id": "asset-type://example-renovation/mineral-roof-insulation-placeholder",
+    "name": "Fictional roof insulation system placeholder",
+    "manufacturer": "fictional manufacturer",
+    "model": "fictional insulation system",
+    "category": "insulation",
+    "technicalData": {
+      "declaredThermalConductivityWmK": 0.035,
+      "layerRole": "between-or-above-rafter insulation candidate"
+    },
+    "documentationRefs": ["evidence://example-renovation/datasheet-insulation-placeholder"],
+    "environmentalData": {
+      "epdRef": "not provided",
+      "co2Data": "unknown",
+      "recyclability": "to be checked"
+    },
+    "serviceLife": {
+      "expectedYears": 40,
+      "basis": "fictional planning placeholder"
+    },
+    "warrantyTemplate": {
+      "durationYears": 0,
+      "notes": "No real warranty in committed example data"
+    },
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"]
+  },
+  {
+    "id": "asset-type://example-renovation/pv-module-placeholder",
+    "name": "Fictional PV module placeholder",
+    "manufacturer": "fictional manufacturer",
+    "model": "fictional pv module",
+    "category": "pv_module",
+    "technicalData": {
+      "nominalPowerWp": 430,
+      "moduleWidthM": 1.13,
+      "moduleHeightM": 1.72
+    },
+    "documentationRefs": ["evidence://example-renovation/datasheet-pv-placeholder"],
+    "environmentalData": {
+      "epdRef": "not provided",
+      "recyclability": "manufacturer take-back to be checked"
+    },
+    "serviceLife": {
+      "expectedYears": 25,
+      "basis": "fictional planning placeholder"
+    },
+    "warrantyTemplate": {
+      "durationYears": 0,
+      "notes": "No real warranty in committed example data"
+    },
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"]
+  },
+  {
+    "id": "asset-type://example-renovation/humidity-sensor-placeholder",
+    "name": "Fictional humidity sensor placeholder",
+    "manufacturer": "fictional manufacturer",
+    "model": "fictional humidity sensor",
+    "category": "humidity_sensor",
+    "technicalData": {
+      "measurementTypes": ["relative_humidity", "temperature"],
+      "relativeHumidityAccuracyPercent": 3
+    },
+    "documentationRefs": ["evidence://example-renovation/datasheet-sensor-placeholder"],
+    "environmentalData": {
+      "batteryReplacement": "unknown",
+      "recyclability": "electronic waste route to be checked"
+    },
+    "serviceLife": {
+      "expectedYears": 10,
+      "basis": "fictional planning placeholder"
+    },
+    "warrantyTemplate": {
+      "durationYears": 0,
+      "notes": "No real warranty in committed example data"
+    },
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"]
+  }
+]

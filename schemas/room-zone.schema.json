@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/room-zone.schema.json",
+  "title": "RoomOrZone",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "floor", "function", "geometryRef", "environmentalRequirements", "linkedAssetIds"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^zone://[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$" },
+    "name": { "type": "string", "minLength": 1 },
+    "floor": { "type": "string" },
+    "function": { "type": "string" },
+    "geometryRef": { "type": "string" },
+    "environmentalRequirements": { "type": "object" },
+    "linkedAssetIds": { "type": "array", "items": { "type": "string" } },
+    "evidenceIds": { "type": "array", "items": { "type": "string" } },
+    "sourceIds": { "type": "array", "items": { "type": "string" } }
+  }
+}

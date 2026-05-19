@@ -1,0 +1,360 @@
+{
+  "projectStatus": {
+    "label": "Private House Renovation Baseline",
+    "phase": "evidence organization and uncertainty reduction",
+    "privacyMode": "local-first, no committed address",
+    "latestGeneratedState": "LoD2/terrain/IFC-oriented baseline with Part 1 decomposition, side elevations, metadata schemas and assessment examples",
+    "statusNotes": [
+      "The app is not a construction model and not a replacement for professional planning.",
+      "Generated hull, terrain and IFC artifacts are useful reasoning inputs but still need site verification.",
+      "The next practical milestone is a laser-referenced photo and measurement pass."
+    ]
+  },
+  "artifacts": [
+    {
+      "id": "artifact-lod2-candidate-geometry",
+      "label": "LoD2 candidate geometry",
+      "path": "src/features/building-hull-import/generated/lod2CandidateGeometry.ts",
+      "kind": "generated_model",
+      "status": "available"
+    },
+    {
+      "id": "artifact-ifc-baseline",
+      "label": "IFC baseline export pipeline",
+      "path": "utils/export_ifc.py",
+      "kind": "ifc",
+      "status": "available"
+    },
+    {
+      "id": "artifact-part1-floor-plan",
+      "label": "Part 1 schematic floor plan and vertical CAD seed",
+      "path": "src/features/building-parts/generated/part1SchematicFloorPlan.ts",
+      "kind": "generated_model",
+      "status": "available"
+    },
+    {
+      "id": "artifact-photo-list",
+      "label": "S01-S20 field photo list",
+      "path": "docs/FOTOLISTE_BEGEHUNG_S01_S20.md",
+      "kind": "site_check",
+      "status": "ready_for_visit"
+    },
+    {
+      "id": "artifact-asset-model",
+      "label": "Asset-separated metadata model",
+      "path": "docs/architecture/asset-data-model.md",
+      "kind": "schema",
+      "status": "available"
+    }
+  ],
+  "buildingFacts": [
+    {
+      "id": "fact-confirmed-hull-parts",
+      "label": "Confirmed hull parts",
+      "value": "Part 1 and Part 2",
+      "unit": "parts",
+      "source": "confirmed building part selection",
+      "confidence": "documented",
+      "last_updated": "2026-05-12",
+      "evidence_links": ["src/features/building-hull-import/confirmedBuildingParts.ts"]
+    },
+    {
+      "id": "fact-part1-main-length",
+      "label": "Part 1 main body length",
+      "value": 16.88,
+      "unit": "m",
+      "source": "Part 1 schematic floor plan / LoD2-derived local axis",
+      "confidence": "generated",
+      "last_updated": "2026-05-12",
+      "evidence_links": ["src/features/building-parts/generated/part1SchematicFloorPlan.ts"]
+    },
+    {
+      "id": "fact-part1-main-width",
+      "label": "Part 1 main body width",
+      "value": 8.08,
+      "unit": "m",
+      "source": "Part 1 schematic floor plan / LoD2-derived local axis",
+      "confidence": "generated",
+      "last_updated": "2026-05-12",
+      "evidence_links": ["src/features/building-parts/generated/part1SchematicFloorPlan.ts"]
+    },
+    {
+      "id": "fact-part1-total-axis",
+      "label": "Part 1 total interpreted axis including Wintergarten and Flur",
+      "value": 24.08,
+      "unit": "m",
+      "source": "Part 1 side-elevation dimension chain",
+      "confidence": "generated",
+      "last_updated": "2026-05-12",
+      "evidence_links": ["src/features/building-parts/generated/part1ElevationPhotoStudy.ts"]
+    },
+    {
+      "id": "fact-keller-size",
+      "label": "Keller schematic size",
+      "value": "approximately 4 x 7",
+      "unit": "m",
+      "source": "owner-provided schematic interpretation captured in Part 1 plan",
+      "confidence": "estimated",
+      "last_updated": "2026-05-12",
+      "evidence_links": ["docs/PART1_FIRST_SITE_VISIT_GUIDE.md"]
+    },
+    {
+      "id": "fact-storey-height-seed",
+      "label": "Nominal storey height seed",
+      "value": 2.4,
+      "unit": "m",
+      "source": "vertical CAD seed assumption",
+      "confidence": "estimated",
+      "last_updated": "2026-05-12",
+      "evidence_links": ["src/features/building-parts/generated/part1SchematicFloorPlan.ts"]
+    },
+    {
+      "id": "fact-metadata-foundation",
+      "label": "Metadata validation foundation",
+      "value": "schemas, examples, references, privacy and modeling checks",
+      "unit": "package",
+      "source": "metadata-first sprint",
+      "confidence": "documented",
+      "last_updated": "2026-05-12",
+      "evidence_links": ["schemas/", "examples/building-assessment/", "src/validation/metadataValidator.js"]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "assumption-wall-thickness",
+      "statement": "Part 1 exterior wall thickness is currently estimated at about 0.5 m.",
+      "why_it_matters": "Wall thickness affects U-value reasoning, opening details, material quantities and CAD seed accuracy.",
+      "confidence": "low",
+      "affected_decisions": ["decision-roof-insulation", "decision-wall-energy-strategy"],
+      "required_verification": "Measure a representative reveal at a window or exterior door.",
+      "status": "needs_site_check"
+    },
+    {
+      "id": "assumption-roof-build-up",
+      "statement": "Existing roof build-up, ventilation and underlay/sarking are unknown.",
+      "why_it_matters": "Roof insulation and PV decisions can fail if moisture behavior and structural build-up are misunderstood.",
+      "confidence": "unknown",
+      "affected_decisions": ["decision-roof-insulation", "decision-pv-placement"],
+      "required_verification": "Inspect attic/roof build-up and document with S11-S14 photos.",
+      "status": "open"
+    },
+    {
+      "id": "assumption-terrain-lines",
+      "statement": "Side-elevation terrain lines are simplified reasoning aids, not measured site profiles.",
+      "why_it_matters": "Drainage, plinth moisture and threshold decisions depend on real local ground levels.",
+      "confidence": "medium",
+      "affected_decisions": ["decision-drainage-moisture"],
+      "required_verification": "Check threshold, plinth and local fall with photos and quick level/laser measurements.",
+      "status": "needs_site_check"
+    },
+    {
+      "id": "assumption-keller-location",
+      "statement": "Keller is assumed near the southernmost Part 1 corner and roughly follows the main building direction.",
+      "why_it_matters": "Moisture diagnosis, structural context and deconstruction planning depend on cellar extent.",
+      "confidence": "medium",
+      "affected_decisions": ["decision-drainage-moisture", "decision-deconstruction-reuse"],
+      "required_verification": "Confirm cellar access, vault direction and approximate 4 m x 7 m dimensions.",
+      "status": "needs_site_check"
+    }
+  ],
+  "measurementNeeds": [
+    {
+      "id": "need-wall-thickness",
+      "description": "Measure representative exterior wall thickness at a window or door reveal.",
+      "location_or_component": "Part 1 exterior wall / opening reveal",
+      "reason": "Replaces the current 0.5 m wall estimate with measured evidence.",
+      "priority": "high",
+      "suggested_method": "Use tape/laser at an open reveal and photograph the measurement.",
+      "blocks_decisions": ["decision-wall-energy-strategy", "decision-roof-insulation"]
+    },
+    {
+      "id": "need-roof-build-up",
+      "description": "Identify roof covering, underlay/boarding, ventilation path and visible timber structure.",
+      "location_or_component": "Part 1 attic and roof slopes",
+      "reason": "Roof insulation, PV and moisture risk depend on existing build-up.",
+      "priority": "critical",
+      "suggested_method": "Use S11-S14 photo blocks, measure one rafter bay and document visible layers.",
+      "blocks_decisions": ["decision-roof-insulation", "decision-pv-placement"]
+    },
+    {
+      "id": "need-eaves-ridge-heights",
+      "description": "Verify eaves, ridge, threshold and terrain relationships.",
+      "location_or_component": "Part 1 side elevations A-01 and A-02",
+      "reason": "Current side-elevation dimensions are generated from the model and need site control.",
+      "priority": "high",
+      "suggested_method": "Laser-distance photo blocks plus one reliable vertical or diagonal control where safe.",
+      "blocks_decisions": ["decision-roof-extension", "decision-pv-placement"]
+    },
+    {
+      "id": "need-drainage-paths",
+      "description": "Document all gutter/downpipe discharge points and ground fall at plinth zones.",
+      "location_or_component": "North/west/south plinth and roof drainage",
+      "reason": "Moisture-control priority depends on actual water paths.",
+      "priority": "high",
+      "suggested_method": "Photo walkaround after rainfall if possible; note discharge type and ponding.",
+      "blocks_decisions": ["decision-drainage-moisture"]
+    },
+    {
+      "id": "need-keller-confirmation",
+      "description": "Confirm Keller size, vault direction, entrance and moisture pattern.",
+      "location_or_component": "Part 1 Keller at southern corner",
+      "reason": "Cellar evidence influences moisture diagnosis and structural assumptions.",
+      "priority": "medium",
+      "suggested_method": "Use S18-S19 photo blocks and rough tape/laser dimensions if safe.",
+      "blocks_decisions": ["decision-drainage-moisture", "decision-deconstruction-reuse"]
+    }
+  ],
+  "renovationDecisions": [
+    {
+      "id": "decision-roof-insulation",
+      "decision_title": "Choose roof insulation strategy",
+      "current_status": "blocked",
+      "options": ["Exterior insulation", "Interior insulation", "Hybrid or deferred strategy"],
+      "dependencies": ["need-roof-build-up", "need-eaves-ridge-heights", "assumption-roof-build-up"],
+      "risks": ["risk-moisture-trap", "risk-structural-overclaim"],
+      "evidence_links": ["docs/architecture/asset-data-model.md", "examples/building-assessment/assessment-findings.example.json"],
+      "next_action": "Inspect roof build-up and timber condition before narrowing insulation options."
+    },
+    {
+      "id": "decision-pv-placement",
+      "decision_title": "Define realistic PV placement and mounting constraints",
+      "current_status": "under_review",
+      "options": ["Use unobstructed roof areas only", "Defer PV until roof renovation", "Plan PV-ready roof intervention"],
+      "dependencies": ["need-roof-build-up", "need-eaves-ridge-heights", "assumption-roof-build-up"],
+      "risks": ["risk-pv-overclaim", "risk-structural-overclaim"],
+      "evidence_links": ["src/features/deconstruction/generated/solarPvPlanData.ts"],
+      "next_action": "Verify roof condition, obstructions, setbacks and structural plausibility on site."
+    },
+    {
+      "id": "decision-drainage-moisture",
+      "decision_title": "Prioritize moisture and drainage interventions",
+      "current_status": "blocked",
+      "options": ["Repair drainage first", "Open plinth trial spots", "Defer until rainfall evidence"],
+      "dependencies": ["need-drainage-paths", "need-keller-confirmation", "assumption-terrain-lines"],
+      "risks": ["risk-moisture-misdiagnosis"],
+      "evidence_links": ["docs/NEXT_SITE_VISIT_TODOS.md"],
+      "next_action": "Collect drainage, plinth and Keller evidence during first site visit."
+    },
+    {
+      "id": "decision-roof-extension",
+      "decision_title": "Frame roof extension, dormer and overhang concepts for expert review",
+      "current_status": "under_review",
+      "options": ["Keep generated concept as discussion model", "Defer until measured roof geometry", "Ask architect/structural engineer to reframe"],
+      "dependencies": ["need-eaves-ridge-heights", "need-roof-build-up"],
+      "risks": ["risk-structural-overclaim"],
+      "evidence_links": ["src/features/building-parts/generated/part1ElevationPhotoStudy.ts", "utils/export_ifc.py"],
+      "next_action": "Use side-elevation measurements to decide whether the concept is worth expert review."
+    },
+    {
+      "id": "decision-wall-energy-strategy",
+      "decision_title": "Clarify exterior wall energy strategy",
+      "current_status": "blocked",
+      "options": ["Keep wall unchanged initially", "Plan interior insulation only after hygrothermal review", "Plan exterior insulation only after facade/permit review"],
+      "dependencies": ["need-wall-thickness", "assumption-wall-thickness"],
+      "risks": ["risk-moisture-misdiagnosis"],
+      "evidence_links": ["docs/NEXT_SITE_VISIT_TODOS.md"],
+      "next_action": "Measure representative wall thickness and document moisture condition before discussing insulation strategy."
+    },
+    {
+      "id": "decision-deconstruction-reuse",
+      "decision_title": "Classify retained, removed and reusable elements",
+      "current_status": "not_started",
+      "options": ["Retain in place", "Remove and reuse", "Dispose after condition check"],
+      "dependencies": ["need-roof-build-up", "need-keller-confirmation"],
+      "risks": ["risk-unsupported-reuse-claim"],
+      "evidence_links": ["examples/building-assessment/building-elements.example.json"],
+      "next_action": "Use site photos and timber condition checks before assigning reuse status."
+    }
+  ],
+  "risks": [
+    {
+      "id": "risk-moisture-trap",
+      "description": "A roof insulation build-up could trap moisture if ventilation and existing layers are misunderstood.",
+      "category": "moisture",
+      "likelihood": "unknown",
+      "impact": "high",
+      "mitigation": "Inspect roof build-up, document ventilation paths and validate with an energy consultant.",
+      "related_assumptions": ["assumption-roof-build-up"],
+      "related_decisions": ["decision-roof-insulation"]
+    },
+    {
+      "id": "risk-pv-overclaim",
+      "description": "PV suitability could be overestimated if roof condition, obstructions and maintenance zones are not verified.",
+      "category": "pv",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigation": "Verify roof surfaces, setbacks, windows, penetrations and structure before layout decisions.",
+      "related_assumptions": ["assumption-roof-build-up"],
+      "related_decisions": ["decision-pv-placement"]
+    },
+    {
+      "id": "risk-moisture-misdiagnosis",
+      "description": "Plinth or Keller moisture could be misclassified without drainage and rainfall evidence.",
+      "category": "moisture",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigation": "Document drainage discharge, splash zones, Keller moisture and terrain fall.",
+      "related_assumptions": ["assumption-terrain-lines", "assumption-keller-location"],
+      "related_decisions": ["decision-drainage-moisture"]
+    },
+    {
+      "id": "risk-structural-overclaim",
+      "description": "Generated roof and dormer/overhang concepts do not prove structural feasibility.",
+      "category": "structure",
+      "likelihood": "medium",
+      "impact": "critical",
+      "mitigation": "Treat geometry concepts as discussion aids and require structural expert validation.",
+      "related_assumptions": ["assumption-roof-build-up"],
+      "related_decisions": ["decision-roof-insulation", "decision-pv-placement"]
+    },
+    {
+      "id": "risk-unsupported-reuse-claim",
+      "description": "Reuse potential could be overstated before material condition and deconstruction constraints are inspected.",
+      "category": "deconstruction",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigation": "Classify retained/removed/reusable elements only after photo and condition evidence.",
+      "related_assumptions": ["assumption-roof-build-up", "assumption-keller-location"],
+      "related_decisions": ["decision-deconstruction-reuse"]
+    }
+  ],
+  "evidenceItems": [
+    {
+      "id": "evidence-current-state-doc",
+      "title": "Current repository state documentation",
+      "type": "document",
+      "path_or_reference": "docs/CURRENT_STATE.md",
+      "derived_from": ["repository inspection"],
+      "reliability_notes": "Describes current repository structure and capabilities, not measured building reality."
+    },
+    {
+      "id": "evidence-renovation-loop",
+      "title": "Renovation loop documentation",
+      "type": "document",
+      "path_or_reference": "docs/RENOVATION_LOOP.md",
+      "derived_from": ["product framing"],
+      "reliability_notes": "Process model for software support and expert preparation."
+    },
+    {
+      "id": "evidence-part1-guide",
+      "title": "Part 1 first site visit guide",
+      "type": "document",
+      "path_or_reference": "docs/PART1_FIRST_SITE_VISIT_GUIDE.md",
+      "derived_from": ["Part 1 decomposition", "owner corrections"],
+      "reliability_notes": "Useful site guide; geometry remains partly generated and needs measurement."
+    },
+    {
+      "id": "evidence-ifc-exporter",
+      "title": "IFC export pipeline",
+      "type": "ifc",
+      "path_or_reference": "utils/export_ifc.py",
+      "derived_from": ["LoD2 hull", "terrain", "roof intervention scenarios"],
+      "reliability_notes": "Concept/export artifact, not construction-ready IFC."
+    }
+  ],
+  "nextImplementationTasks": [
+    "Connect planning seed data to richer local evidence once site photos and measurements exist.",
+    "Add change detection between generated model states and summarize deltas in the handoff.",
+    "Add editable local-only registers for facts, assumptions, findings and decisions."
+  ]
+}

@@ -1,0 +1,46 @@
+export const materialReuseEstimates = {
+  generatedAt: '2026-05-11',
+  sourceNote: 'Derived from LoD2 hull geometry. Confidence: low until field-verified.',
+  timber: {
+    label: 'Roof Timber (rafters + purlins)',
+    basisM2: 414.97,
+    estimatedMassKg: 7469,
+    confidence: 'low',
+    reuseOutcome: 'direct-reuse' as const,
+    reuseNote: 'Solid timber from pre-1960 construction is often dimensionally stable enough for direct reuse if no rot or insect damage is found.',
+    inspectionGate: ['roof-structure'],
+    volumeM3Note: 'Typical sections 8×16 cm to 10×20 cm at 80–100 cm spacing. Field measurement still required.',
+  },
+  masonry: {
+    label: 'Solid Masonry Walls',
+    basisM2: 618.47,
+    thicknessMinM: 0.5,
+    thicknessMaxM: 0.8,
+    estimatedVolumeMinM3: 309,
+    estimatedVolumeMaxM3: 495,
+    confidence: 'low',
+    reuseOutcome: 'downcycle' as const,
+    reuseNote: 'Old lime mortar masonry can often be hand-separated. Bricks suit secondary use; rubble can become drainage or sub-base granulate.',
+    inspectionGate: ['wall-thickness'],
+  },
+  roofCovering: {
+    label: 'Roof Covering (tiles or slates)',
+    basisM2: 414.97,
+    estimatedTileCount: 11204,
+    estimatedMassKg: 22408,
+    confidence: 'very-low',
+    reuseOutcome: 'tbd' as const,
+    reuseNote: 'Intact clay tiles retain reuse value, but frost cracks and bedding condition must be inspected in the field.',
+    inspectionGate: ['roof-obstructions', 'roof-structure'],
+  },
+  windows: {
+    label: 'Windows & Doors',
+    openingCountEstimate: '12–18',
+    confidence: 'very-low',
+    reuseOutcome: 'dispose' as const,
+    reuseNote: 'Pre-1980 single or double glazing is typically below current energy standard and usually only worth keeping for heritage value.',
+    inspectionGate: ['wall-openings'],
+  },
+} as const;
+
+export type MaterialReuseEstimates = typeof materialReuseEstimates;

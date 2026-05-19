@@ -10,8 +10,8 @@
 import { deleteProject, listProjects, loadProject, saveProject } from '@/features/project-store/projectStore';
 import type { ImportedProject } from '@/features/project-store/types';
 import { importWorkshopBundle, importWorkshopBundleZip, type WorkshopBundleExport } from '@/features/workshop/db/workshopDb';
-import { Building2, FolderOpen, Home, Layers, MapPin, Pencil, Plus, Upload, Wrench, X, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Building2, FolderOpen, Home, Layers, MapPin, Pencil, Plus, Trash2, Upload, Wrench, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 // ── Built-in pre-existing projects ──────────────────────────────────────────
 

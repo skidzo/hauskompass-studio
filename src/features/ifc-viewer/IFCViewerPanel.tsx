@@ -130,6 +130,8 @@ export function IFCViewerPanel({ ifcContent }: { ifcContent?: string }) {
     const fitFromDirRef = useRef<(dir: THREE.Vector3) => void>(() => { });
     // activeDirRef tracks the last-used preset direction so re-fits after visibility changes use it
     const activeDirRef = useRef<THREE.Vector3>(PRESET_DIRS.oblique);
+    // cameraRef exposes the live camera to the click handler (raycasting)
+    const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
     const meshRefs = useRef<Array<{
         mesh: THREE.Mesh;
         edgeLines?: THREE.LineSegments;
@@ -143,6 +145,8 @@ export function IFCViewerPanel({ ifcContent }: { ifcContent?: string }) {
     const [meshCount, setMeshCount] = useState(0);
     const [stageElementCount, setStageElementCount] = useState(0);
     const [colorMode, setColorMode] = useState<ColorMode>('type');
+    // Set of mesh indices that are currently toggled transparent (opacity 0.15)
+    const [transparentSet, setTransparentSet] = useState<Set<number>>(new Set());
     const [showStage, setShowStage] = useState(true);
     const [showInfo, setShowInfo] = useState(false);
     const [showLegend, setShowLegend] = useState(true);
@@ -177,6 +181,7 @@ export function IFCViewerPanel({ ifcContent }: { ifcContent?: string }) {
         );
         camera.position.set(40, 30, 50);
         camera.lookAt(0, 8, 0);
+        cameraRef.current = camera;
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
@@ -359,6 +364,7 @@ export function IFCViewerPanel({ ifcContent }: { ifcContent?: string }) {
 
         return () => {
             cancelled = true;
+            cameraRef.current = null;
             cancelAnimationFrame(raf);
             controls.dispose();
             ro.disconnect();
@@ -408,6 +414,59 @@ export function IFCViewerPanel({ ifcContent }: { ifcContent?: string }) {
         fitFromDirRef.current(activeDirRef.current);
     }, [showStage]);
 
+    // ── Transparency selection effect ────────────────────────────────────
+    useEffect(() => {
+        meshRefs.current.forEach(({ mesh, edgeLines, kind, original }, idx) => {
+            const material = mesh.material;
+            if (!(material instanceof THREE.MeshPhongMaterial)) return;
+            if (transparentSet.has(idx)) {
+                material.opacity = 0.15;
+                material.transparent = true;
+                if (edgeLines) {
+                    (edgeLines.material as THREE.LineBasicMaterial).color.set('#ffe080');
+                    (edgeLines.material as THREE.LineBasicMaterial).needsUpdate = true;
+                }
+            } else {
+                // Restore based on current color mode
+                if (colorMode === 'type') {
+                    material.color.set(TYPE_COLORS[kind].color);
+                    material.emissive.set(kind === 'window' ? '#214a5f' : '#000000');
+                }
+                material.opacity = kind === 'window' ? 0.96 : original.a;
+                material.transparent = kind === 'window' || original.a < 0.99;
+                if (edgeLines) {
+                    (edgeLines.material as THREE.LineBasicMaterial).color.set(EDGE_COLORS[kind]);
+                    (edgeLines.material as THREE.LineBasicMaterial).needsUpdate = true;
+                }
+            }
+            material.needsUpdate = true;
+        });
+    }, [transparentSet, colorMode]);
+
+    // ── Canvas click — raycast to toggle surface transparency ────────────
+    const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        const wrap = wrapRef.current;
+        const camera = cameraRef.current;
+        if (!wrap || !camera) return;
+        const rect = wrap.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+        const visibleMeshes = meshRefs.current.map((r) => r.mesh).filter((m) => m.visible);
+        const hits = raycaster.intersectObjects(visibleMeshes, false);
+        if (hits.length === 0) return;
+        const hitMesh = hits[0].object as THREE.Mesh;
+        const idx = meshRefs.current.findIndex((r) => r.mesh === hitMesh);
+        if (idx < 0) return;
+        setTransparentSet((prev) => {
+            const next = new Set(prev);
+            if (next.has(idx)) next.delete(idx);
+            else next.add(idx);
+            return next;
+        });
+    };
+
     // ── Camera preset handler ────────────────────────────────────────────
     const handlePreset = (preset: PresetName) => {
         setActivePreset(preset);
@@ -427,7 +486,7 @@ export function IFCViewerPanel({ ifcContent }: { ifcContent?: string }) {
         <div className={`ifc-workspace-root${focusMode ? ' ifc-focus-mode' : ''}`}>
             <div className="ifc-viewport">
                 {/* Three.js canvas mount point */}
-                <div ref={wrapRef} className="ifc-canvas-wrap" />
+                <div ref={wrapRef} className="ifc-canvas-wrap" onClick={handleCanvasClick} style={{ cursor: loadState === 'ready' ? 'crosshair' : 'default' }} />
 
                 {/* Loading overlay */}
                 {isLoading && (
@@ -544,6 +603,16 @@ export function IFCViewerPanel({ ifcContent }: { ifcContent?: string }) {
                                 >
                                     {focusMode ? '⊠ Exit' : '⊞ Focus'}
                                 </button>
+                                {transparentSet.size > 0 && (
+                                    <button
+                                        className="ifc-tool-btn ifc-tool-btn-warn"
+                                        onClick={() => setTransparentSet(new Set())}
+                                        title="Alle Transparenz zurücksetzen"
+                                        type="button"
+                                    >
+                                        ✕ {transparentSet.size} transparent
+                                    </button>
+                                )}
                             </div>
                         </div>
 

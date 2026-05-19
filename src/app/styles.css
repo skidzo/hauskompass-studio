@@ -2826,6 +2826,36 @@ td span,
   cursor: not-allowed;
 }
 
+/* Warning / reset button (transparent surfaces count) */
+.ifc-tool-btn-warn {
+  border-color: #f59e0b;
+  color: #fde68a;
+}
+
+.ifc-tool-btn-warn:hover {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+/* ── Candidate colour tints in LoD2 SVG viewer ───────────────────────────── */
+.surface-c0 {
+  opacity: 0.92;
+}
+
+.surface-c1 {
+  filter: hue-rotate(100deg) brightness(1.1);
+  opacity: 0.92;
+}
+
+.surface-c2 {
+  filter: hue-rotate(200deg) brightness(1.1);
+  opacity: 0.92;
+}
+
+.surface-c3 {
+  filter: hue-rotate(300deg) brightness(1.1);
+  opacity: 0.92;
+}
+
 /* ── Category legend ─────────────────────────────────────────────────────── */
 
 .ifc-legend {

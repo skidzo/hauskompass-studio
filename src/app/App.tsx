@@ -16,7 +16,7 @@ import { MaterialReusePanel } from '@/features/deconstruction/MaterialReusePanel
 import { SolarPvPlanPanel } from '@/features/deconstruction/SolarPvPlanPanel';
 import { IFCViewerPanel } from '@/features/ifc-viewer/IFCViewerPanel';
 import { type ImportedTerrainData } from '@/features/lod2-derived/fetchTerrainProfile';
-import { generateIfcStep } from '@/features/lod2-derived/generateLod2Ifc';
+import { generateCombinedIfcStep } from '@/features/lod2-derived/generateLod2Ifc';
 import { ImportedSiteMapPanel } from '@/features/map-view/ImportedSiteMapPanel';
 import { LocationContextPanel } from '@/features/map-view/LocationContextPanel';
 import { MetadataExplorerPanel } from '@/features/metadata/MetadataExplorerPanel';
@@ -184,14 +184,13 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
     runtimeCandidates,
     runtimeConfirmedIds,
   } = useCandidateSelection(activeProject);
-  const { lod2GeneratedFor, lod2IfcContent, setGenerated, resetGeneration } = useIfcGeneration();
+  const { lod2IfcContent, setGenerated, resetGeneration } = useIfcGeneration();
 
   const projectLabel = activeProject ? activeProject.address : demoLabel;
   const isImportedProject = !!activeProject;
 
-  // Detail-Tabs (Elemente/Ansichten) nur anzeigen wenn IFC für aktuellen Kandidaten generiert,
-  // oder für das Demo-Projekt (hat statische Daten)
-  const showDetailTabs = !isImportedProject || lod2GeneratedFor === effectiveCandidateId;
+  // Detail-Tabs (Elemente/Ansichten) nur anzeigen wenn IFC generiert oder Demo-Modus
+  const showDetailTabs = !isImportedProject || lod2IfcContent !== null;
 
   const availableSources = dataInventorySeed.filter((item) => item.status === 'candidate' || item.status === 'available').length;
 
@@ -391,7 +390,7 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
               <h2 className="section-title">Gebäude — {isImportedProject ? activeProject.address : 'LoD2 Geometrie'}</h2>
             </header>
 
-            {/* Kombinierte Tab-Leiste + Teil-Selektor */}
+            {/* Tab-Leiste (ohne Teil-Selektor — alle Gebäude werden gemeinsam dargestellt) */}
             <div className="building-tab-bar">
               <div className="tab-strip">
                 <button
@@ -427,38 +426,29 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
                   IFC-Modell
                 </button>
               </div>
-              {confirmedCandidates.length > 1 && (
-                <div className="segment-control" role="group" aria-label="Gebäudeteil wählen">
-                  {confirmedCandidates.map((c, i) => (
-                    <button
-                      key={c.id}
-                      className={`segment-btn ${c.id === selectedCandidateId ? 'segment-btn-active' : ''}`}
-                      onClick={() => setSelectedCandidateId(c.id)}
-                      title={c.id}
-                      type="button"
-                    >
-                      Teil {i + 1}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
 
             {buildingTab === 'lod2' && (
               <div className="building-layout">
                 <div className="building-viewer-wrap">
-                  <LoD2SurfaceViewer candidate={selectedCandidate!} />
+                  {/* Alle bestätigten Kandidaten im gemeinsamen Koordinatenraum */}
+                  <LoD2SurfaceViewer
+                    candidates={isImportedProject
+                      ? (confirmedCandidates.length > 0 ? confirmedCandidates : (selectedCandidate ? [selectedCandidate] : []))
+                      : undefined}
+                    candidate={!isImportedProject ? selectedCandidate! : undefined}
+                  />
                 </div>
                 <div className="building-side">
                   {isImportedProject && selectedCandidate
                     ? <>
                       <ImportedCandidateMetricsPanel candidate={selectedCandidate} />
                       <Lod2GenerateCard
-                        candidate={selectedCandidate}
+                        candidates={confirmedCandidates.length > 0 ? confirmedCandidates : [selectedCandidate]}
                         address={activeProject!.address}
-                        isGenerated={lod2GeneratedFor === selectedCandidate.id}
+                        isGenerated={lod2IfcContent !== null}
                         onGenerate={(ifcContent) => {
-                          setGenerated(selectedCandidate.id, ifcContent);
+                          setGenerated(ifcContent);
                         }}
                       />
                     </>
@@ -468,19 +458,19 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
             )}
 
             {buildingTab === 'parts' && showDetailTabs && (
-              isImportedProject && lod2GeneratedFor === selectedCandidate?.id
+              isImportedProject && lod2IfcContent !== null
                 ? <Lod2FloorPlanPanel candidate={selectedCandidate!} />
                 : <Part1ElementPlanPanel />
             )}
 
             {buildingTab === 'sections' && showDetailTabs && (
-              isImportedProject && lod2GeneratedFor === selectedCandidate?.id
+              isImportedProject && lod2IfcContent !== null
                 ? <Lod2ElevationsPanel candidate={selectedCandidate!} />
                 : <Part1SectionDrawingsPanel />
             )}
 
             {buildingTab === 'ifc' && (
-              isImportedProject && lod2GeneratedFor === selectedCandidate?.id && lod2IfcContent
+              isImportedProject && lod2IfcContent !== null
                 ? <IFCViewerPanel ifcContent={lod2IfcContent} />
                 : isImportedProject
                   ? <div className="panel"><PipelineRequiredHint context="ifc" /></div>
@@ -627,8 +617,8 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
                       <>
                         <ScenarioRegistryPanel project={activeProject} />
                         {!isImportedProject && <MetadataExplorerPanel />}
-                        <DataInventoryPanel items={isImportedProject ? buildProjectInventory(activeProject!, terrainData, lod2GeneratedFor) : dataInventorySeed} />
-                        <AssessmentReadinessPanel summary={fetchedGeodataSummary} project={activeProject} terrainData={terrainData} lod2GeneratedFor={lod2GeneratedFor} />
+                        <DataInventoryPanel items={isImportedProject ? buildProjectInventory(activeProject!, terrainData, lod2IfcContent !== null ? 'generated' : null) : dataInventorySeed} />
+                        <AssessmentReadinessPanel summary={fetchedGeodataSummary} project={activeProject} terrainData={terrainData} lod2GeneratedFor={lod2IfcContent !== null ? 'generated' : null} />
                       </>
                     )}
                   </div>
@@ -647,7 +637,7 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
               </header>
               <div className="data-layout">
                 {!isImportedProject && <MetadataExplorerPanel />}
-                <DataInventoryPanel items={isImportedProject ? buildProjectInventory(activeProject!, terrainData, lod2GeneratedFor) : dataInventorySeed} />
+                <DataInventoryPanel items={isImportedProject ? buildProjectInventory(activeProject!, terrainData, lod2IfcContent !== null ? 'generated' : null) : dataInventorySeed} />
                 {!isImportedProject && (
                   <>
                     <BuildingCandidateTable
@@ -1109,18 +1099,18 @@ void generatePipelineConfig;
 // ── In-browser LoD2 → Ansichten / IFC generator ──────────────────────────
 
 function Lod2GenerateCard({
-  candidate,
+  candidates,
   address,
   isGenerated,
   onGenerate,
 }: {
-  candidate: Lod2Candidate;
+  candidates: Lod2Candidate[];
   address: string;
   isGenerated: boolean;
   onGenerate: (ifcContent: string) => void;
 }) {
   const handleGenerate = () => {
-    const ifcStep = generateIfcStep(candidate, address);
+    const ifcStep = generateCombinedIfcStep(candidates, address);
     onGenerate(ifcStep);
   };
 
@@ -1151,7 +1141,9 @@ function Lod2GenerateCard({
       </p>
       <button className="lod2-generate-btn" onClick={handleGenerate} type="button">
         <Play size={14} />
-        Grundriss · Ansichten · IFC generieren
+        {candidates.length > 1
+          ? `${candidates.length} Gebäude · Grundriss · IFC generieren`
+          : 'Grundriss · Ansichten · IFC generieren'}
       </button>
     </section>
   );

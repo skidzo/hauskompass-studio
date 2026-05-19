@@ -24,10 +24,20 @@ function fmt(n: number): string {
 
 // ── Main generator ─────────────────────────────────────────────────────────
 export function generateIfcStep(candidate: Lod2Candidate, address: string): string {
-    const { bboxUtm32, surfaces } = candidate;
-    const baseE = bboxUtm32.minE;
-    const baseN = bboxUtm32.minN;
-    const baseZ = bboxUtm32.minZ;
+    return generateCombinedIfcStep([candidate], address);
+}
+
+/**
+ * Generates one IFC file containing ALL provided candidates.
+ * Uses a shared coordinate origin (min bbox across all candidates)
+ * so buildings are positioned relative to each other correctly.
+ */
+export function generateCombinedIfcStep(candidates: Lod2Candidate[], address: string): string {
+    if (candidates.length === 0) return '';
+
+    const baseE = Math.min(...candidates.map((c) => c.bboxUtm32.minE));
+    const baseN = Math.min(...candidates.map((c) => c.bboxUtm32.minN));
+    const baseZ = Math.min(...candidates.map((c) => c.bboxUtm32.minZ));
 
     let idCounter = 0;
     const nextId = () => ++idCounter;
@@ -79,83 +89,88 @@ export function generateIfcStep(candidate: Lod2Candidate, address: string): stri
     push(`#${ID.aggBuilding}=IFCRELAGGREGATES('${ifcGuid()}',#${ID.ownerHist},$,$,#${ID.site},(#${ID.building}));`);
     push(`#${ID.aggStorey}=IFCRELAGGREGATES('${ifcGuid()}',#${ID.ownerHist},$,$,#${ID.building},(#${ID.storey}));`);
 
-    // ── Surfaces → IFC entities ───────────────────────────────────────────
-    const elementIds: number[] = [];
+    // ── All candidates → IFC entities ──────────────────────────────────────
+    const allElementIds: number[] = [];
 
     type Surf = { id: string; kind: 'ground' | 'wall' | 'roof'; points: SurfacePoint[] };
-    const allSurfaces: Surf[] = [
-        ...surfaces.ground.map((s) => ({ id: s.id, kind: 'ground' as const, points: s.points })),
-        ...surfaces.wall.map((s) => ({ id: s.id, kind: 'wall' as const, points: s.points })),
-        ...surfaces.roof.map((s) => ({ id: s.id, kind: 'roof' as const, points: s.points })),
-    ];
 
-    for (const surface of allSurfaces) {
-        // Remove closing duplicate point if present
-        let pts = surface.points;
-        if (pts.length > 3) {
-            const first = pts[0];
-            const last = pts[pts.length - 1];
-            if (
-                Math.abs(first.e - last.e) < 0.002 &&
-                Math.abs(first.n - last.n) < 0.002 &&
-                Math.abs(first.z - last.z) < 0.002
-            ) {
-                pts = pts.slice(0, -1);
+    for (const candidate of candidates) {
+        const { surfaces } = candidate;
+        const candidateSurfaces: Surf[] = [
+            ...surfaces.ground.map((s) => ({ id: s.id, kind: 'ground' as const, points: s.points })),
+            ...surfaces.wall.map((s) => ({ id: s.id, kind: 'wall' as const, points: s.points })),
+            ...surfaces.roof.map((s) => ({ id: s.id, kind: 'roof' as const, points: s.points })),
+        ];
+
+        for (const surface of candidateSurfaces) {
+            // Remove closing duplicate point if present
+            let pts = surface.points;
+            if (pts.length > 3) {
+                const first = pts[0];
+                const last = pts[pts.length - 1];
+                if (
+                    Math.abs(first.e - last.e) < 0.002 &&
+                    Math.abs(first.n - last.n) < 0.002 &&
+                    Math.abs(first.z - last.z) < 0.002
+                ) {
+                    pts = pts.slice(0, -1);
+                }
             }
+            if (pts.length < 3) continue;
+
+            const ptIds = pts.map((p) => {
+                const pid = nextId();
+                push(`#${pid}=IFCCARTESIANPOINT((${fmt(p.e - baseE)},${fmt(p.n - baseN)},${fmt(p.z - baseZ)}));`);
+                return pid;
+            });
+
+            const loopId = nextId();
+            push(`#${loopId}=IFCPOLYLOOP((${ptIds.map((i) => '#' + i).join(',')}));`);
+
+            const boundId = nextId();
+            push(`#${boundId}=IFCFACEOUTERBOUND(#${loopId},.T.);`);
+
+            const faceId = nextId();
+            push(`#${faceId}=IFCFACE((#${boundId}));`);
+
+            const shellId = nextId();
+            push(`#${shellId}=IFCOPENSHELL((#${faceId}));`);
+
+            const modelId = nextId();
+            push(`#${modelId}=IFCSHELLBASEDSURFACEMODEL((#${shellId}));`);
+
+            const reprId = nextId();
+            push(`#${reprId}=IFCSHAPEREPRESENTATION(#${ID.geomCtx},'Body','SurfaceModel',(#${modelId}));`);
+
+            const pdsId = nextId();
+            push(`#${pdsId}=IFCPRODUCTDEFINITIONSHAPE($,$,(#${reprId}));`);
+
+            const placId = nextId();
+            push(`#${placId}=IFCLOCALPLACEMENT(#${ID.rootPlac},#${ID.axis});`);
+
+            const elemId = nextId();
+            const shortId = surface.id.slice(-12);
+            push(
+                `#${elemId}=IFCBUILDINGELEMENTPROXY('${ifcGuid()}',#${ID.ownerHist},'${surface.kind}-${shortId}',$,$,#${placId},#${pdsId},$,$);`,
+            );
+            allElementIds.push(elemId);
         }
-        if (pts.length < 3) continue;
-
-        const ptIds = pts.map((p) => {
-            const pid = nextId();
-            push(`#${pid}=IFCCARTESIANPOINT((${fmt(p.e - baseE)},${fmt(p.n - baseN)},${fmt(p.z - baseZ)}));`);
-            return pid;
-        });
-
-        const loopId = nextId();
-        push(`#${loopId}=IFCPOLYLOOP((${ptIds.map((i) => '#' + i).join(',')}));`);
-
-        const boundId = nextId();
-        push(`#${boundId}=IFCFACEOUTERBOUND(#${loopId},.T.);`);
-
-        const faceId = nextId();
-        push(`#${faceId}=IFCFACE((#${boundId}));`);
-
-        const shellId = nextId();
-        push(`#${shellId}=IFCOPENSHELL((#${faceId}));`);
-
-        const modelId = nextId();
-        push(`#${modelId}=IFCSHELLBASEDSURFACEMODEL((#${shellId}));`);
-
-        const reprId = nextId();
-        push(`#${reprId}=IFCSHAPEREPRESENTATION(#${ID.geomCtx},'Body','SurfaceModel',(#${modelId}));`);
-
-        const pdsId = nextId();
-        push(`#${pdsId}=IFCPRODUCTDEFINITIONSHAPE($,$,(#${reprId}));`);
-
-        const placId = nextId();
-        push(`#${placId}=IFCLOCALPLACEMENT(#${ID.rootPlac},#${ID.axis});`);
-
-        const elemId = nextId();
-        const shortId = surface.id.slice(-12);
-        push(
-            `#${elemId}=IFCBUILDINGELEMENTPROXY('${ifcGuid()}',#${ID.ownerHist},'${surface.kind}-${shortId}',$,$,#${placId},#${pdsId},$,$);`,
-        );
-        elementIds.push(elemId);
     }
 
-    if (elementIds.length > 0) {
+    if (allElementIds.length > 0) {
         const contId = nextId();
         push(
-            `#${contId}=IFCRELCONTAINEDINSPATIALSTRUCTURE('${ifcGuid()}',#${ID.ownerHist},$,$,(${elementIds.map((i) => '#' + i).join(',')}),#${ID.storey});`,
+            `#${contId}=IFCRELCONTAINEDINSPATIALSTRUCTURE('${ifcGuid()}',#${ID.ownerHist},$,$,(${allElementIds.map((i) => '#' + i).join(',')}),#${ID.storey});`,
         );
     }
 
     const today = new Date().toISOString().slice(0, 10);
+    const label = candidates.length === 1 ? candidates[0].id : `${candidates.length}-buildings`;
     const header = [
         'ISO-10303-21;',
         'HEADER;',
         `FILE_DESCRIPTION(('Hauskompass LoD2 — ${safeAddr}'),'2;1');`,
-        `FILE_NAME('hauskompass_lod2_${candidate.id}.ifc','${today}',(),$,'','Hauskompass','');`,
+        `FILE_NAME('hauskompass_lod2_${label}.ifc','${today}',(),$,'','Hauskompass','');`,
         "FILE_SCHEMA(('IFC2X3'));",
         'ENDSEC;',
         'DATA;',

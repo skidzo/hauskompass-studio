@@ -2,6 +2,10 @@
 
 ## v0.1.0 — 2026-05-19
 
+- **Editierbare Gebäudeauswahl**: Klick auf Gebäude in der 2D-Lage-Karte togglet `confirmedIds` (grün = bestätigt, grau = Umgebung); Änderungen werden sofort in localStorage persistiert und die Karte aktualisiert sich reaktiv
+- **Projekt löschen**: Gespeicherte Renovierungsprojekte auf der Startseite haben jetzt einen Lösch-Button (Mülleimer-Icon), der beim Hover eingeblendet wird
+- **ProjectContext.updateProject**: Neuer Callback für in-app Änderungen am aktiven Projekt (confirmedIds, etc.)
+
 - **ZIP-Backup mit Fotos**: `exportWorkshopBundleZip()` / `importWorkshopBundleZip()` via fflate; DataBackupBar bietet "ZIP-Backup (mit Fotos)" und "JSON (nur Metadaten)"; Startseite akzeptiert .zip und .json beim Import
 
 - **Backup-Import auf Startseite**: `importWorkshopBundle()`, Datei-Picker-Button "Aus Backup wiederherstellen", kein Neustart und keine Umgebungsvariable nötig

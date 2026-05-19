@@ -6892,6 +6892,39 @@ td {
   cursor: not-allowed;
 }
 
+.ws-backup-btn-secondary {
+  background: #f3e5f5;
+  color: #6a1b9a;
+}
+
+.ws-backup-btn-secondary:not(:disabled):hover {
+  background: #e1bee7;
+}
+
+.ws-backup-btn-merge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.ws-backup-btn-merge:not(:disabled):hover {
+  background: #c8e6c9;
+}
+
+.ws-merge-result {
+  font-size: 0.70rem;
+  color: #2e7d32;
+  font-style: italic;
+}
+
+.ws-merge-error {
+  font-size: 0.70rem;
+  color: #c62828;
+  font-style: italic;
+}
+
 .ws-backup-hint {
   font-size: 0.65rem;
   color: #78909c;

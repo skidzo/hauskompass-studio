@@ -702,3 +702,110 @@ export async function importWorkshopBundleZip(file: File): Promise<{ projectId: 
         title: bundle.project.title ?? bundle.project.id,
     };
 }
+
+// ---------------------------------------------------------------------------
+// Merge — add records from another user's backup without overwriting existing
+// ---------------------------------------------------------------------------
+
+export interface MergeResult {
+    /** Total number of new records added across all tables. */
+    added: number;
+}
+
+/**
+ * Merge a backup bundle into the current database.
+ * Existing records (by primary key) are never overwritten.
+ * Project and Site records are intentionally skipped — the user keeps their own.
+ */
+export async function mergeWorkshopBundle(bundle: WorkshopBundleExport): Promise<MergeResult> {
+    if (!bundle.project || !bundle.site) throw new Error('Keine gültige Backup-Datei.');
+
+    const {
+        zones = [], places = [], assets = [],
+        observations = [], interpretations = [], claims = [],
+        questions = [], memories = [], eventPhases = [],
+        assessments = [], scenarios = [], workshopScenes = [],
+    } = bundle;
+
+    // Add-only helper: inserts items whose ID is not yet in the table.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async function addIfNew(table: Dexie.Table<any, string>, items: Array<{ id: string }>): Promise<number> {
+        if (!items.length) return 0;
+        const existing = await table.bulkGet(items.map((i) => i.id));
+        const newItems = items.filter((_, idx) => existing[idx] === undefined);
+        if (newItems.length) await table.bulkAdd(newItems);
+        return newItems.length;
+    }
+
+    let added = 0;
+
+    await workshopDb.transaction('rw', [
+        workshopDb.zones, workshopDb.places, workshopDb.assets,
+        workshopDb.observations, workshopDb.interpretations, workshopDb.claims,
+        workshopDb.questions, workshopDb.memories, workshopDb.eventPhases,
+        workshopDb.assessments, workshopDb.scenarios, workshopDb.workshopScenes,
+    ], async () => {
+        added += await addIfNew(workshopDb.zones, zones);
+        added += await addIfNew(workshopDb.places, places);
+        added += await addIfNew(workshopDb.assets, assets);
+        added += await addIfNew(workshopDb.observations, observations);
+        added += await addIfNew(workshopDb.interpretations, interpretations);
+        added += await addIfNew(workshopDb.claims, claims);
+        added += await addIfNew(workshopDb.questions, questions);
+        added += await addIfNew(workshopDb.memories, memories);
+        added += await addIfNew(workshopDb.eventPhases, eventPhases);
+        added += await addIfNew(workshopDb.assessments, assessments);
+        added += await addIfNew(workshopDb.scenarios, scenarios);
+        added += await addIfNew(workshopDb.workshopScenes, workshopScenes);
+    });
+
+    return { added };
+}
+
+/**
+ * Parse a ZIP archive from another user and merge its contents (same as mergeWorkshopBundle
+ * for metadata, plus photo blobs that aren't already stored locally).
+ */
+export async function mergeWorkshopBundleZip(file: File): Promise<MergeResult> {
+    const buf = await file.arrayBuffer();
+
+    const extracted = await new Promise<Record<string, Uint8Array>>((resolve, reject) => {
+        unzip(new Uint8Array(buf), (err, data) => {
+            if (err) reject(err);
+            else resolve(data);
+        });
+    });
+
+    const jsonBytes = extracted['backup.json'];
+    if (!jsonBytes) throw new Error('Keine backup.json in der ZIP-Datei gefunden.');
+
+    const bundle = JSON.parse(strFromU8(jsonBytes)) as WorkshopBundleExport;
+    const result = await mergeWorkshopBundle(bundle);
+
+    // Merge photo blobs — only add if not already present locally
+    let addedBlobs = 0;
+    const photoEntries = Object.entries(extracted).filter(([name]) => name.startsWith('photos/'));
+    if (photoEntries.length > 0) {
+        await workshopDb.transaction('rw', workshopDb.assetBlobs, async () => {
+            for (const [name, data] of photoEntries) {
+                const filename = name.replace('photos/', '');
+                const dotIdx = filename.lastIndexOf('.');
+                const assetId = dotIdx >= 0 ? filename.slice(0, dotIdx) : filename;
+                const existing = await workshopDb.assetBlobs.get(assetId);
+                if (!existing && assetId) {
+                    const ext = dotIdx >= 0 ? filename.slice(dotIdx + 1) : 'bin';
+                    const mimeMap: Record<string, string> = {
+                        jpg: 'image/jpeg', jpeg: 'image/jpeg',
+                        png: 'image/png', webp: 'image/webp',
+                        gif: 'image/gif', heic: 'image/heic', tiff: 'image/tiff',
+                    };
+                    const blob = new Blob([data.buffer as ArrayBuffer], { type: mimeMap[ext] ?? 'application/octet-stream' });
+                    await workshopDb.assetBlobs.add({ id: assetId, blob });
+                    addedBlobs++;
+                }
+            }
+        });
+    }
+
+    return { added: result.added + addedBlobs };
+}

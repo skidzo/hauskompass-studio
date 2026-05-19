@@ -21,7 +21,7 @@ import {
     useZoneObservationCounts,
     useZones
 } from '@/features/workshop/hooks/useWorkshopData';
-import { Camera, ChevronLeft, ChevronRight, Database, Download, Eye, HelpCircle, Layers, MapPin, MapPinned, MessageSquare, Navigation, PlusCircle, Trash2, X } from 'lucide-react';
+import { Camera, ChevronLeft, ChevronRight, Database, Download, Eye, HelpCircle, Layers, MapPin, MapPinned, MessageSquare, Navigation, PlusCircle, Trash2, UserPlus, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { ASSET_WARNING_LABEL, computeAssetCompleteness } from './completeness';
 import { AssetIngestPanel } from './components/AssetIngestPanel';
@@ -35,8 +35,8 @@ import { Timeline } from './components/Timeline';
 import { WorkshopSceneEditor } from './components/WorkshopSceneEditor';
 import { WorkshopSceneCard, WorkshopSceneDetail } from './components/WorkshopSceneViewer';
 import { ZoneList } from './components/ZoneList';
-import type { ObservationRecord } from './db/workshopDb';
-import { deleteAsset, exportWorkshopBundle, exportWorkshopBundleZip, getAssetObjectUrl, saveObservation } from './db/workshopDb';
+import type { MergeResult, ObservationRecord, WorkshopBundleExport } from './db/workshopDb';
+import { deleteAsset, exportWorkshopBundle, exportWorkshopBundleZip, getAssetObjectUrl, mergeWorkshopBundle, mergeWorkshopBundleZip, saveObservation } from './db/workshopDb';
 import type { ExportMode } from './export/workshopExport';
 import { buildExportBlob, buildExportFilename, downloadExportBlob } from './export/workshopExport';
 
@@ -900,6 +900,34 @@ function DataBackupBar({
     projectTitle: string;
 }) {
     const [exporting, setExporting] = useState<null | 'json' | 'zip'>(null);
+    const [merging, setMerging] = useState(false);
+    const [mergeResult, setMergeResult] = useState<MergeResult | null>(null);
+    const [mergeError, setMergeError] = useState<string | null>(null);
+    const mergeFileRef = useRef<HTMLInputElement>(null);
+
+    async function handleMergeFile(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setMerging(true);
+        setMergeResult(null);
+        setMergeError(null);
+        try {
+            let result: MergeResult;
+            if (file.name.endsWith('.zip')) {
+                result = await mergeWorkshopBundleZip(file);
+            } else {
+                const text = await file.text();
+                const bundle = JSON.parse(text) as WorkshopBundleExport;
+                result = await mergeWorkshopBundle(bundle);
+            }
+            setMergeResult(result);
+        } catch (err) {
+            setMergeError(err instanceof Error ? err.message : 'Zusammenführen fehlgeschlagen.');
+        } finally {
+            setMerging(false);
+            if (mergeFileRef.current) mergeFileRef.current.value = '';
+        }
+    }
 
     async function handleJsonBackup() {
         setExporting('json');
@@ -933,7 +961,7 @@ function DataBackupBar({
             <button
                 className="ws-backup-btn"
                 onClick={handleZipBackup}
-                disabled={exporting !== null}
+                disabled={exporting !== null || merging}
                 type="button"
                 title="Metadaten + alle Fotos als ZIP sichern"
             >
@@ -942,12 +970,37 @@ function DataBackupBar({
             <button
                 className="ws-backup-btn ws-backup-btn-secondary"
                 onClick={handleJsonBackup}
-                disabled={exporting !== null}
+                disabled={exporting !== null || merging}
                 type="button"
                 title="Nur Metadaten als JSON sichern (keine Fotos)"
             >
                 {exporting === 'json' ? 'Exportiert …' : 'JSON (nur Metadaten)'}
             </button>
+            <input
+                ref={mergeFileRef}
+                type="file"
+                accept=".zip,.json,application/zip,application/json"
+                style={{ display: 'none' }}
+                onChange={handleMergeFile}
+            />
+            <button
+                className="ws-backup-btn ws-backup-btn-merge"
+                onClick={() => { setMergeResult(null); setMergeError(null); mergeFileRef.current?.click(); }}
+                disabled={exporting !== null || merging}
+                type="button"
+                title="Backup einer anderen Person einlesen und zusammenführen (bestehende Einträge bleiben erhalten)"
+            >
+                <UserPlus size={12} />
+                {merging ? 'Zusammengeführt …' : 'Zusammenführen'}
+            </button>
+            {mergeResult !== null && (
+                <span className="ws-merge-result">
+                    {mergeResult.added === 0
+                        ? 'Keine neuen Einträge — alles bereits vorhanden.'
+                        : `${mergeResult.added} neue Einträge hinzugefügt.`}
+                </span>
+            )}
+            {mergeError && <span className="ws-merge-error">{mergeError}</span>}
         </div>
     );
 }

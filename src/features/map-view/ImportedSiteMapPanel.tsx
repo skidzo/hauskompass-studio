@@ -252,7 +252,6 @@ export function ImportedSiteMapPanel({
                     const feature = buildPolygonFeature(c, {
                         id: c.id,
                         confirmed: isConfirmed ? 1 : 0,
-                        selected: c.id === selectedId ? 1 : 0,
                         label: isConfirmed && rank >= 0 ? `T${rank + 1}` : '',
                     });
 

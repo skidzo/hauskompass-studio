@@ -165,7 +165,7 @@ function HauskompassApp() {
 }
 
 function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
-  const { activeProject, activateProject, deactivateProject } = useProject();
+  const { activeProject, activateProject, deactivateProject, updateProject } = useProject();
   const [showNewProject, setShowNewProject] = useState(false);
   const [showProjectDrawer, setShowProjectDrawer] = useState(false);
   const [activeSection, setActiveSection] = useState<Section>('site');
@@ -513,6 +513,7 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
                 terrainData={terrainData}
                 selectedId={effectiveCandidateId}
                 onSelectCandidate={setSelectedCandidateId}
+                onUpdateProject={updateProject}
               />
             )}
 

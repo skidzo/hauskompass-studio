@@ -2,7 +2,7 @@ import type { ImportedTerrainData } from '@/features/lod2-derived/fetchTerrainPr
 import { utm32ToWgs84 } from '@/features/new-project/geocode';
 import type { ImportedProject, Lod2Candidate } from '@/features/project-store/types';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Map, { Layer, NavigationControl, ScaleControl, Source } from 'react-map-gl/maplibre';
 
 // OpenFreeMap Bright — free, no API key required
@@ -40,13 +40,16 @@ export function ImportedSiteMapPanel({
     terrainData: _terrainData,
     selectedId,
     onSelectCandidate,
+    onUpdateProject,
 }: {
     project: ImportedProject;
     terrainData: ImportedTerrainData | null;
     selectedId?: string;
     onSelectCandidate?: (id: string) => void;
+    onUpdateProject?: (project: ImportedProject) => void;
 }) {
     const { candidates, confirmedIds, address, geocode } = project;
+    const [cursor, setCursor] = useState<'auto' | 'pointer'>('auto');
     const confirmedSet = new Set(confirmedIds);
 
     const confirmedCandidates = useMemo(
@@ -69,6 +72,7 @@ export function ImportedSiteMapPanel({
                         // Use number 1/0 instead of boolean — MapLibre case-expressions
                         // with raw boolean false can silently fail in some versions.
                         selected: c.id === selectedId ? 1 : 0,
+                        kind: 'confirmed',
                     }),
                 )
                 .filter((f): f is NonNullable<typeof f> => f !== null),
@@ -80,8 +84,8 @@ export function ImportedSiteMapPanel({
         () => ({
             type: 'FeatureCollection' as const,
             features: surroundingCandidates
-                .slice(0, 60)
-                .map((c, idx) => buildPolygonFeature(c, idx, { id: c.id }))
+                .slice(0, 80)
+                .map((c, idx) => buildPolygonFeature(c, idx, { id: c.id, kind: 'surrounding' }))
                 .filter((f): f is NonNullable<typeof f> => f !== null),
         }),
         [surroundingCandidates],
@@ -108,6 +112,25 @@ export function ImportedSiteMapPanel({
         ];
     }, [confirmedCandidates, geocode]);
 
+    /** Toggle a building's confirmed status and persist via onUpdateProject. */
+    function handleMapClick(e: { features?: Array<{ properties?: Record<string, unknown> }> }) {
+        const f = e.features?.[0];
+        if (!f) return;
+        const id = f.properties?.id as string | undefined;
+        if (!id) return;
+        const kind = f.properties?.kind as string | undefined;
+
+        if (onUpdateProject) {
+            // Toggle confirmed status
+            const newConfirmedIds = kind === 'confirmed'
+                ? confirmedIds.filter((cid) => cid !== id)   // remove
+                : [...confirmedIds, id];                      // add
+            onUpdateProject({ ...project, confirmedIds: newConfirmedIds });
+        } else if (onSelectCandidate && kind === 'confirmed') {
+            onSelectCandidate(id);
+        }
+    }
+
     return (
         <div className="imported-map-wrap">
             <div className="imported-map-gl">
@@ -117,16 +140,11 @@ export function ImportedSiteMapPanel({
                         fitBoundsOptions: { padding: 80, maxZoom: 19 },
                     }}
                     mapStyle={MAP_STYLE}
-                    style={{ width: '100%', height: '100%' }}
-                    interactiveLayerIds={['confirmed-fill']}
-                    onClick={(e) => {
-                        if (!onSelectCandidate) return;
-                        const f = e.features?.[0];
-                        if (f) {
-                            const id = f.properties?.id as string | undefined;
-                            if (id) onSelectCandidate(id);
-                        }
-                    }}
+                    style={{ width: '100%', height: '100%', cursor }}
+                    interactiveLayerIds={['confirmed-fill', 'surrounding-fill']}
+                    onClick={handleMapClick}
+                    onMouseEnter={() => setCursor('pointer')}
+                    onMouseLeave={() => setCursor('auto')}
                 >
                     <NavigationControl position="top-right" showCompass visualizePitch />
                     <ScaleControl position="bottom-left" unit="metric" />
@@ -136,7 +154,7 @@ export function ImportedSiteMapPanel({
                         <Layer
                             id="surrounding-fill"
                             type="fill"
-                            paint={{ 'fill-color': '#b8c5b2', 'fill-opacity': 0.3 }}
+                            paint={{ 'fill-color': '#b8c5b2', 'fill-opacity': 0.25 }}
                         />
                         <Layer
                             id="surrounding-outline"
@@ -185,6 +203,14 @@ export function ImportedSiteMapPanel({
                         />
                     </Source>
                 </Map>
+
+                {onUpdateProject && (
+                    <div className="map-edit-hint">
+                        <span className="map-hint-confirmed">■ Grün = bestätigt</span>
+                        <span className="map-hint-sep">·</span>
+                        <span>Klick → Gebäude hinzufügen / entfernen</span>
+                    </div>
+                )}
             </div>
             <div className="map-meta">
                 <strong>{address}</strong>

@@ -7,10 +7,10 @@
  *  3. "Neues Projekt anlegen" (nur Bayern und Baden-Württemberg)
  */
 
-import { listProjects, loadProject, saveProject } from '@/features/project-store/projectStore';
+import { deleteProject, listProjects, loadProject, saveProject } from '@/features/project-store/projectStore';
 import type { ImportedProject } from '@/features/project-store/types';
 import { importWorkshopBundle, importWorkshopBundleZip, type WorkshopBundleExport } from '@/features/workshop/db/workshopDb';
-import { Building2, FolderOpen, Home, Layers, MapPin, Pencil, Plus, Upload, Wrench, X } from 'lucide-react';
+import { Building2, FolderOpen, Home, Layers, MapPin, Pencil, Plus, Upload, Wrench, X, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 // ── Built-in pre-existing projects ──────────────────────────────────────────
@@ -160,11 +160,19 @@ export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject,
         }
     }
 
-    const savedProjects = useMemo<ImportedProject[]>(() => {
-        return listProjects()
+    // ── Renovation project management ─────────────────────────────────────────
+    const [savedProjectList, setSavedProjectList] = useState<ImportedProject[]>(() =>
+        listProjects()
             .map((slug) => loadProject(slug))
-            .filter((p): p is ImportedProject => p !== null);
-    }, []);
+            .filter((p): p is ImportedProject => p !== null)
+    );
+
+    function handleDeleteProject(slug: string, e: React.MouseEvent) {
+        e.stopPropagation();
+        if (!confirm(`Projekt "${slug}" wirklich löschen?`)) return;
+        deleteProject(slug);
+        setSavedProjectList((prev) => prev.filter((p) => p.slug !== slug));
+    }
 
     return (
         <div className="ph-root">
@@ -236,39 +244,48 @@ export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject,
                             );
                         })}
                         {/* Saved renovation projects */}
-                        {savedProjects.map((proj) => (
-                            <button
-                                key={proj.slug}
-                                className="ph-project-card ph-project-card-saved"
-                                onClick={() => onSelectRenovation(proj.slug)}
-                                type="button"
-                            >
-                                <div className="ph-card-icon">
-                                    <FolderOpen size={22} />
-                                </div>
-                                <div className="ph-card-body">
-                                    <span className="ph-card-label">Renovierungsprojekt</span>
-                                    <strong className="ph-card-title">{proj.address}</strong>
-                                    <span className="ph-card-sub">
-                                        {proj.candidates.length} Gebäude
-                                        {proj.confirmedIds.length > 0
-                                            ? ` · ${proj.confirmedIds.length} bestätigt`
-                                            : ''}
-                                    </span>
-                                    <span className="ph-card-loc">
-                                        <MapPin size={11} />
-                                        {proj.geocode.displayName.split(',').slice(-2).join(',').trim()}
-                                    </span>
-                                    <p className="ph-card-desc">
-                                        Importiert am{' '}
-                                        {new Date(proj.importedAt).toLocaleDateString('de-DE', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric',
-                                        })}
-                                    </p>
-                                </div>
-                            </button>
+                        {savedProjectList.map((proj) => (
+                            <div key={proj.slug} className="ph-project-card-wrap">
+                                <button
+                                    className="ph-project-card ph-project-card-saved"
+                                    onClick={() => onSelectRenovation(proj.slug)}
+                                    type="button"
+                                >
+                                    <div className="ph-card-icon">
+                                        <FolderOpen size={22} />
+                                    </div>
+                                    <div className="ph-card-body">
+                                        <span className="ph-card-label">Renovierungsprojekt</span>
+                                        <strong className="ph-card-title">{proj.address}</strong>
+                                        <span className="ph-card-sub">
+                                            {proj.candidates.length} Gebäude
+                                            {proj.confirmedIds.length > 0
+                                                ? ` · ${proj.confirmedIds.length} bestätigt`
+                                                : ''}
+                                        </span>
+                                        <span className="ph-card-loc">
+                                            <MapPin size={11} />
+                                            {proj.geocode.displayName.split(',').slice(-2).join(',').trim()}
+                                        </span>
+                                        <p className="ph-card-desc">
+                                            Importiert am{' '}
+                                            {new Date(proj.importedAt).toLocaleDateString('de-DE', {
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric',
+                                            })}
+                                        </p>
+                                    </div>
+                                </button>
+                                <button
+                                    className="ph-card-edit-btn ph-card-delete-btn"
+                                    onClick={(e) => handleDeleteProject(proj.slug, e)}
+                                    type="button"
+                                    title="Projekt löschen"
+                                >
+                                    <Trash2 size={12} />
+                                </button>
+                            </div>
                         ))}
 
                         {/* New project card */}

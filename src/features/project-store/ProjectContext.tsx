@@ -1,17 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { getActiveSlug, loadProject, setActiveSlug } from './projectStore';
+import { getActiveSlug, loadProject, saveProject, setActiveSlug } from './projectStore';
 import type { ImportedProject } from './types';
 
 interface ProjectContextValue {
     activeProject: ImportedProject | null;
     activateProject: (slug: string) => void;
     deactivateProject: () => void;
+    /** Persist an in-place update to the active project (e.g. confirmedIds changed in-app). */
+    updateProject: (project: ImportedProject) => void;
 }
 
 const ProjectContext = createContext<ProjectContextValue>({
     activeProject: null,
     activateProject: () => undefined,
     deactivateProject: () => undefined,
+    updateProject: () => undefined,
 });
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
@@ -33,6 +36,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         setActiveProject(null);
     }, []);
 
+    const updateProject = useCallback((project: ImportedProject) => {
+        saveProject(project);
+        setActiveProject((prev) => (prev?.slug === project.slug ? project : prev));
+    }, []);
+
     // Sync across tabs
     useEffect(() => {
         const handler = (e: StorageEvent) => {
@@ -46,7 +54,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     return (
-        <ProjectContext.Provider value={{ activeProject, activateProject, deactivateProject }}>
+        <ProjectContext.Provider value={{ activeProject, activateProject, deactivateProject, updateProject }}>
             {children}
         </ProjectContext.Provider>
     );

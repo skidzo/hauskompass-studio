@@ -5917,6 +5917,45 @@ td {
   opacity: 1;
 }
 
+/* Delete button — same base as edit btn but top-right of saved project cards */
+.ph-card-delete-btn {
+  color: #8b3a3a;
+  border-color: #e0bebe;
+  background: rgba(255, 248, 248, 0.9);
+}
+
+.ph-card-delete-btn:hover {
+  color: #c0392b;
+  border-color: #c0392b;
+  background: #fff0f0;
+}
+
+/* ── Map edit hint overlay ───────────────────────────────────────────────── */
+.map-edit-hint {
+  position: absolute;
+  bottom: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 25, 18, 0.82);
+  color: #b8d8c0;
+  font-size: 0.78rem;
+  padding: 5px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.map-hint-confirmed {
+  color: #6ee7b7;
+}
+
+.map-hint-sep {
+  opacity: 0.4;
+}
+
 /* Edit overlay / dialog */
 .ph-edit-overlay {
   position: fixed;

@@ -330,39 +330,15 @@ export function ImportedSiteMapPanel({
             confirmedIds,
             totalFeatures: geojson.features.length,
             confirmedBuildings: geojson.features.filter(f => f.properties?.confirmed === 1).length,
-            selectedBuilding: geojson.features.filter(f => f.properties?.selected === 1).length,
             sampleFeatures: geojson.features.slice(0, 3).map(f => ({
                 id: f.properties?.id,
                 confirmed: f.properties?.confirmed,
-                selected: f.properties?.selected,
                 coordsLength: f.geometry.coordinates[0]?.length,
             })),
         });
 
         return geojson;
-    }, [candidates, confirmedIds, selectedId]);
-
-    // Force MapLibre to update the GeoJSON data when it changes
-    // This ensures selected/confirmed properties are reflected immediately
-    useEffect(() => {
-        if (!mapRef.current) return;
-        const map = mapRef.current.getMap?.();
-        if (!map) return;
-
-        try {
-            const source = map.getSource('buildings');
-            if (source && 'setData' in source) {
-                (source as any).setData(allCandidatesGeoJSON);
-                console.log('[useEffect] GeoJSON updated via setData()', {
-                    selectedId,
-                    confirmedCount: confirmedIds.length,
-                    totalFeatures: allCandidatesGeoJSON.features.length,
-                });
-            }
-        } catch (err) {
-            console.error('[useEffect] Failed to update source:', err);
-        }
-    }, [allCandidatesGeoJSON, confirmedIds.length, selectedId]);
+    }, [candidates, confirmedIds]);
 
     // Initial map bounds: fit all confirmed buildings
     const initialBounds = useMemo((): BBox => {

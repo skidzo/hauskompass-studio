@@ -34,6 +34,7 @@ import type {
     Zone,
 } from '@/domain/workshop/types';
 import Dexie, { type EntityTable } from 'dexie';
+import { strFromU8, strToU8, unzip, zip } from 'fflate';
 import { inferAssetSpatialSemantics } from '../spatial/assetSpatialSemantics';
 import { QUICK_START_MARKER, getWorkshopSeedVersionKey } from './workshopProjectStorageKeys';
 
@@ -594,4 +595,110 @@ export async function importWorkshopBundle(bundle: WorkshopBundleExport): Promis
 
     // Store seed version so seedProject() won't overwrite imported data
     localStorage.setItem(getWorkshopSeedVersionKey(project.id), seedVersion ?? QUICK_START_MARKER);
+}
+
+// ---------------------------------------------------------------------------
+// ZIP export — metadata + all photo blobs in one archive
+// ---------------------------------------------------------------------------
+
+function mimeToExt(mimeType?: string): string {
+    switch (mimeType) {
+        case 'image/jpeg': return 'jpg';
+        case 'image/png': return 'png';
+        case 'image/webp': return 'webp';
+        case 'image/gif': return 'gif';
+        case 'image/heic': return 'heic';
+        case 'image/tiff': return 'tiff';
+        default: return 'bin';
+    }
+}
+
+/**
+ * Export all metadata + binary photo blobs as a ZIP archive.
+ * Structure:
+ *   backup.json          — all domain records (WorkshopBundleExport)
+ *   photos/<id>.<ext>    — raw blobs for each asset that has one
+ */
+export async function exportWorkshopBundleZip(projectId: string): Promise<Blob> {
+    const bundle = await exportWorkshopBundle(projectId);
+    const { assets } = bundle;
+
+    // Collect all blobs for this project's assets
+    const blobEntries = await workshopDb.assetBlobs
+        .where('id').anyOf(assets.map((a) => a.id))
+        .toArray();
+
+    const files: Record<string, Uint8Array> = {
+        'backup.json': strToU8(JSON.stringify(bundle, null, 2)),
+    };
+
+    for (const entry of blobEntries) {
+        const asset = assets.find((a) => a.id === entry.id);
+        const ext = mimeToExt(asset?.mimeType);
+        const buf = await entry.blob.arrayBuffer();
+        files[`photos/${entry.id}.${ext}`] = new Uint8Array(buf);
+    }
+
+    return new Promise((resolve, reject) => {
+        zip(files, { level: 0 }, (err, data) => {
+            if (err) reject(err);
+            else resolve(new Blob([data], { type: 'application/zip' }));
+        });
+    });
+}
+
+// ---------------------------------------------------------------------------
+// ZIP import — restore metadata + blobs from archive
+// ---------------------------------------------------------------------------
+
+/**
+ * Import a ZIP archive previously created by exportWorkshopBundleZip().
+ * Writes all metadata records and photo blobs back to IndexedDB.
+ */
+export async function importWorkshopBundleZip(file: File): Promise<{ projectId: string; siteId: string; title: string }> {
+    const buf = await file.arrayBuffer();
+
+    const extracted = await new Promise<Record<string, Uint8Array>>((resolve, reject) => {
+        unzip(new Uint8Array(buf), (err, data) => {
+            if (err) reject(err);
+            else resolve(data);
+        });
+    });
+
+    const jsonBytes = extracted['backup.json'];
+    if (!jsonBytes) throw new Error('Keine backup.json in der ZIP-Datei gefunden.');
+
+    const bundle = JSON.parse(strFromU8(jsonBytes)) as WorkshopBundleExport;
+    if (!bundle.project?.id || !bundle.site?.id) throw new Error('Keine gültige Backup-Datei.');
+
+    // Import metadata
+    await importWorkshopBundle(bundle);
+
+    // Import blobs
+    const photoEntries = Object.entries(extracted).filter(([name]) => name.startsWith('photos/'));
+    if (photoEntries.length > 0) {
+        await workshopDb.transaction('rw', workshopDb.assetBlobs, async () => {
+            for (const [name, data] of photoEntries) {
+                // photos/<id>.<ext> → extract id
+                const filename = name.replace('photos/', '');
+                const dotIdx = filename.lastIndexOf('.');
+                const assetId = dotIdx >= 0 ? filename.slice(0, dotIdx) : filename;
+                const ext = dotIdx >= 0 ? filename.slice(dotIdx + 1) : 'bin';
+                const mimeMap: Record<string, string> = {
+                    jpg: 'image/jpeg', jpeg: 'image/jpeg',
+                    png: 'image/png', webp: 'image/webp',
+                    gif: 'image/gif', heic: 'image/heic', tiff: 'image/tiff',
+                };
+                const mimeType = mimeMap[ext] ?? 'application/octet-stream';
+                const blob = new Blob([data.buffer as ArrayBuffer], { type: mimeType });
+                await workshopDb.assetBlobs.put({ id: assetId, blob });
+            }
+        });
+    }
+
+    return {
+        projectId: bundle.project.id,
+        siteId: bundle.site.id,
+        title: bundle.project.title ?? bundle.project.id,
+    };
 }

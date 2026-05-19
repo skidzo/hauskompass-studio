@@ -36,7 +36,7 @@ import { WorkshopSceneEditor } from './components/WorkshopSceneEditor';
 import { WorkshopSceneCard, WorkshopSceneDetail } from './components/WorkshopSceneViewer';
 import { ZoneList } from './components/ZoneList';
 import type { ObservationRecord } from './db/workshopDb';
-import { deleteAsset, exportWorkshopBundle, getAssetObjectUrl, saveObservation } from './db/workshopDb';
+import { deleteAsset, exportWorkshopBundle, exportWorkshopBundleZip, getAssetObjectUrl, saveObservation } from './db/workshopDb';
 import type { ExportMode } from './export/workshopExport';
 import { buildExportBlob, buildExportFilename, downloadExportBlob } from './export/workshopExport';
 
@@ -889,7 +889,7 @@ function useProjectClaims(projectId: string): import('./db/workshopDb').ClaimRec
 }
 
 // ---------------------------------------------------------------------------
-// DataBackupBar — export all domain records as JSON bundle
+// DataBackupBar — export all domain records as JSON or ZIP bundle
 // ---------------------------------------------------------------------------
 
 function DataBackupBar({
@@ -899,24 +899,29 @@ function DataBackupBar({
     projectId: string;
     projectTitle: string;
 }) {
-    const [exporting, setExporting] = useState(false);
+    const [exporting, setExporting] = useState<null | 'json' | 'zip'>(null);
 
-    async function handleBackup() {
-        setExporting(true);
+    async function handleJsonBackup() {
+        setExporting('json');
         try {
             const bundle = await exportWorkshopBundle(projectId);
             const json = JSON.stringify(bundle, null, 2);
             const blob = new Blob([json], { type: 'application/json' });
             const date = new Date().toISOString().slice(0, 10);
-            const filename = `${projectTitle}-backup-${date}.json`;
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.click();
-            URL.revokeObjectURL(url);
+            triggerDownload(blob, `${projectTitle}-backup-${date}.json`);
         } finally {
-            setExporting(false);
+            setExporting(null);
+        }
+    }
+
+    async function handleZipBackup() {
+        setExporting('zip');
+        try {
+            const blob = await exportWorkshopBundleZip(projectId);
+            const date = new Date().toISOString().slice(0, 10);
+            triggerDownload(blob, `${projectTitle}-backup-${date}.zip`);
+        } finally {
+            setExporting(null);
         }
     }
 
@@ -927,16 +932,31 @@ function DataBackupBar({
             </span>
             <button
                 className="ws-backup-btn"
-                onClick={handleBackup}
-                disabled={exporting}
+                onClick={handleZipBackup}
+                disabled={exporting !== null}
                 type="button"
-                title="Alle Domain-Datensätze als JSON sichern (keine Mediendateien)"
+                title="Metadaten + alle Fotos als ZIP sichern"
             >
-                {exporting ? 'Exportiert …' : 'JSON-Backup herunterladen'}
+                {exporting === 'zip' ? 'Exportiert …' : 'ZIP-Backup (mit Fotos)'}
             </button>
-            <span className="ws-backup-hint">
-                Keine Mediendateien — nur Metadaten. Nach Feldbesuch sichern!
-            </span>
+            <button
+                className="ws-backup-btn ws-backup-btn-secondary"
+                onClick={handleJsonBackup}
+                disabled={exporting !== null}
+                type="button"
+                title="Nur Metadaten als JSON sichern (keine Fotos)"
+            >
+                {exporting === 'json' ? 'Exportiert …' : 'JSON (nur Metadaten)'}
+            </button>
         </div>
     );
+}
+
+function triggerDownload(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
 }

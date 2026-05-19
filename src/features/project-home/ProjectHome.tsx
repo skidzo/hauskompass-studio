@@ -9,7 +9,7 @@
 
 import { listProjects, loadProject } from '@/features/project-store/projectStore';
 import type { ImportedProject } from '@/features/project-store/types';
-import { importWorkshopBundle, type WorkshopBundleExport } from '@/features/workshop/db/workshopDb';
+import { importWorkshopBundle, importWorkshopBundleZip, type WorkshopBundleExport } from '@/features/workshop/db/workshopDb';
 import { Building2, FolderOpen, Home, Layers, MapPin, Plus, Upload, Wrench } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -67,11 +67,26 @@ export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject,
         setImporting(true);
         setImportError(null);
         try {
-            const text = await file.text();
-            const bundle = JSON.parse(text) as WorkshopBundleExport;
-            if (!bundle.project?.id || !bundle.site?.id) throw new Error('Keine gültige Backup-Datei.');
-            await importWorkshopBundle(bundle);
-            onImportBackup(bundle.project.id, bundle.site.id, bundle.project.title ?? bundle.project.id);
+            let projectId: string;
+            let siteId: string;
+            let title: string;
+
+            if (file.name.endsWith('.zip')) {
+                const result = await importWorkshopBundleZip(file);
+                projectId = result.projectId;
+                siteId = result.siteId;
+                title = result.title;
+            } else {
+                const text = await file.text();
+                const bundle = JSON.parse(text) as WorkshopBundleExport;
+                if (!bundle.project?.id || !bundle.site?.id) throw new Error('Keine gültige Backup-Datei.');
+                await importWorkshopBundle(bundle);
+                projectId = bundle.project.id;
+                siteId = bundle.site.id;
+                title = bundle.project.title ?? bundle.project.id;
+            }
+
+            onImportBackup(projectId, siteId, title);
         } catch (err) {
             setImportError(err instanceof Error ? err.message : 'Import fehlgeschlagen.');
         } finally {
@@ -211,7 +226,7 @@ export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject,
                     <input
                         ref={fileInputRef}
                         type="file"
-                        accept=".json,application/json"
+                        accept=".zip,.json,application/zip,application/json"
                         style={{ display: 'none' }}
                         onChange={handleFileChange}
                     />

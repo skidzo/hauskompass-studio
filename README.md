@@ -66,7 +66,7 @@ Alle Ihre Einträge bleiben gespeichert, solange Sie denselben Browser und dense
 
 **Nirgendwo hin.** Alle Notizen und Fotos werden ausschließlich im Speicher Ihres Browsers abgelegt (sogenannte „IndexedDB" — unsichtbar, aber sicher auf Ihrer Festplatte). Es gibt keinen Server, keine Cloud, keine Anmeldung. Niemand außer Ihnen kann auf diese Daten zugreifen.
 
-Das bedeutet auch: Wenn Sie den Browser-Cache löschen oder einen anderen Computer verwenden, sind die Daten weg. Sichern Sie Ihre Daten regelmäßig mit dem **„JSON-Backup herunterladen"**-Button, der im Workshop unten in der Leiste erscheint. Die heruntergeladene Datei können Sie jederzeit über **„Projekt aus Backup wiederherstellen"** auf der Startseite wieder einlesen — auch auf einem anderen Computer.
+Das bedeutet auch: Wenn Sie den Browser-Cache löschen oder einen anderen Computer verwenden, sind die Daten weg. Sichern Sie Ihre Daten regelmäßig mit dem **„ZIP-Backup (mit Fotos)"**-Button, der im Workshop unten in der Leiste erscheint. Die ZIP-Datei enthält alle Notizen und Fotos. Alternativ steht **„JSON (nur Metadaten)"** für ein kleineres Backup ohne Bilder zur Verfügung. Beide Formate können über **„Projekt aus Backup wiederherstellen"** auf der Startseite wieder eingelesen werden — auch auf einem anderen Computer.
 
 ---
 

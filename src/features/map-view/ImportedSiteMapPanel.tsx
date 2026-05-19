@@ -111,7 +111,15 @@ function buildPolygonFeature(
         .filter(([, v]) => v === null || v === undefined)
         .map(([k]) => k);
     if (nullProps.length > 0) {
-        console.log(`[buildPolygonFeature] ${c.id}: HAS NULL PROPERTIES`, { nullProps, properties });
+        console.warn(`[buildPolygonFeature] ${c.id}: HAS NULL PROPERTIES — SANITIZING`, {
+            nullProps,
+            before: properties
+        });
+        // Sanitize: Replace null/undefined with safe defaults for numeric properties
+        if (nullProps.includes('confirmed')) properties.confirmed = 0;
+        if (nullProps.includes('selected')) properties.selected = 0;
+        if (nullProps.includes('label')) properties.label = '';
+        console.warn(`[buildPolygonFeature] ${c.id}: After sanitize`, { after: properties });
     }
 
     const feature = {
@@ -305,15 +313,15 @@ export function ImportedSiteMapPanel({
                             paint={{
                                 'fill-color': [
                                     'case',
-                                    ['all', ['==', ['get', 'confirmed'], 1], ['==', ['get', 'selected'], 1]],
+                                    ['all', ['==', ['coalesce', ['get', 'confirmed'], 0], 1], ['==', ['coalesce', ['get', 'selected'], 0], 1]],
                                     '#2d7a52',
-                                    ['==', ['get', 'confirmed'], 1],
+                                    ['==', ['coalesce', ['get', 'confirmed'], 0], 1],
                                     '#3d9465',
                                     '#b8c5b2',
                                 ],
                                 'fill-opacity': [
                                     'case',
-                                    ['==', ['get', 'confirmed'], 1],
+                                    ['==', ['coalesce', ['get', 'confirmed'], 0], 1],
                                     0.6,
                                     0.3,
                                 ],

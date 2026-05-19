@@ -358,10 +358,10 @@ export function ImportedSiteMapPanel({
             if (map.getLayer('buildings-labels')) map.removeLayer('buildings-labels');
             if (map.getLayer('buildings-outline')) map.removeLayer('buildings-outline');
             if (map.getLayer('buildings-fill')) map.removeLayer('buildings-fill');
-            
+
             // Remove source
             if (map.getSource('buildings')) map.removeSource('buildings');
-            
+
             console.log('[MapLibre] Removed old source and layers');
         } catch (err) {
             console.warn('[MapLibre] Error removing source/layers:', err);
@@ -443,6 +443,21 @@ export function ImportedSiteMapPanel({
         ];
     }, [candidates, geocode]);
 
+    // After sources/layers are created, re-fit bounds to ensure all buildings are visible
+    useEffect(() => {
+        if (!mapLoaded || !mapRef.current) return;
+        const map = mapRef.current.getMap?.();
+        if (!map || !map.getSource('buildings')) return;
+
+        // Use a small delay to ensure layers have actually rendered
+        const timer = setTimeout(() => {
+            console.log('[Map] Re-fitting bounds after layers created');
+            map.fitBounds(initialBounds, { padding: 80, maxZoom: 19 });
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, [mapLoaded, allCandidatesGeoJSON, initialBounds]);
+
     /** Toggle a building's confirmed status and persist via onUpdateProject. */
     function handleMapClick(e: { features?: Array<{ properties?: Record<string, unknown> }> }) {
         const f = e.features?.[0];
@@ -477,6 +492,15 @@ export function ImportedSiteMapPanel({
                     onLoad={() => {
                         console.log('[Map] onLoad event fired');
                         setMapLoaded(true);
+                        // Ensure map re-fits bounds after data is rendered
+                        const map = mapRef.current?.getMap?.();
+                        if (map) {
+                            // Use requestAnimationFrame to ensure rendering has occurred
+                            requestAnimationFrame(() => {
+                                console.log('[Map] Fitting bounds after render');
+                                map.fitBounds(initialBounds, { padding: 80, maxZoom: 19 });
+                            });
+                        }
                     }}
                     onMouseEnter={() => setCursor('pointer')}
                     onMouseLeave={() => setCursor('auto')}

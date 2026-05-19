@@ -333,15 +333,15 @@ export function ImportedSiteMapPanel({
                             paint={{
                                 'line-color': [
                                     'case',
-                                    ['==', ['get', 'confirmed'], 1],
+                                    ['==', ['coalesce', ['get', 'confirmed'], 0], 1],
                                     '#1a5c38',
                                     '#7a9084',
                                 ],
                                 'line-width': [
                                     'case',
-                                    ['all', ['==', ['get', 'confirmed'], 1], ['==', ['get', 'selected'], 1]],
+                                    ['all', ['==', ['coalesce', ['get', 'confirmed'], 0], 1], ['==', ['coalesce', ['get', 'selected'], 0], 1]],
                                     4,
-                                    ['==', ['get', 'confirmed'], 1],
+                                    ['==', ['coalesce', ['get', 'confirmed'], 0], 1],
                                     2.5,
                                     1,
                                 ],
@@ -350,9 +350,9 @@ export function ImportedSiteMapPanel({
                         <Layer
                             id="buildings-labels"
                             type="symbol"
-                            filter={['==', ['get', 'confirmed'], 1]}
+                            filter={['==', ['coalesce', ['get', 'confirmed'], 0], 1]}
                             layout={{
-                                'text-field': ['get', 'label'],
+                                'text-field': ['coalesce', ['get', 'label'], ''],
                                 'text-size': 13,
                                 'text-font': ['Noto Sans Bold', 'Arial Unicode MS Bold'],
                                 'text-anchor': 'center',

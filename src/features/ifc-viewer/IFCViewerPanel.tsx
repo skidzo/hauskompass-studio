@@ -141,6 +141,7 @@ export function IFCViewerPanel({ ifcContent }: { ifcContent?: string }) {
     const [loadState, setLoadState] = useState<LoadState>('idle');
     const [loadMsg, setLoadMsg] = useState('');
     const [meshCount, setMeshCount] = useState(0);
+    const [stageElementCount, setStageElementCount] = useState(0);
     const [colorMode, setColorMode] = useState<ColorMode>('type');
     const [showStage, setShowStage] = useState(true);
     const [showInfo, setShowInfo] = useState(false);
@@ -335,6 +336,7 @@ export function IFCViewerPanel({ ifcContent }: { ifcContent?: string }) {
 
                 if (!cancelled) {
                     setMeshCount(count);
+                    setStageElementCount(meshRefs.current.filter((m) => m.isStageElement).length);
                     setLoadState('ready');
                     setLoadMsg('');
                     fitFromDir(PRESET_DIRS.oblique);
@@ -498,12 +500,17 @@ export function IFCViewerPanel({ ifcContent }: { ifcContent?: string }) {
                             </div>
                             <div className="ifc-toolbar-group">
                                 <button
-                                    className={`ifc-tool-btn${showStage ? ' ifc-tool-btn-on' : ''}`}
-                                    onClick={() => setShowStage((s) => !s)}
-                                    title={showStage ? 'Planungsgeometrie ausblenden (nur Bestand)' : 'Planungsgeometrie einblenden'}
+                                    className={`ifc-tool-btn${showStage && stageElementCount > 0 ? ' ifc-tool-btn-on' : ''}${stageElementCount === 0 ? ' ifc-tool-btn-disabled' : ''}`}
+                                    onClick={() => stageElementCount > 0 && setShowStage((s) => !s)}
+                                    title={
+                                        stageElementCount === 0
+                                            ? 'Keine Planungsgeometrie im IFC — nur im Demo-Modus verfügbar (export_ifc.py mit STAGE-Elementen)'
+                                            : showStage ? 'Planungsgeometrie ausblenden (nur Bestand)' : 'Planungsgeometrie einblenden'
+                                    }
                                     type="button"
+                                    aria-disabled={stageElementCount === 0}
                                 >
-                                    {showStage ? '+Planung' : 'Bestand'}
+                                    {stageElementCount === 0 ? '±Planung' : showStage ? '+Planung' : 'Bestand'}
                                 </button>
                                 <button
                                     className={`ifc-tool-btn${colorMode === 'type' ? ' ifc-tool-btn-on' : ''}`}

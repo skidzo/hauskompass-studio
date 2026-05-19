@@ -66,7 +66,9 @@ export function ImportedSiteMapPanel({
                     buildPolygonFeature(c, idx, {
                         id: c.id,
                         label: `T${idx + 1}`,
-                        selected: c.id === selectedId,
+                        // Use number 1/0 instead of boolean — MapLibre case-expressions
+                        // with raw boolean false can silently fail in some versions.
+                        selected: c.id === selectedId ? 1 : 0,
                     }),
                 )
                 .filter((f): f is NonNullable<typeof f> => f !== null),
@@ -151,7 +153,7 @@ export function ImportedSiteMapPanel({
                             paint={{
                                 'fill-color': [
                                     'case',
-                                    ['get', 'selected'],
+                                    ['==', ['get', 'selected'], 1],
                                     '#a8d5b5',
                                     '#cce4d3',
                                 ],
@@ -163,7 +165,7 @@ export function ImportedSiteMapPanel({
                             type="line"
                             paint={{
                                 'line-color': '#23614b',
-                                'line-width': ['case', ['get', 'selected'], 3, 2],
+                                'line-width': ['case', ['==', ['get', 'selected'], 1], 3, 2],
                             }}
                         />
                         <Layer

@@ -202,37 +202,37 @@ export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject,
                         {builtinProjects.map((proj) => {
                             const eff = applyOverride(proj);
                             return (
-                            <div key={proj.id} className="ph-project-card-wrap">
-                                <button
-                                    className="ph-project-card ph-project-card-builtin"
-                                    onClick={() => onSelectBuiltin(eff)}
-                                    type="button"
-                                >
-                                    <div className="ph-card-icon">
-                                        {eff.type === 'workshop' ? <Wrench size={22} /> : <Home size={22} />}
-                                    </div>
-                                    <div className="ph-card-body">
-                                        <span className="ph-card-label">
-                                            {eff.type === 'workshop' ? 'Workshop-Projekt' : 'Renovierungsprojekt'}
-                                        </span>
-                                        <strong className="ph-card-title">{eff.title}</strong>
-                                        <span className="ph-card-sub">{eff.subtitle}</span>
-                                        <span className="ph-card-loc">
-                                            <MapPin size={11} />
-                                            {eff.location}
-                                        </span>
-                                        <p className="ph-card-desc">{eff.description}</p>
-                                    </div>
-                                </button>
-                                <button
-                                    className="ph-card-edit-btn"
-                                    onClick={(e) => openEdit(proj, e)}
-                                    type="button"
-                                    title="Metadaten bearbeiten"
-                                >
-                                    <Pencil size={12} />
-                                </button>
-                            </div>
+                                <div key={proj.id} className="ph-project-card-wrap">
+                                    <button
+                                        className="ph-project-card ph-project-card-builtin"
+                                        onClick={() => onSelectBuiltin(eff)}
+                                        type="button"
+                                    >
+                                        <div className="ph-card-icon">
+                                            {eff.type === 'workshop' ? <Wrench size={22} /> : <Home size={22} />}
+                                        </div>
+                                        <div className="ph-card-body">
+                                            <span className="ph-card-label">
+                                                {eff.type === 'workshop' ? 'Workshop-Projekt' : 'Renovierungsprojekt'}
+                                            </span>
+                                            <strong className="ph-card-title">{eff.title}</strong>
+                                            <span className="ph-card-sub">{eff.subtitle}</span>
+                                            <span className="ph-card-loc">
+                                                <MapPin size={11} />
+                                                {eff.location}
+                                            </span>
+                                            <p className="ph-card-desc">{eff.description}</p>
+                                        </div>
+                                    </button>
+                                    <button
+                                        className="ph-card-edit-btn"
+                                        onClick={(e) => openEdit(proj, e)}
+                                        type="button"
+                                        title="Metadaten bearbeiten"
+                                    >
+                                        <Pencil size={12} />
+                                    </button>
+                                </div>
                             );
                         })}
                         {/* Saved renovation projects */}

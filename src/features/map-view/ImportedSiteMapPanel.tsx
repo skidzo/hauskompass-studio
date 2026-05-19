@@ -49,7 +49,7 @@ function buildPolygonFeature(
     const nVals = pts.map((p) => p.n);
     const eSpan = Math.max(...eVals) - Math.min(...eVals);
     const nSpan = Math.max(...nVals) - Math.min(...nVals);
-    
+
     if (eSpan > 1000 || nSpan > 1000) {
         console.log(`[buildPolygonFeature] ${c.id}: REJECTED (span too large)`, {
             eSpan: eSpan.toFixed(0),
@@ -69,16 +69,33 @@ function buildPolygonFeature(
         const lats = ring.map((p) => p[1]);
         const lonSpan = Math.max(...lons) - Math.min(...lons);
         const latSpan = Math.max(...lats) - Math.min(...lats);
-        
+
         // If WGS84 span is huge (likely a wrapped/problematic polygon)
         if (lonSpan > 0.05 || latSpan > 0.05) {
             console.log(`[buildPolygonFeature] ${c.id}: SUSPICIOUS (huge WGS84 span)`, {
                 lonSpan: lonSpan.toFixed(6),
                 latSpan: latSpan.toFixed(6),
+                lonRange: `[${Math.min(...lons).toFixed(6)}, ${Math.max(...lons).toFixed(6)}]`,
+                latRange: `[${Math.min(...lats).toFixed(6)}, ${Math.max(...lats).toFixed(6)}]`,
                 points: pts.length,
             });
-            // Still include but mark as suspicious
         }
+
+        // Also log first 3 and last point in WGS84 to spot coordinate issues
+        console.log(`[buildPolygonFeature] ${c.id}: WGS84 samples`, {
+            first: ring[0],
+            second: ring[1],
+            third: ring[2],
+            last: ring[ring.length - 2],
+        });
+    }
+
+    // Verify properties don't contain null values (could cause MapLibre errors)
+    const nullProps = Object.entries(properties)
+        .filter(([, v]) => v === null || v === undefined)
+        .map(([k]) => k);
+    if (nullProps.length > 0) {
+        console.log(`[buildPolygonFeature] ${c.id}: HAS NULL PROPERTIES`, { nullProps, properties });
     }
 
     const feature = {
@@ -86,15 +103,6 @@ function buildPolygonFeature(
         properties,
         geometry: { type: 'Polygon' as const, coordinates: [ring] },
     };
-
-    console.log(`[buildPolygonFeature] ${c.id}: ACCEPTED`, {
-        surfaces: c.surfaces.ground.length,
-        selectedSurface: surface.id,
-        areaM2: surface.areaM2,
-        utmPoints: pts.length,
-        eSpan: eSpan.toFixed(0),
-        nSpan: nSpan.toFixed(0),
-    });
 
     return feature;
 }
@@ -128,7 +136,7 @@ export function ImportedSiteMapPanel({
         const surrounding = candidates.filter((c) => !confirmedSet.has(c.id)).slice(0, 120);
         const confirmed = candidates.filter((c) => confirmedSet.has(c.id));
         const allCandidatesToProcess = [...confirmed, ...surrounding];
-        
+
         const stats = {
             total: allCandidatesToProcess.length,
             accepted: 0,
@@ -144,7 +152,7 @@ export function ImportedSiteMapPanel({
                 nSpan: number;
             }>,
         };
-        
+
         const geojson = {
             type: 'FeatureCollection' as const,
             features: allCandidatesToProcess
@@ -157,7 +165,7 @@ export function ImportedSiteMapPanel({
                         selected: c.id === selectedId ? 1 : 0,
                         label: isConfirmed && rank >= 0 ? `T${rank + 1}` : '',
                     });
-                    
+
                     if (feature) {
                         stats.accepted++;
                         // Check if this might be the problematic rectangle
@@ -171,7 +179,7 @@ export function ImportedSiteMapPanel({
                             const nVals = pts.map((p) => p.n);
                             const eSpan = Math.max(...eVals) - Math.min(...eVals);
                             const nSpan = Math.max(...nVals) - Math.min(...nVals);
-                            
+
                             // Flag if this geometry looks suspicious (very elongated or large)
                             const aspectRatio = Math.max(eSpan, nSpan) / Math.max(Math.min(eSpan, nSpan), 1);
                             const area = eSpan * nSpan;
@@ -190,7 +198,7 @@ export function ImportedSiteMapPanel({
                     } else {
                         stats.rejected++;
                     }
-                    
+
                     return feature;
                 })
                 .filter((f): f is NonNullable<typeof f> => f !== null),

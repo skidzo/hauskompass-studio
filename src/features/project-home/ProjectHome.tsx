@@ -7,7 +7,7 @@
  *  3. "Neues Projekt anlegen" (nur Bayern und Baden-Württemberg)
  */
 
-import { listProjects, loadProject } from '@/features/project-store/projectStore';
+import { listProjects, loadProject, saveProject } from '@/features/project-store/projectStore';
 import type { ImportedProject } from '@/features/project-store/types';
 import { importWorkshopBundle, importWorkshopBundleZip, type WorkshopBundleExport } from '@/features/workshop/db/workshopDb';
 import { Building2, FolderOpen, Home, Layers, MapPin, Plus, Upload, Wrench } from 'lucide-react';
@@ -60,6 +60,31 @@ export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject,
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [importError, setImportError] = useState<string | null>(null);
     const [importing, setImporting] = useState(false);
+
+    const renovImportRef = useRef<HTMLInputElement>(null);
+    const [renovImporting, setRenovImporting] = useState(false);
+    const [renovImportError, setRenovImportError] = useState<string | null>(null);
+
+    async function handleRenovImport(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setRenovImporting(true);
+        setRenovImportError(null);
+        try {
+            const text = await file.text();
+            const project = JSON.parse(text) as ImportedProject;
+            if (!project.slug || !project.address || !project.geocode || !Array.isArray(project.candidates)) {
+                throw new Error('Keine gültige Renovierungsprojekt-Datei. Bitte eine mit generate_project_backup.py erzeugte JSON-Datei verwenden.');
+            }
+            saveProject(project);
+            onSelectRenovation(project.slug);
+        } catch (err) {
+            setRenovImportError(err instanceof Error ? err.message : 'Import fehlgeschlagen.');
+        } finally {
+            setRenovImporting(false);
+            if (renovImportRef.current) renovImportRef.current.value = '';
+        }
+    }
 
     async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -221,25 +246,44 @@ export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject,
                 <section className="ph-section">
                     <h2 className="ph-section-title">Projekt aus Backup wiederherstellen</h2>
                     <p className="ph-import-hint">
-                        Sie haben eine zuvor exportierte JSON-Backup-Datei? Laden Sie sie hier hoch — alle Notizen und Daten werden sofort wiederhergestellt.
+                        Workshop-Backup (ZIP/JSON) oder Renovierungsprojekt (JSON) hier hochladen — alle Daten werden sofort wiederhergestellt.
                     </p>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".zip,.json,application/zip,application/json"
-                        style={{ display: 'none' }}
-                        onChange={handleFileChange}
-                    />
-                    <button
-                        className="ph-import-btn"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={importing}
-                        type="button"
-                    >
-                        <Upload size={16} />
-                        {importing ? 'Wird importiert …' : 'JSON-Backup auswählen'}
-                    </button>
+                    <div className="ph-import-row">
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".zip,.json,application/zip,application/json"
+                            style={{ display: 'none' }}
+                            onChange={handleFileChange}
+                        />
+                        <button
+                            className="ph-import-btn"
+                            onClick={() => { setImportError(null); fileInputRef.current?.click(); }}
+                            disabled={importing}
+                            type="button"
+                        >
+                            <Upload size={16} />
+                            {importing ? 'Wird importiert …' : 'Workshop-Backup (ZIP/JSON)'}
+                        </button>
+                        <input
+                            ref={renovImportRef}
+                            type="file"
+                            accept=".json,application/json"
+                            style={{ display: 'none' }}
+                            onChange={handleRenovImport}
+                        />
+                        <button
+                            className="ph-import-btn ph-import-btn-renov"
+                            onClick={() => { setRenovImportError(null); renovImportRef.current?.click(); }}
+                            disabled={renovImporting}
+                            type="button"
+                        >
+                            <Upload size={16} />
+                            {renovImporting ? 'Wird importiert …' : 'Renovierungsprojekt (JSON)'}
+                        </button>
+                    </div>
                     {importError && <p className="ph-import-error">{importError}</p>}
+                    {renovImportError && <p className="ph-import-error">{renovImportError}</p>}
                 </section>
 
                 {/* ── Section: Supported regions info ── */}

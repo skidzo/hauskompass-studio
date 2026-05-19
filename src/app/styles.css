@@ -8752,6 +8752,24 @@ td {
   cursor: not-allowed;
 }
 
+.ph-import-btn-renov {
+  background: #1e2a22;
+  border-color: #3a5844;
+  color: #a8d0b0;
+}
+
+.ph-import-btn-renov:hover:not(:disabled) {
+  background: #253430;
+  border-color: #5a9870;
+}
+
+.ph-import-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
 .ph-import-error {
   margin-top: 0.5rem;
   font-size: 0.85rem;

@@ -24,14 +24,18 @@ function buildPolygonFeature(
     c: Lod2Candidate,
     properties: Record<string, unknown>,
 ) {
-    // Use the single largest ground surface — do NOT flatMap multiple surfaces
-    // into one ring, that creates a self-intersecting polygon which can cover
-    // the entire viewport as a large rectangle.
+    // Use the single largest ground surface by AREA (not point count) — 
+    // do NOT flatMap multiple surfaces into one ring, that creates a 
+    // self-intersecting polygon which can cover the entire viewport as 
+    // a large rectangle.
     const surface = c.surfaces.ground.reduce<(typeof c.surfaces.ground)[0] | null>(
-        (best, s) => (!best || s.points.length > best.points.length ? s : best),
+        (best, s) => (!best || s.areaM2 > best.areaM2 ? s : best),
         null,
     );
-    if (!surface || surface.points.length < 3) return null;
+    if (!surface || surface.points.length < 3) {
+        console.log(`[buildPolygonFeature] ${c.id}: rejected (no surface or <3 points)`);
+        return null;
+    }
 
     const pts = surface.points;
 
@@ -39,14 +43,29 @@ function buildPolygonFeature(
     // (guards against corrupted GML placeholder / bbox-as-geometry entries)
     const eVals = pts.map((p) => p.e);
     const nVals = pts.map((p) => p.n);
-    if (Math.max(...eVals) - Math.min(...eVals) > 1000) return null;
-    if (Math.max(...nVals) - Math.min(...nVals) > 1000) return null;
+    const eSpan = Math.max(...eVals) - Math.min(...eVals);
+    const nSpan = Math.max(...nVals) - Math.min(...nVals);
+    if (eSpan > 1000 || nSpan > 1000) {
+        console.log(`[buildPolygonFeature] ${c.id}: rejected (span too large: e=${eSpan}, n=${nSpan})`);
+        return null;
+    }
 
-    return {
+    const feature = {
         type: 'Feature' as const,
         properties,
         geometry: { type: 'Polygon' as const, coordinates: [toRing(pts)] },
     };
+    
+    console.log(`[buildPolygonFeature] ${c.id}: OK`, { 
+        surfaces: c.surfaces.ground.length, 
+        selectedSurface: surface.id, 
+        areaM2: surface.areaM2,
+        points: pts.length, 
+        eSpan, 
+        nSpan 
+    });
+    
+    return feature;
 }
 
 export function ImportedSiteMapPanel({
@@ -77,7 +96,7 @@ export function ImportedSiteMapPanel({
         // Always include all confirmed + up to 120 surrounding (performance)
         const surrounding = candidates.filter((c) => !confirmedSet.has(c.id)).slice(0, 120);
         const confirmed = candidates.filter((c) => confirmedSet.has(c.id));
-        return {
+        const geojson = {
             type: 'FeatureCollection' as const,
             features: [...confirmed, ...surrounding]
                 .map((c) => {
@@ -92,6 +111,21 @@ export function ImportedSiteMapPanel({
                 })
                 .filter((f): f is NonNullable<typeof f> => f !== null),
         };
+        
+        // DEBUG: Log features for inspection
+        console.log('allCandidatesGeoJSON built:', {
+            confirmed: confirmed.length,
+            surrounding: surrounding.length,
+            features: geojson.features.length,
+            sampleFeatures: geojson.features.slice(0, 3).map(f => ({
+                id: f.properties?.id,
+                confirmed: f.properties?.confirmed,
+                geomType: f.geometry.type,
+                coordsLength: (f.geometry.coordinates[0]?.length ?? 0),
+            })),
+        });
+        
+        return geojson;
     }, [candidates, confirmedIds, selectedId]);
 
     // Initial map bounds: fit all confirmed buildings

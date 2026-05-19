@@ -50,10 +50,13 @@ export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = n
     const objectRefs = useRef<THREE.Object3D[]>([]);
     const compassRef = useRef<SVGGElement>(null);
     const [sceneData, setSceneData] = useState<SpatialScene | null>(null);
+    const [sceneLoadState, setSceneLoadState] = useState<'loading' | 'ready' | 'unavailable'>('loading');
     useEffect(() => {
+        setSceneData(null);
+        setSceneLoadState('loading');
         fetchProjectJson<SpatialScene>(projectId, 'spatial_context.json')
-            .then((data) => setSceneData(data))
-            .catch((e) => console.error('[Workshop3D] Failed to load spatial context:', e));
+            .then((data) => { setSceneData(data); setSceneLoadState('ready'); })
+            .catch(() => setSceneLoadState('unavailable'));
     }, [projectId]);
     const [layers, setLayers] = useState<LayerState>({ terrain: true, buildingHulls: true, vegetation: true });
     const [activeObjectId, setActiveObjectId] = useState<string | null>(null);
@@ -319,7 +322,17 @@ export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = n
     return (
         <section className="ws-3d-workspace">
             <div className="ws-3d-viewport">
-                <div ref={wrapRef} className="ws-3d-canvas" />
+                {sceneLoadState === 'unavailable' ? (
+                    <div className="ws-3d-unavailable">
+                        <strong>Keine 3D-Szene verfügbar</strong>
+                        <p>
+                            Für dieses Projekt existiert keine räumliche Kontextdatei (<code>spatial_context.json</code>).
+                            Die 3D-Ansicht ist nur für Projekte mit vorkonfigurierten Geometriedaten verfügbar.
+                        </p>
+                    </div>
+                ) : (
+                    <div ref={wrapRef} className="ws-3d-canvas" />
+                )}
                 <div className="ws-3d-toolbar" role="toolbar" aria-label="Workshop 3D layer controls">
                     {(Object.keys(layers) as LayerKey[]).map((key) => (
                         <button

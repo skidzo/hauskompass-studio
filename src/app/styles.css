@@ -7122,6 +7122,37 @@ td {
   height: 100%;
 }
 
+.ws-3d-unavailable {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  text-align: center;
+  color: #8a9ba8;
+}
+
+.ws-3d-unavailable strong {
+  font-size: 1.05rem;
+  color: #b0bec5;
+}
+
+.ws-3d-unavailable p {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  max-width: 360px;
+}
+
+.ws-3d-unavailable code {
+  font-family: monospace;
+  background: #1e2a35;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+}
+
 .ws-3d-toolbar {
   position: absolute;
   top: 14px;

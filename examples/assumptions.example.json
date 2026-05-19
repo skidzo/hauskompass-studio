@@ -1,0 +1,26 @@
+[
+  {
+    "id": "assumption://example-renovation/roof-build-up-unknown",
+    "statement": "The existing roof build-up is unknown until opened or inspected from inside.",
+    "reason": "No verified construction-layer evidence exists in the fictional example dataset.",
+    "relatedObjectRefs": ["building://example-renovation/element/main-roof", "building://example-renovation/element/east-roof-surface"],
+    "evidenceRefs": ["evidence://example-renovation/roof-note-001"],
+    "confidence": "low",
+    "reviewStatus": "needs_review",
+    "needsExpertReview": true,
+    "createdAt": "2026-05-12T10:10:00Z",
+    "updatedAt": "2026-05-12T10:10:00Z"
+  },
+  {
+    "id": "assumption://example-renovation/wall-thickness-unknown",
+    "statement": "The north wall thickness is unknown and must be measured before insulation decisions.",
+    "reason": "The fictional example has no measured wall reveal or construction drawing.",
+    "relatedObjectRefs": ["building://example-renovation/element/north-wall"],
+    "evidenceRefs": ["evidence://example-renovation/site-visit-note-001"],
+    "confidence": "unknown",
+    "reviewStatus": "needs_review",
+    "needsExpertReview": false,
+    "createdAt": "2026-05-12T10:12:00Z",
+    "updatedAt": "2026-05-12T10:12:00Z"
+  }
+]

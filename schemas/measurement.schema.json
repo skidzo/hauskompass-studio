@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/measurement.schema.json",
+  "title": "Measurement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "assetInstanceId", "measurementType", "timestamp", "value", "unit", "method", "confidence", "sourceId"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^measurement://[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$" },
+    "assetInstanceId": { "type": "string" },
+    "measurementType": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "value": { "type": "number" },
+    "unit": { "type": "string" },
+    "method": { "type": "string" },
+    "confidence": { "type": "string", "enum": ["confirmed", "high", "medium", "low", "unknown"] },
+    "sourceId": { "type": "string" }
+  }
+}

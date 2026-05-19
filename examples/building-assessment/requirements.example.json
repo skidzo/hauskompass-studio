@@ -1,0 +1,36 @@
+[
+  {
+    "id": "requirement://example-renovation/roof-insulation-uvalue-target",
+    "appliesTo": [
+      "building://example-renovation/element/part1-main-roof-existing",
+      "asset://example-renovation/instance/planned-roof-insulation-part1"
+    ],
+    "requirementType": "thermal",
+    "description": "Fictional roof insulation planning target. Final value must be replaced by applicable local design and code requirements before real decisions.",
+    "minValue": 0,
+    "maxValue": 0.24,
+    "unit": "W_per_m2K",
+    "source": "fictional planning placeholder",
+    "priority": "high",
+    "validationStatus": "pending",
+    "evidenceIds": ["evidence://example-renovation/datasheet-insulation-placeholder"],
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"]
+  },
+  {
+    "id": "requirement://example-renovation/pv-placement-maintenance-setback",
+    "appliesTo": [
+      "building://example-renovation/element/part1-main-roof-existing",
+      "asset://example-renovation/instance/planned-pv-array-east-roof"
+    ],
+    "requirementType": "pv_placement",
+    "description": "Fictional PV placement requirement requiring safety setbacks, window/penetration clearance and maintenance access zones before a module layout is accepted.",
+    "minValue": 0.5,
+    "maxValue": 999,
+    "unit": "m_clearance",
+    "source": "project planning rule placeholder",
+    "priority": "high",
+    "validationStatus": "pending",
+    "evidenceIds": ["evidence://example-renovation/photo-roof-overview-001"],
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"]
+  }
+]

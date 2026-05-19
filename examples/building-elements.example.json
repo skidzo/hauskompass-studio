@@ -1,0 +1,45 @@
+[
+  {
+    "id": "building://example-renovation/element/main-roof",
+    "type": "roof",
+    "name": "Main roof",
+    "description": "Fictional pitched roof element used as parent for roof surface placeholders.",
+    "location": "fictional main house roof zone",
+    "geometryRef": "geometry://example-renovation/local-placeholder/main-roof",
+    "linkedAssetIds": [],
+    "evidenceIds": ["evidence://example-renovation/roof-note-001"],
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"],
+    "assumptionIds": ["assumption://example-renovation/roof-build-up-unknown"],
+    "confidence": "medium",
+    "status": "existing"
+  },
+  {
+    "id": "building://example-renovation/element/east-roof-surface",
+    "type": "roof_surface",
+    "name": "East roof surface",
+    "description": "Fictional roof surface placeholder for PV and weather assessment examples.",
+    "location": "fictional east-facing roof plane",
+    "geometryRef": "geometry://example-renovation/local-placeholder/east-roof-surface",
+    "parentId": "building://example-renovation/element/main-roof",
+    "linkedAssetIds": [],
+    "evidenceIds": ["evidence://example-renovation/roof-note-001"],
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"],
+    "assumptionIds": ["assumption://example-renovation/roof-build-up-unknown"],
+    "confidence": "medium",
+    "status": "existing"
+  },
+  {
+    "id": "building://example-renovation/element/north-wall",
+    "type": "wall",
+    "name": "North wall",
+    "description": "Fictional wall placeholder for moisture-risk assessment examples.",
+    "location": "fictional north-facing wall zone",
+    "geometryRef": "geometry://example-renovation/local-placeholder/north-wall",
+    "linkedAssetIds": [],
+    "evidenceIds": ["evidence://example-renovation/site-visit-note-001"],
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"],
+    "assumptionIds": ["assumption://example-renovation/wall-thickness-unknown"],
+    "confidence": "low",
+    "status": "unknown"
+  }
+]

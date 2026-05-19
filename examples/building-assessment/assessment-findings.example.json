@@ -1,0 +1,36 @@
+[
+  {
+    "id": "finding://example-renovation/roof-moisture-monitoring-gap",
+    "title": "Roof insulation decision needs moisture-monitoring evidence",
+    "findingType": "missing_information",
+    "description": "Fictional issue showing how a roof insulation requirement, a planned humidity sensor, roof evidence and a future decision can be linked before full BCF support exists.",
+    "status": "open",
+    "severity": "medium",
+    "priority": "high",
+    "relatedBuildingElementIds": ["building://example-renovation/element/part1-main-roof-existing"],
+    "relatedAssetInstanceIds": [
+      "asset://example-renovation/instance/planned-roof-insulation-part1",
+      "asset://example-renovation/instance/planned-attic-humidity-sensor-01"
+    ],
+    "evidenceIds": ["evidence://example-renovation/photo-roof-overview-001"],
+    "requirementIds": ["requirement://example-renovation/roof-insulation-uvalue-target"],
+    "decisionIds": ["decision://example-renovation/roof-insulation-strategy"],
+    "location": {
+      "description": "Fictional Part 1 attic / roof interface; no real coordinates committed.",
+      "geometryRef": "geometry://example-renovation/part1/attic-zone"
+    },
+    "viewpoint": {
+      "description": "Internal BCF-like pointer to the roof overview photo used for discussion.",
+      "snapshotRef": "evidence://example-renovation/photo-roof-overview-001",
+      "cameraRef": "viewpoint://example-renovation/fictional-roof-overview"
+    },
+    "createdAt": "2026-05-12T12:30:00Z",
+    "updatedAt": "2026-05-12T12:30:00Z",
+    "assignedTo": "unassigned",
+    "notes": [
+      "Do not resolve the roof insulation decision until roof build-up, ventilation path and moisture-monitoring strategy are verified.",
+      "This is an internal issue model inspired by BCF, not a BCF exchange file."
+    ],
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"]
+  }
+]

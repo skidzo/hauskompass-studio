@@ -1,0 +1,27 @@
+[
+  {
+    "id": "decision://example-renovation/roof-insulation-strategy",
+    "title": "Choose roof insulation strategy",
+    "decisionArea": "roof insulation",
+    "description": "Fictional placeholder decision for comparing interior, exterior, and deferred insulation strategies.",
+    "alternatives": ["Exterior insulation", "Interior insulation", "Defer until roof opening"],
+    "relatedObjectRefs": ["building://example-renovation/element/main-roof"],
+    "evidenceRefs": ["evidence://example-renovation/roof-note-001"],
+    "assumptionRefs": ["assumption://example-renovation/roof-build-up-unknown"],
+    "risks": ["Choosing a build-up before verifying existing layers may trap moisture."],
+    "status": "draft"
+  },
+  {
+    "id": "decision://example-renovation/moisture-control-priority",
+    "title": "Set moisture-control priority",
+    "decisionArea": "moisture control",
+    "description": "Fictional placeholder decision for prioritizing inspection of a weather-exposed wall.",
+    "alternatives": ["Inspect before design", "Proceed with generic repair allowance"],
+    "selectedOption": "Inspect before design",
+    "relatedObjectRefs": ["building://example-renovation/element/north-wall"],
+    "evidenceRefs": ["evidence://example-renovation/site-visit-note-001"],
+    "assumptionRefs": ["assumption://example-renovation/wall-thickness-unknown"],
+    "risks": ["Moisture source may be misclassified without field evidence."],
+    "status": "needs_review"
+  }
+]

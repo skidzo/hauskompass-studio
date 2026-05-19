@@ -1,0 +1,27 @@
+{
+    "_comment": "Per-project constants for the data generation pipeline. Replace all fields for a new property.",
+    "cacheSlug": "retrieval_YYYYMMDD_project_slug",
+    "dgmTile": "000_0000",
+    "targetEasting": 0,
+    "targetNorthing": 0,
+    "mapElevationM": 0,
+    "confirmedLod2Ids": [
+        "LOD2_PRIMARY_BUILDING_ID"
+    ],
+    "referenceLod2Ids": [
+        "LOD2_REFERENCE_BUILDING_ID"
+    ],
+    "ifc": {
+        "part1RoofSurfaceIds": {
+            "eastMain": "SURFACE_ID",
+            "westMain": "SURFACE_ID",
+            "erker": "SURFACE_ID"
+        },
+        "part2RoofSurfaceIds": {
+            "westLow1": "SURFACE_ID",
+            "westLow2": "SURFACE_ID",
+            "westMain": "SURFACE_ID",
+            "eastMain": "SURFACE_ID"
+        }
+    }
+}

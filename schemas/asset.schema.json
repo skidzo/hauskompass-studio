@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/asset.schema.json",
+  "title": "Asset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "assetType", "name", "relatedBuildingElementRefs", "documents", "aasLiteSubmodels", "evidenceRefs", "confidence", "status"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^asset://[a-z0-9][a-z0-9-]*/[a-z0-9-]+/[a-z0-9][a-z0-9-]*$" },
+    "assetType": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "manufacturer": { "type": "string" },
+    "model": { "type": "string" },
+    "installationDate": { "type": "string" },
+    "relatedBuildingElementRefs": { "type": "array", "items": { "type": "string" } },
+    "documents": { "type": "array", "items": { "type": "string" } },
+    "aasLiteSubmodels": { "type": "array", "items": { "type": "object" } },
+    "evidenceRefs": { "type": "array", "items": { "type": "string" } },
+    "confidence": { "type": "string", "enum": ["confirmed", "high", "medium", "low", "unknown"] },
+    "status": { "type": "string", "enum": ["draft", "needs_review", "verified", "superseded", "rejected", "archived"] }
+  }
+}

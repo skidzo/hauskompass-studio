@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/asset-instance.schema.json",
+  "title": "AssetInstance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "assetTypeId", "name", "status", "locationRef", "buildingElementRefs", "serialNumber", "installationDate", "warrantyStart", "warrantyEnd", "condition", "maintenanceEvents", "measurementRefs", "evidenceIds", "sourceIds"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^asset://[a-z0-9][a-z0-9-]*/instance/[a-z0-9][a-z0-9-]*$" },
+    "assetTypeId": { "type": "string" },
+    "name": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["existing", "planned", "installed", "removed", "replaced", "unknown"] },
+    "locationRef": { "type": "string" },
+    "buildingElementRefs": { "type": "array", "items": { "type": "string" } },
+    "serialNumber": { "type": "string" },
+    "installationDate": { "type": "string" },
+    "warrantyStart": { "type": "string" },
+    "warrantyEnd": { "type": "string" },
+    "condition": { "type": "string" },
+    "maintenanceEvents": { "type": "array", "items": { "type": "object" } },
+    "measurementRefs": { "type": "array", "items": { "type": "string" } },
+    "evidenceIds": { "type": "array", "items": { "type": "string" } },
+    "sourceIds": { "type": "array", "items": { "type": "string" } }
+  }
+}

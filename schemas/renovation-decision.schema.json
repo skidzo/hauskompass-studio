@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/renovation-decision.schema.json",
+  "title": "RenovationDecision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "title", "decisionArea", "description", "alternatives", "relatedObjectRefs", "evidenceRefs", "assumptionRefs", "risks", "status"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^decision://[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$" },
+    "title": { "type": "string", "minLength": 1 },
+    "decisionArea": {
+      "type": "string",
+      "enum": ["roof insulation", "PV placement", "roof extension", "wall removal", "structural preservation", "heating", "moisture control", "facade", "basement", "indoor comfort", "budget", "permitting"]
+    },
+    "description": { "type": "string", "minLength": 1 },
+    "alternatives": { "type": "array", "items": { "type": "string" } },
+    "selectedOption": { "type": "string" },
+    "relatedObjectRefs": { "type": "array", "items": { "type": "string" } },
+    "evidenceRefs": { "type": "array", "items": { "type": "string" } },
+    "assumptionRefs": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "status": { "type": "string", "enum": ["draft", "needs_review", "verified", "superseded", "rejected", "archived"] },
+    "decisionDate": { "type": "string" }
+  }
+}

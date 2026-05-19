@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/requirement.schema.json",
+  "title": "Requirement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "appliesTo", "requirementType", "description", "minValue", "maxValue", "unit", "source", "priority", "validationStatus"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^requirement://[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$" },
+    "appliesTo": { "type": "array", "items": { "type": "string" } },
+    "requirementType": {
+      "type": "string",
+      "enum": ["thermal", "moisture", "pv_placement", "safety", "maintenance", "evidence", "deconstruction", "sustainability", "other"]
+    },
+    "description": { "type": "string" },
+    "minValue": { "type": "number" },
+    "maxValue": { "type": "number" },
+    "unit": { "type": "string" },
+    "source": { "type": "string" },
+    "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+    "validationStatus": { "type": "string", "enum": ["unknown", "pending", "passed", "failed", "not_applicable"] },
+    "evidenceIds": { "type": "array", "items": { "type": "string" } },
+    "sourceIds": { "type": "array", "items": { "type": "string" } }
+  }
+}

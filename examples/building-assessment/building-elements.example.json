@@ -1,0 +1,41 @@
+[
+  {
+    "id": "building://example-renovation/element/part1-main-roof-existing",
+    "type": "roof",
+    "name": "Part 1 existing main roof",
+    "description": "Fictional existing roof element representing the assessed main-house roof context. Product and sensor details are linked as asset instances, not duplicated here.",
+    "location": "Part 1 upper envelope, fictional placeholder orientation",
+    "geometryRef": "geometry://example-renovation/part1/main-roof",
+    "status": "existing",
+    "linkedAssetIds": [
+      "asset://example-renovation/instance/planned-roof-insulation-part1",
+      "asset://example-renovation/instance/planned-pv-array-east-roof",
+      "asset://example-renovation/instance/planned-attic-humidity-sensor-01"
+    ],
+    "evidenceIds": ["evidence://example-renovation/photo-roof-overview-001"],
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"],
+    "assumptionIds": [],
+    "reuse": {
+      "reusePotential": "unknown until roof build-up and timber condition are verified"
+    },
+    "confidence": "medium"
+  },
+  {
+    "id": "building://example-renovation/element/retained-visible-timber-beam-01",
+    "type": "beam",
+    "name": "Retained visible timber beam",
+    "description": "Fictional retained timber beam used to show lifecycle state and deconstruction/reuse classification without embedding a product specification.",
+    "location": "Part 1 attic, representative visible timber zone",
+    "geometryRef": "geometry://example-renovation/part1/attic/beam-01",
+    "status": "retained",
+    "linkedAssetIds": [],
+    "evidenceIds": ["evidence://example-renovation/photo-roof-overview-001"],
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"],
+    "assumptionIds": [],
+    "reuse": {
+      "classification": "existing and retained",
+      "reusePotential": "retain in place if later inspection confirms condition"
+    },
+    "confidence": "low"
+  }
+]

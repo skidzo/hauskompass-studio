@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/evidence-document.schema.json",
+  "title": "EvidenceDocument",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "title", "filePath", "sourceDate", "capturedAt", "relatedBuildingElementIds", "relatedAssetInstanceIds", "notes"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^evidence://[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9-]*$" },
+    "type": { "type": "string", "enum": ["photo", "pdf", "scan", "manual", "quote", "invoice", "datasheet", "inspection", "note"] },
+    "title": { "type": "string", "minLength": 1 },
+    "filePath": { "type": "string" },
+    "sourceDate": { "type": "string" },
+    "capturedAt": { "type": "string", "format": "date-time" },
+    "relatedBuildingElementIds": { "type": "array", "items": { "type": "string" } },
+    "relatedAssetInstanceIds": { "type": "array", "items": { "type": "string" } },
+    "notes": { "type": "string" },
+    "sourceIds": { "type": "array", "items": { "type": "string" } }
+  }
+}

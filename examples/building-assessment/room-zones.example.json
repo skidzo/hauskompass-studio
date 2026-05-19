@@ -1,0 +1,17 @@
+[
+  {
+    "id": "zone://example-renovation/part1-attic-monitoring-zone",
+    "name": "Part 1 attic monitoring zone",
+    "floor": "attic",
+    "function": "Roof structure inspection, future moisture monitoring and insulation planning context",
+    "geometryRef": "geometry://example-renovation/part1/attic-zone",
+    "environmentalRequirements": {
+      "humidityMonitoring": "required after roof insulation intervention",
+      "temperatureMonitoring": "recommended",
+      "ventilationAssumption": "unknown until site visit"
+    },
+    "linkedAssetIds": ["asset://example-renovation/instance/planned-attic-humidity-sensor-01"],
+    "evidenceIds": ["evidence://example-renovation/photo-roof-overview-001"],
+    "sourceIds": ["source://uploaded/bim-aas-renovation-guideline"]
+  }
+]

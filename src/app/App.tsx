@@ -34,12 +34,14 @@ import { TerrainCrossSectionEWPanel } from '@/features/terrain/TerrainCrossSecti
 import { TerrainCrossSectionPanel } from '@/features/terrain/TerrainCrossSectionPanel';
 import { TerrainSamplingPanel } from '@/features/terrain/TerrainSamplingPanel';
 import { LoD2SurfaceViewer } from '@/features/three-viewer/LoD2SurfaceViewer';
+import { WorkshopQuickStartDialog } from '@/features/workshop/WorkshopQuickStartDialog';
 import { WorkshopRoute, type WorkshopFocusRequest } from '@/features/workshop/WorkshopRoute';
 import { BulkImportPanel } from '@/features/workshop/components/BulkImportPanel';
 import { GpsMetadataPanel } from '@/features/workshop/components/GpsMetadataPanel';
 import { Workshop3DPanel } from '@/features/workshop/components/Workshop3DPanel';
 import { WorkshopMapPanel } from '@/features/workshop/components/WorkshopMapPanel';
 import { seedProject } from '@/features/workshop/db/seedLoader';
+import { type QuickStartResult } from '@/features/workshop/db/workshopDb';
 import { useGpsAssets, useZones } from '@/features/workshop/hooks/useWorkshopData';
 import { BrainCircuit, Building2, CheckCircle2, Circle, ClipboardList, Combine, Compass, Database, FolderOpen, Home, Layers, MapPinned, Mountain, Play, Plus, ShieldCheck, Upload, Wrench, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -73,6 +75,7 @@ function HauskompassApp() {
     activeProject ? 'renovation' : 'home',
   );
   const [showNewProject, setShowNewProject] = useState(false);
+  const [showWorkshopQuickStart, setShowWorkshopQuickStart] = useState(false);
   const [activeWorkshopProject, setActiveWorkshopProject] = useState<BuiltinProject | null>(null);
 
   const goHome = () => setAppMode('home');
@@ -92,6 +95,21 @@ function HauskompassApp() {
     setAppMode('renovation');
   };
 
+  const handleQuickStartWorkshop = (result: QuickStartResult) => {
+    setShowWorkshopQuickStart(false);
+    setActiveWorkshopProject({
+      id: result.projectId,
+      projectId: result.projectId,
+      siteId: result.siteId,
+      title: result.title,
+      subtitle: 'Schnell-Start',
+      type: 'workshop',
+      location: '',
+      description: '',
+    });
+    setAppMode('workshop');
+  };
+
   // Workshop full-screen mode
   if (appMode === 'workshop') {
     return <WorkshopApp onGoHome={goHome} project={activeWorkshopProject} />;
@@ -101,6 +119,12 @@ function HauskompassApp() {
   if (appMode === 'home') {
     return (
       <>
+        {showWorkshopQuickStart && (
+          <WorkshopQuickStartDialog
+            onStarted={handleQuickStartWorkshop}
+            onClose={() => setShowWorkshopQuickStart(false)}
+          />
+        )}
         {showNewProject && (
           <NewProjectWizard
             onClose={() => setShowNewProject(false)}
@@ -115,6 +139,7 @@ function HauskompassApp() {
           onSelectBuiltin={handleSelectBuiltin}
           onSelectRenovation={handleSelectRenovation}
           onNewProject={() => setShowNewProject(true)}
+          onStartWorkshop={() => setShowWorkshopQuickStart(true)}
         />
       </>
     );

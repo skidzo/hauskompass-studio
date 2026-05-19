@@ -1,5 +1,9 @@
 # Changelog
 
+- **Laien-Usability: Workshop-Schnellstart**: "Workshop starten"-CTA auf Startseite, `WorkshopQuickStartDialog` (nur Name → sofort Zonen + Struktur, keine Pipeline), `createQuickStartWorkshop()` in IndexedDB, ObservationForm vereinfacht (Konfidenz/Sensitivität hinter "Weitere Optionen"), 14 neue Usability-Tests (LW-01–LW-06). Build: 0 TS-Fehler, 1705 Module.
+
+- **GitHub-Readiness**: Standalone Git-Repo in `apps/hauskompass-studio/` initialisiert (Branch `main`), erster öffentlicher Commit `5d243b9` mit 272 Dateien. Alle privaten Strings aus src/ + docs/ bereinigt (0 Treffer), project-spezifische Scripts (find-local-media-eiermann, generate-eiermann-spatial-context) gitignored, build_output-Logs gitignored, docs/RELEASE_DECISION.md + initial_repository_assessment.md + ADR-0003 generalisiert.
+
 - Release-Readiness Cleanup: alle privaten Projekt-Strings aus src/ entfernt (Schönseer, Oberviechtach, Eiermann-IDs, /home/johannes-Pfade), seedLoader.ts generalisiert (seedProject/isProjectSeeded/clearProjectSeed), generated-Dateien durch leere Stubs ersetzt, public/projects/index.json auf [], .gitignore um output/, public/local-media/, examples/eiermann/, private Docs ergänzt. Build: 0 TS-Fehler, 1704 Module.
 
 - Codex-Session 019e3bed vorbereitet: RELEASE_DECISION.md (NEEDS_CLEANUP, 10 priorisierte Schritte), ADR-0003-python-utility-layer.md (Entscheidung: Option B — utils/py/ CLI-Layer), Code-Review-Befunde dokumentiert (seedLoader Eiermann-spezifisch: major; Utils: minor)

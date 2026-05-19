@@ -9,7 +9,7 @@
 
 import { listProjects, loadProject } from '@/features/project-store/projectStore';
 import type { ImportedProject } from '@/features/project-store/types';
-import { Building2, FolderOpen, Home, MapPin, Plus, Wrench } from 'lucide-react';
+import { Building2, FolderOpen, Home, Layers, MapPin, Plus, Wrench } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 // ── Built-in pre-existing projects ──────────────────────────────────────────
@@ -48,11 +48,12 @@ interface ProjectHomeProps {
     onSelectBuiltin: (project: BuiltinProject) => void;
     onSelectRenovation: (slug: string) => void;
     onNewProject: () => void;
+    onStartWorkshop: () => void;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject }: ProjectHomeProps) {
+export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject, onStartWorkshop }: ProjectHomeProps) {
     const builtinProjects = useBuiltinProjects();
     const savedProjects = useMemo<ImportedProject[]>(() => {
         return listProjects()
@@ -67,11 +68,24 @@ export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject 
                 <p className="ph-tagline">
                     Workshop-Dokumentation &amp; Renovierungsplanung
                 </p>
-                <p className="ph-geo-note">
-                    Neue Projekte werden für Adressen in{' '}
-                    <strong>Bayern</strong> und{' '}
-                    <strong>Baden-Württemberg</strong> unterstützt.
-                </p>
+
+                {/* ── Quick-Start CTA für Workshop-Teilnehmer ── */}
+                <div className="ph-quickstart-banner">
+                    <div className="ph-quickstart-text">
+                        <strong>Workshop dokumentieren?</strong>
+                        <span>
+                            Kein Setup, kein technisches Vorwissen — einfach loslegen.
+                        </span>
+                    </div>
+                    <button
+                        className="ph-quickstart-btn"
+                        onClick={onStartWorkshop}
+                        type="button"
+                    >
+                        <Layers size={18} />
+                        Workshop starten
+                    </button>
+                </div>
             </header>
 
             <div className="ph-content">

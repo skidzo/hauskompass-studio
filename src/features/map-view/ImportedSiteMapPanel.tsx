@@ -56,40 +56,28 @@ export function ImportedSiteMapPanel({
         () => candidates.filter((c) => confirmedSet.has(c.id)),
         [candidates, confirmedIds],
     );
-    const surroundingCandidates = useMemo(
-        () => candidates.filter((c) => !confirmedSet.has(c.id)),
-        [candidates, confirmedIds],
-    );
 
-    const confirmedGeoJSON = useMemo(
-        () => ({
+    // Single source for all buildings — avoids visual flash when toggling
+    const allCandidatesGeoJSON = useMemo(() => {
+        // Always include all confirmed + up to 80 surrounding (performance)
+        const surrounding = candidates.filter((c) => !confirmedSet.has(c.id)).slice(0, 80);
+        const confirmed = candidates.filter((c) => confirmedSet.has(c.id));
+        return {
             type: 'FeatureCollection' as const,
-            features: confirmedCandidates
-                .map((c, idx) =>
-                    buildPolygonFeature(c, idx, {
+            features: [...confirmed, ...surrounding]
+                .map((c, idx) => {
+                    const isConfirmed = confirmedSet.has(c.id);
+                    const rank = confirmedIds.indexOf(c.id);
+                    return buildPolygonFeature(c, idx, {
                         id: c.id,
-                        label: `T${idx + 1}`,
-                        // Use number 1/0 instead of boolean — MapLibre case-expressions
-                        // with raw boolean false can silently fail in some versions.
+                        confirmed: isConfirmed ? 1 : 0,
                         selected: c.id === selectedId ? 1 : 0,
-                        kind: 'confirmed',
-                    }),
-                )
+                        label: isConfirmed && rank >= 0 ? `T${rank + 1}` : '',
+                    });
+                })
                 .filter((f): f is NonNullable<typeof f> => f !== null),
-        }),
-        [confirmedCandidates, selectedId],
-    );
-
-    const surroundingGeoJSON = useMemo(
-        () => ({
-            type: 'FeatureCollection' as const,
-            features: surroundingCandidates
-                .slice(0, 80)
-                .map((c, idx) => buildPolygonFeature(c, idx, { id: c.id, kind: 'surrounding' }))
-                .filter((f): f is NonNullable<typeof f> => f !== null),
-        }),
-        [surroundingCandidates],
-    );
+        };
+    }, [candidates, confirmedIds, selectedId]);
 
     // Initial map bounds: fit all confirmed buildings
     const initialBounds = useMemo((): BBox => {
@@ -118,15 +106,14 @@ export function ImportedSiteMapPanel({
         if (!f) return;
         const id = f.properties?.id as string | undefined;
         if (!id) return;
-        const kind = f.properties?.kind as string | undefined;
+        const isConfirmed = (f.properties?.confirmed as number | undefined) === 1;
 
         if (onUpdateProject) {
-            // Toggle confirmed status
-            const newConfirmedIds = kind === 'confirmed'
-                ? confirmedIds.filter((cid) => cid !== id)   // remove
-                : [...confirmedIds, id];                      // add
+            const newConfirmedIds = isConfirmed
+                ? confirmedIds.filter((cid) => cid !== id)   // abwählen
+                : [...confirmedIds, id];                      // auswählen
             onUpdateProject({ ...project, confirmedIds: newConfirmedIds });
-        } else if (onSelectCandidate && kind === 'confirmed') {
+        } else if (onSelectCandidate && isConfirmed) {
             onSelectCandidate(id);
         }
     }
@@ -141,7 +128,7 @@ export function ImportedSiteMapPanel({
                     }}
                     mapStyle={MAP_STYLE}
                     style={{ width: '100%', height: '100%', cursor }}
-                    interactiveLayerIds={['confirmed-fill', 'surrounding-fill']}
+                    interactiveLayerIds={['buildings-fill']}
                     onClick={handleMapClick}
                     onMouseEnter={() => setCursor('pointer')}
                     onMouseLeave={() => setCursor('auto')}
@@ -149,48 +136,53 @@ export function ImportedSiteMapPanel({
                     <NavigationControl position="top-right" showCompass visualizePitch />
                     <ScaleControl position="bottom-left" unit="metric" />
 
-                    {/* Umgebungsgebäude aus LoD2 */}
-                    <Source id="surrounding" type="geojson" data={surroundingGeoJSON}>
+                    {/* Alle LoD2-Gebäude — Farbe wechselt per Case-Ausdruck,
+                        kein Quellen-Wechsel beim Umschalten */}
+                    <Source id="buildings" type="geojson" data={allCandidatesGeoJSON}>
                         <Layer
-                            id="surrounding-fill"
-                            type="fill"
-                            paint={{ 'fill-color': '#b8c5b2', 'fill-opacity': 0.25 }}
-                        />
-                        <Layer
-                            id="surrounding-outline"
-                            type="line"
-                            paint={{ 'line-color': '#7a9084', 'line-width': 1 }}
-                        />
-                    </Source>
-
-                    {/* Bestätigte Gebäude — gleiche graue Grundfläche wie Umgebung,
-                        grüner Rand kennzeichnet Zugehörigkeit zum Projekt */}
-                    <Source id="confirmed" type="geojson" data={confirmedGeoJSON}>
-                        <Layer
-                            id="confirmed-fill"
+                            id="buildings-fill"
                             type="fill"
                             paint={{
-                                'fill-color': '#b8c5b2',
+                                'fill-color': [
+                                    'case',
+                                    ['all', ['==', ['get', 'confirmed'], 1], ['==', ['get', 'selected'], 1]],
+                                    '#8ab592',
+                                    ['==', ['get', 'confirmed'], 1],
+                                    '#9dba9f',
+                                    '#b8c5b2',
+                                ],
                                 'fill-opacity': [
                                     'case',
-                                    ['==', ['get', 'selected'], 1],
-                                    0.55,
-                                    0.38,
+                                    ['==', ['get', 'confirmed'], 1],
+                                    0.48,
+                                    0.25,
                                 ],
                             }}
                         />
                         <Layer
-                            id="confirmed-outline"
+                            id="buildings-outline"
                             type="line"
                             paint={{
-                                'line-color': '#23614b',
-                                'line-width': ['case', ['==', ['get', 'selected'], 1], 3.5, 2.5],
-                                'line-opacity': 1,
+                                'line-color': [
+                                    'case',
+                                    ['==', ['get', 'confirmed'], 1],
+                                    '#23614b',
+                                    '#7a9084',
+                                ],
+                                'line-width': [
+                                    'case',
+                                    ['all', ['==', ['get', 'confirmed'], 1], ['==', ['get', 'selected'], 1]],
+                                    3,
+                                    ['==', ['get', 'confirmed'], 1],
+                                    2,
+                                    1,
+                                ],
                             }}
                         />
                         <Layer
-                            id="confirmed-labels"
+                            id="buildings-labels"
                             type="symbol"
+                            filter={['==', ['get', 'confirmed'], 1]}
                             layout={{
                                 'text-field': ['get', 'label'],
                                 'text-size': 13,
@@ -208,7 +200,7 @@ export function ImportedSiteMapPanel({
 
                 {onUpdateProject && (
                     <div className="map-edit-hint">
-                        <span className="map-hint-confirmed">■ Grüner Rand = Projektgebäude</span>
+                        <span className="map-hint-confirmed">■ Grüngrau = Projektgebäude</span>
                         <span className="map-hint-sep">·</span>
                         <span>Klick → auswählen / abwählen</span>
                     </div>

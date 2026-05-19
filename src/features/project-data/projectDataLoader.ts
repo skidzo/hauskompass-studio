@@ -38,9 +38,9 @@ async function loadProjectIndex(): Promise<ProjectIndexEntry[]> {
 
 export async function resolveRuntimeProjectConfig(projectId: string): Promise<RuntimeProjectConfig> {
     const projectIndex = await loadProjectIndex();
-    const fromIndex = projectIndex.find((entry) => entry.projectId === projectId && entry.siteId && entry.slug && entry.mediaManifestUrl);
-    if (fromIndex?.siteId && fromIndex.slug && fromIndex.mediaManifestUrl) {
-        return { projectId, siteId: fromIndex.siteId, slug: fromIndex.slug, mediaManifestUrl: fromIndex.mediaManifestUrl };
+    const fromIndex = projectIndex.find((entry) => entry.projectId === projectId && entry.siteId && entry.slug);
+    if (fromIndex?.siteId && fromIndex.slug) {
+        return { projectId, siteId: fromIndex.siteId, slug: fromIndex.slug, mediaManifestUrl: fromIndex.mediaManifestUrl ?? '' };
     }
 
     const fallback = RUNTIME_PROJECTS_FALLBACK.find((entry) => entry.projectId === projectId);

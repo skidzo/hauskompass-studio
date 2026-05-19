@@ -24,8 +24,24 @@ function buildPolygonFeature(
     c: Lod2Candidate,
     properties: Record<string, unknown>,
 ) {
-    const pts = c.surfaces.ground.flatMap((s) => s.points);
-    if (pts.length < 3) return null;
+    // Use the single largest ground surface — do NOT flatMap multiple surfaces
+    // into one ring, that creates a self-intersecting polygon which can cover
+    // the entire viewport as a large rectangle.
+    const surface = c.surfaces.ground.reduce<(typeof c.surfaces.ground)[0] | null>(
+        (best, s) => (!best || s.points.length > best.points.length ? s : best),
+        null,
+    );
+    if (!surface || surface.points.length < 3) return null;
+
+    const pts = surface.points;
+
+    // Sanity-check: reject polygons whose UTM bounding box exceeds 1 km
+    // (guards against corrupted GML placeholder / bbox-as-geometry entries)
+    const eVals = pts.map((p) => p.e);
+    const nVals = pts.map((p) => p.n);
+    if (Math.max(...eVals) - Math.min(...eVals) > 1000) return null;
+    if (Math.max(...nVals) - Math.min(...nVals) > 1000) return null;
+
     return {
         type: 'Feature' as const,
         properties,
@@ -135,9 +151,9 @@ export function ImportedSiteMapPanel({
                     <NavigationControl position="top-right" showCompass visualizePitch />
                     <ScaleControl position="bottom-left" unit="metric" />
 
-                    {/* Alle LoD2-Gebäude — Farbe wechselt per Case-Ausdruck,
-                        kein Quellen-Wechsel beim Umschalten */}
-                    <Source id="buildings" type="geojson" data={allCandidatesGeoJSON}>
+                    {/* Alle LoD2-Gebäude — promoteId='id' sorgt für stabile Feature-Identität
+                        beim setData()-Update, verhindert Re-Render-Flash */}
+                    <Source id="buildings" type="geojson" data={allCandidatesGeoJSON} promoteId="id">
                         <Layer
                             id="buildings-fill"
                             type="fill"

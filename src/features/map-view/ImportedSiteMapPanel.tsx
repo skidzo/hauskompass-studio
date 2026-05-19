@@ -346,27 +346,36 @@ export function ImportedSiteMapPanel({
         const map = mapRef.current.getMap?.();
         if (!map) return;
 
-        console.log('[useEffect] Setting up buildings source and layers', {
+        console.log('[useEffect] Updating buildings source and layers', {
             mapLoaded,
             allCandidatesGeoJSON: allCandidatesGeoJSON.features.length,
         });
 
-        // Add or update source
-        if (!map.getSource('buildings')) {
+        // WORKAROUND: Delete and recreate source/layers instead of using setData()
+        // This seems to avoid a MapLibre rendering bug that happens with setData()
+        try {
+            // Remove layers (must remove in correct order due to dependencies)
+            if (map.getLayer('buildings-labels')) map.removeLayer('buildings-labels');
+            if (map.getLayer('buildings-outline')) map.removeLayer('buildings-outline');
+            if (map.getLayer('buildings-fill')) map.removeLayer('buildings-fill');
+            
+            // Remove source
+            if (map.getSource('buildings')) map.removeSource('buildings');
+            
+            console.log('[MapLibre] Removed old source and layers');
+        } catch (err) {
+            console.warn('[MapLibre] Error removing source/layers:', err);
+        }
+
+        // Now add fresh source and layers
+        try {
             map.addSource('buildings', {
                 type: 'geojson',
                 data: allCandidatesGeoJSON,
                 promoteId: 'id',
             });
-            console.log('[MapLibre] Source "buildings" created');
-        } else {
-            // Update existing source data
-            (map.getSource('buildings') as any).setData(allCandidatesGeoJSON);
-            console.log('[MapLibre] Source "buildings" updated with', allCandidatesGeoJSON.features.length, 'features');
-        }
+            console.log('[MapLibre] Source "buildings" created fresh');
 
-        // Add layers if they don't exist
-        if (!map.getLayer('buildings-fill')) {
             map.addLayer({
                 id: 'buildings-fill',
                 type: 'fill',
@@ -377,9 +386,7 @@ export function ImportedSiteMapPanel({
                 },
             });
             console.log('[MapLibre] Layer "buildings-fill" created');
-        }
 
-        if (!map.getLayer('buildings-outline')) {
             map.addLayer({
                 id: 'buildings-outline',
                 type: 'line',
@@ -390,9 +397,7 @@ export function ImportedSiteMapPanel({
                 },
             });
             console.log('[MapLibre] Layer "buildings-outline" created');
-        }
 
-        if (!map.getLayer('buildings-labels')) {
             map.addLayer({
                 id: 'buildings-labels',
                 type: 'symbol',
@@ -411,6 +416,8 @@ export function ImportedSiteMapPanel({
                 },
             });
             console.log('[MapLibre] Layer "buildings-labels" created');
+        } catch (err) {
+            console.error('[MapLibre] Error adding source/layers:', err);
         }
     }, [mapLoaded, allCandidatesGeoJSON]);
 

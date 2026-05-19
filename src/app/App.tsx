@@ -876,7 +876,7 @@ function ImportedCandidatePanel({
   onUpdateProject: (project: ImportedProject) => void;
 }) {
   const isSelectedConfirmed = confirmedIds.includes(selectedId);
-  
+
   const handleToggleSelected = () => {
     if (!selectedId) return;
     const newConfirmedIds = isSelectedConfirmed
@@ -894,7 +894,7 @@ function ImportedCandidatePanel({
       <p className="imported-candidate-heading">
         {candidates.length} Gebäude aus GML · {confirmedIds.length} ausgewählt
       </p>
-      
+
       {/* Action Bar */}
       <div style={{
         display: 'flex',

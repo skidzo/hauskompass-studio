@@ -33,7 +33,11 @@ function buildPolygonFeature(
         null,
     );
     if (!surface || surface.points.length < 3) {
-        console.log(`[buildPolygonFeature] ${c.id}: rejected (no surface or <3 points)`);
+        console.log(`[buildPolygonFeature] ${c.id}: REJECTED (no surface or <3 points)`, {
+            surfaceCount: c.surfaces.ground.length,
+            selectedSurface: surface?.id,
+            pointsInSurface: surface?.points.length,
+        });
         return null;
     }
 
@@ -45,17 +49,53 @@ function buildPolygonFeature(
     const nVals = pts.map((p) => p.n);
     const eSpan = Math.max(...eVals) - Math.min(...eVals);
     const nSpan = Math.max(...nVals) - Math.min(...nVals);
+    
     if (eSpan > 1000 || nSpan > 1000) {
-        console.log(`[buildPolygonFeature] ${c.id}: rejected (span too large: e=${eSpan}, n=${nSpan})`);
+        console.log(`[buildPolygonFeature] ${c.id}: REJECTED (span too large)`, {
+            eSpan: eSpan.toFixed(0),
+            nSpan: nSpan.toFixed(0),
+            surfaceId: surface.id,
+            points: pts.length,
+        });
         return null;
+    }
+
+    // Convert to WGS84 ring
+    const ring = toRing(pts);
+
+    // Additional check: Ring coordinates in WGS84 — verify they're not pathological
+    if (ring.length > 3) {
+        const lons = ring.map((p) => p[0]);
+        const lats = ring.map((p) => p[1]);
+        const lonSpan = Math.max(...lons) - Math.min(...lons);
+        const latSpan = Math.max(...lats) - Math.min(...lats);
+        
+        // If WGS84 span is huge (likely a wrapped/problematic polygon)
+        if (lonSpan > 0.05 || latSpan > 0.05) {
+            console.log(`[buildPolygonFeature] ${c.id}: SUSPICIOUS (huge WGS84 span)`, {
+                lonSpan: lonSpan.toFixed(6),
+                latSpan: latSpan.toFixed(6),
+                points: pts.length,
+            });
+            // Still include but mark as suspicious
+        }
     }
 
     const feature = {
         type: 'Feature' as const,
         properties,
-        geometry: { type: 'Polygon' as const, coordinates: [toRing(pts)] },
+        geometry: { type: 'Polygon' as const, coordinates: [ring] },
     };
-    
+
+    console.log(`[buildPolygonFeature] ${c.id}: ACCEPTED`, {
+        surfaces: c.surfaces.ground.length,
+        selectedSurface: surface.id,
+        areaM2: surface.areaM2,
+        utmPoints: pts.length,
+        eSpan: eSpan.toFixed(0),
+        nSpan: nSpan.toFixed(0),
+    });
+
     return feature;
 }
 
@@ -87,22 +127,83 @@ export function ImportedSiteMapPanel({
         // Always include all confirmed + up to 120 surrounding (performance)
         const surrounding = candidates.filter((c) => !confirmedSet.has(c.id)).slice(0, 120);
         const confirmed = candidates.filter((c) => confirmedSet.has(c.id));
+        const allCandidatesToProcess = [...confirmed, ...surrounding];
+        
+        const stats = {
+            total: allCandidatesToProcess.length,
+            accepted: 0,
+            rejected: 0,
+            rejectionReasons: {} as Record<string, number>,
+            suspiciousRectangles: [] as Array<{
+                id: string;
+                reason: string;
+                surfaceCount: number;
+                selectedAreaM2: number;
+                pointCount: number;
+                eSpan: number;
+                nSpan: number;
+            }>,
+        };
+        
         const geojson = {
             type: 'FeatureCollection' as const,
-            features: [...confirmed, ...surrounding]
+            features: allCandidatesToProcess
                 .map((c) => {
                     const isConfirmed = confirmedSet.has(c.id);
                     const rank = confirmedIds.indexOf(c.id);
-                    return buildPolygonFeature(c, {
+                    const feature = buildPolygonFeature(c, {
                         id: c.id,
                         confirmed: isConfirmed ? 1 : 0,
                         selected: c.id === selectedId ? 1 : 0,
                         label: isConfirmed && rank >= 0 ? `T${rank + 1}` : '',
                     });
+                    
+                    if (feature) {
+                        stats.accepted++;
+                        // Check if this might be the problematic rectangle
+                        const selectedSurface = c.surfaces.ground.reduce<(typeof c.surfaces.ground)[0] | null>(
+                            (best, s) => (!best || s.areaM2 > best.areaM2 ? s : best),
+                            null,
+                        );
+                        if (selectedSurface) {
+                            const pts = selectedSurface.points;
+                            const eVals = pts.map((p) => p.e);
+                            const nVals = pts.map((p) => p.n);
+                            const eSpan = Math.max(...eVals) - Math.min(...eVals);
+                            const nSpan = Math.max(...nVals) - Math.min(...nVals);
+                            
+                            // Flag if this geometry looks suspicious (very elongated or large)
+                            const aspectRatio = Math.max(eSpan, nSpan) / Math.max(Math.min(eSpan, nSpan), 1);
+                            const area = eSpan * nSpan;
+                            if (aspectRatio > 10 || area > 500000) {
+                                stats.suspiciousRectangles.push({
+                                    id: c.id,
+                                    reason: `aspect=${aspectRatio.toFixed(1)}, area=${area.toFixed(0)}m²`,
+                                    surfaceCount: c.surfaces.ground.length,
+                                    selectedAreaM2: selectedSurface.areaM2,
+                                    pointCount: pts.length,
+                                    eSpan,
+                                    nSpan,
+                                });
+                            }
+                        }
+                    } else {
+                        stats.rejected++;
+                    }
+                    
+                    return feature;
                 })
                 .filter((f): f is NonNullable<typeof f> => f !== null),
         };
-        
+
+        console.log('[allCandidatesGeoJSON] ANALYSIS:', {
+            stats,
+            sampleFeatures: geojson.features.slice(0, 3).map(f => ({
+                id: f.properties?.id,
+                coordsLength: f.geometry.coordinates[0]?.length,
+            })),
+        });
+
         return geojson;
     }, [candidates, confirmedIds, selectedId]);
 

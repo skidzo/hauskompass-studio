@@ -22,14 +22,12 @@ function toRing(pts: readonly { e: number; n: number }[]): LngLat[] {
 
 function buildPolygonFeature(
     c: Lod2Candidate,
-    id: number,
     properties: Record<string, unknown>,
 ) {
     const pts = c.surfaces.ground.flatMap((s) => s.points);
     if (pts.length < 3) return null;
     return {
         type: 'Feature' as const,
-        id,
         properties,
         geometry: { type: 'Polygon' as const, coordinates: [toRing(pts)] },
     };
@@ -50,25 +48,26 @@ export function ImportedSiteMapPanel({
 }) {
     const { candidates, confirmedIds, address, geocode } = project;
     const [cursor, setCursor] = useState<'auto' | 'pointer'>('auto');
-    const confirmedSet = new Set(confirmedIds);
 
     const confirmedCandidates = useMemo(
-        () => candidates.filter((c) => confirmedSet.has(c.id)),
+        () => candidates.filter((c) => confirmedIds.includes(c.id)),
         [candidates, confirmedIds],
     );
 
-    // Single source for all buildings — avoids visual flash when toggling
+    // Single source for all buildings — confirmedSet built INSIDE useMemo
+    // to avoid stale-closure issues; avoids visual flash when toggling
     const allCandidatesGeoJSON = useMemo(() => {
-        // Always include all confirmed + up to 80 surrounding (performance)
-        const surrounding = candidates.filter((c) => !confirmedSet.has(c.id)).slice(0, 80);
+        const confirmedSet = new Set(confirmedIds);
+        // Always include all confirmed + up to 120 surrounding (performance)
+        const surrounding = candidates.filter((c) => !confirmedSet.has(c.id)).slice(0, 120);
         const confirmed = candidates.filter((c) => confirmedSet.has(c.id));
         return {
             type: 'FeatureCollection' as const,
             features: [...confirmed, ...surrounding]
-                .map((c, idx) => {
+                .map((c) => {
                     const isConfirmed = confirmedSet.has(c.id);
                     const rank = confirmedIds.indexOf(c.id);
-                    return buildPolygonFeature(c, idx, {
+                    return buildPolygonFeature(c, {
                         id: c.id,
                         confirmed: isConfirmed ? 1 : 0,
                         selected: c.id === selectedId ? 1 : 0,

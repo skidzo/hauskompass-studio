@@ -2,6 +2,11 @@
 
 ## v0.1.0 — 2026-05-19
 
+- **IFC: Alle bestätigten Gebäude gemeinsam**: `generateCombinedIfcStep()` generiert ein einziges IFC für alle bestätigten Kandidaten; gemeinsamer Ursprung, korrekte Relativlage der Gebäude zueinander
+- **IFC Flächenauswahl**: Klick auf beliebige IFC-Fläche → transparent schalten (opacity 15 %); Kanten werden gelb; Reset-Button in der Toolbar zeigt Anzahl transparenter Flächen
+- **Teil-1/Teil-2-Buttons entfernt**: Kein Wechsel zwischen Gebäudeteilen mehr — alle bestätigten Gebäude werden immer gemeinsam angezeigt
+- **LoD2-Vorschau multi-Gebäude**: `LoD2SurfaceViewer` zeigt alle bestätigten Kandidaten im gemeinsamen Koordinatenraum; adaptive Skalierung; Farb-Tints pro Gebäude
+
 - **Editierbare Gebäudeauswahl**: Klick auf Gebäude in der 2D-Lage-Karte togglet `confirmedIds` (grün = bestätigt, grau = Umgebung); Änderungen werden sofort in localStorage persistiert und die Karte aktualisiert sich reaktiv
 - **Projekt löschen**: Gespeicherte Renovierungsprojekte auf der Startseite haben jetzt einen Lösch-Button (Mülleimer-Icon), der beim Hover eingeblendet wird
 - **ProjectContext.updateProject**: Neuer Callback für in-app Änderungen am aktiven Projekt (confirmedIds, etc.)

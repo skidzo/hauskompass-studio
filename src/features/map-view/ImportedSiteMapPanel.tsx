@@ -163,19 +163,20 @@ export function ImportedSiteMapPanel({
                         />
                     </Source>
 
-                    {/* Bestätigte Gebäude */}
+                    {/* Bestätigte Gebäude — gleiche graue Grundfläche wie Umgebung,
+                        grüner Rand kennzeichnet Zugehörigkeit zum Projekt */}
                     <Source id="confirmed" type="geojson" data={confirmedGeoJSON}>
                         <Layer
                             id="confirmed-fill"
                             type="fill"
                             paint={{
-                                'fill-color': [
+                                'fill-color': '#b8c5b2',
+                                'fill-opacity': [
                                     'case',
                                     ['==', ['get', 'selected'], 1],
-                                    '#a8d5b5',
-                                    '#cce4d3',
+                                    0.55,
+                                    0.38,
                                 ],
-                                'fill-opacity': 0.65,
                             }}
                         />
                         <Layer
@@ -183,7 +184,8 @@ export function ImportedSiteMapPanel({
                             type="line"
                             paint={{
                                 'line-color': '#23614b',
-                                'line-width': ['case', ['==', ['get', 'selected'], 1], 3, 2],
+                                'line-width': ['case', ['==', ['get', 'selected'], 1], 3.5, 2.5],
+                                'line-opacity': 1,
                             }}
                         />
                         <Layer
@@ -206,9 +208,9 @@ export function ImportedSiteMapPanel({
 
                 {onUpdateProject && (
                     <div className="map-edit-hint">
-                        <span className="map-hint-confirmed">■ Grün = bestätigt</span>
+                        <span className="map-hint-confirmed">■ Grüner Rand = Projektgebäude</span>
                         <span className="map-hint-sep">·</span>
-                        <span>Klick → Gebäude hinzufügen / entfernen</span>
+                        <span>Klick → auswählen / abwählen</span>
                     </div>
                 )}
             </div>

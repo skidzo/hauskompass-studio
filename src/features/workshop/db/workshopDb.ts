@@ -35,7 +35,7 @@ import type {
 } from '@/domain/workshop/types';
 import Dexie, { type EntityTable } from 'dexie';
 import { inferAssetSpatialSemantics } from '../spatial/assetSpatialSemantics';
-import { getWorkshopSeedVersionKey } from './workshopProjectStorageKeys';
+import { QUICK_START_MARKER, getWorkshopSeedVersionKey } from './workshopProjectStorageKeys';
 
 // ---------------------------------------------------------------------------
 // Extended types with optional embedding for future vector search
@@ -456,4 +456,96 @@ export interface WorkshopBundleExport {
     blobAssetIds: string[];
     /** Asset IDs without a blob (placeholder assets). */
     placeholderAssetIds: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Quick-Start: Leeres Workshop-Projekt direkt in IndexedDB anlegen
+// ---------------------------------------------------------------------------
+
+const DEFAULT_ZONES: { name: string; description: string; sortOrder: number }[] = [
+    { name: 'Eingang / Empfang', description: 'Eingangsbereich, Foyer, Erschließung', sortOrder: 0 },
+    { name: 'Erdgeschoss', description: 'Räume im Erdgeschoss', sortOrder: 1 },
+    { name: 'Obergeschoss', description: 'Räume im Obergeschoss', sortOrder: 2 },
+    { name: 'Außenbereich', description: 'Fassade, Hof, Freiflächen', sortOrder: 3 },
+    { name: 'Technik / Lager', description: 'Heizung, Lager, Nebenräume', sortOrder: 4 },
+    { name: 'Diverses', description: 'Sonstiges und Allgemeines', sortOrder: 5 },
+];
+
+export interface QuickStartResult {
+    projectId: string;
+    siteId: string;
+    title: string;
+}
+
+/**
+ * Legt ein leeres Workshop-Projekt direkt in IndexedDB an — keine Seed-Dateien,
+ * keine Python-Pipeline, kein Geodaten-Setup erforderlich.
+ *
+ * @param name  Anzeigename des Projekts (z.B. "Gebäude-Workshop Mai 2026")
+ * @returns     projectId + siteId für die Navigation zu WorkshopRoute
+ */
+export async function createQuickStartWorkshop(name: string): Promise<QuickStartResult> {
+    const trimmed = name.trim();
+    if (!trimmed) throw new Error('Projektname darf nicht leer sein.');
+
+    const ts = Date.now().toString(36);
+    const rnd = Math.random().toString(36).slice(2, 7);
+    const pid = `ws-qs-${ts}-${rnd}`;
+    const sid = `site-${pid}`;
+    const now = new Date().toISOString();
+
+    const project: WorkshopProject = {
+        id: pid,
+        slug: pid,
+        title: trimmed,
+        description: '',
+        siteId: sid,
+        projectMode: 'active',
+        createdAt: now,
+        updatedAt: now,
+        version: '1',
+        sensitivityDefault: 'internal',
+        publicationDefault: 'needs_review',
+    };
+
+    const site: Site = {
+        id: sid,
+        projectId: pid,
+        name: trimmed,
+        shortDescription: '',
+        currentAccess: 'unknown',
+        sensitivityLevel: 'internal',
+        publicationStatus: 'needs_review',
+    };
+
+    const zones: Zone[] = DEFAULT_ZONES.map((z, i) => ({
+        id: `${pid}-z${i}`,
+        siteId: sid,
+        name: z.name,
+        description: z.description,
+        documentationPriority: 'medium',
+        documentationStatus: 'not_started',
+        openQuestionIds: [],
+        linkedAssetIds: [],
+        linkedAssessmentIds: [],
+        sensitivityLevel: 'internal',
+        publicationStatus: 'needs_review',
+        sortOrder: z.sortOrder,
+    }));
+
+    await workshopDb.transaction('rw',
+        workshopDb.projects,
+        workshopDb.sites,
+        workshopDb.zones,
+        async () => {
+            await workshopDb.projects.put(project);
+            await workshopDb.sites.put(site);
+            await workshopDb.zones.bulkPut(zones);
+        },
+    );
+
+    // Mark as quick-start so seedProject() never overwrites this project
+    localStorage.setItem(getWorkshopSeedVersionKey(pid), QUICK_START_MARKER);
+
+    return { projectId: pid, siteId: sid, title: trimmed };
 }

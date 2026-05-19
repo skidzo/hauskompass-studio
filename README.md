@@ -93,18 +93,6 @@ Run `npm run generate:showcase-pdf` to regenerate the sanitized public-facing pr
 
 The showcase source lives in `src/features/showcase/` as typed data plus a dedicated React route. It maps selected Planning seed data into the showcase panels instead of duplicating full content. The browser view can opt into local register data with `/showcase?includeLocalRegisters=1`, but the generated public PDF uses sanitized seed data only. It must not include private addresses, coordinates, land-record identifiers, private photos or exact property identifiers, and generated or estimated values must remain labeled as such.
 
-## Prototype App Scope
-
-```txt
-- Planning section with project overview, facts, assumptions, missing measurements, decisions, local editable registers, S01-S20 site-visit import and rule-based reasoning
-- data inventory
-- map placeholder
-- 3D viewer placeholder
-- mock building hull
-- confidence-rated roof surface placeholders
-- missing measurements panel
-```
-
 ## Lokale Projektordner
 
 Reale Projektmaterialien liegen außerhalb dieses Git-Repositories in einem lokalen Projektordner deiner Wahl. Konfiguration über Umgebungsvariable:

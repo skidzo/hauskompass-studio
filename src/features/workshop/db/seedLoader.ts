@@ -10,7 +10,7 @@ import { fetchProjectSeedJson, getProjectMediaManifestUrl, resolveRuntimeProject
 import { readExifData } from '@/features/workshop/ingest/exifReader';
 import { generateThumbnail } from '@/features/workshop/ingest/thumbnailGenerator';
 import { saveAsset, workshopDb, type AssetRecord } from './workshopDb';
-import { getWorkshopMediaRestoreVersionKey, getWorkshopSeedVersionKey } from './workshopProjectStorageKeys';
+import { QUICK_START_MARKER, getWorkshopMediaRestoreVersionKey, getWorkshopSeedVersionKey } from './workshopProjectStorageKeys';
 
 async function fetchSeedBundle(projectId: string): Promise<WorkshopProjectBundle> {
 
@@ -66,6 +66,11 @@ export async function seedProject(projectId: string): Promise<void> {
     const seedVersionKey = getWorkshopSeedVersionKey(projectId);
     const storedVersion = localStorage.getItem(seedVersionKey);
     const alreadySeeded = await workshopDb.projects.get(projectId);
+
+    // Quick-start project: created directly in DB, no seed files exist — skip
+    if (alreadySeeded && storedVersion === QUICK_START_MARKER) {
+        return;
+    }
 
     if (alreadySeeded && storedVersion === SEED_VERSION) {
         await restoreProjectMediaFromManifest(projectId);

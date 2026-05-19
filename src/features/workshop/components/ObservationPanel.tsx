@@ -13,7 +13,7 @@ import {
     deleteObservation,
     saveObservation,
 } from '@/features/workshop/db/workshopDb';
-import { Eye, PlusCircle, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, PlusCircle, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { SensitivityBadge } from './Badges';
 
@@ -178,6 +178,7 @@ function ObservationForm({
         saving: false,
         error: null,
     });
+    const [showAdvanced, setShowAdvanced] = useState(false);
 
     function patch(p: Partial<FormState>) {
         setForm((prev) => ({ ...prev, ...p }));
@@ -220,6 +221,7 @@ function ObservationForm({
             <label className="obs-form-label">
                 Beobachtung *
                 <textarea
+                    autoFocus
                     className="obs-form-textarea"
                     rows={3}
                     placeholder="Was ist sichtbar, messbar oder erlebt worden?"
@@ -239,33 +241,46 @@ function ObservationForm({
                 />
             </label>
 
-            <div className="obs-form-row">
-                <label className="obs-form-label">
-                    Konfidenz
-                    <select
-                        className="obs-form-select"
-                        value={form.confidence}
-                        onChange={(e) => patch({ confidence: e.target.value as DataConfidence })}
-                    >
-                        {CONFIDENCE_OPTIONS.map((o) => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                    </select>
-                </label>
+            {/* Weitere Optionen (Konfidenz + Sensitivität) — standardmäßig eingeklappt */}
+            <button
+                className="obs-advanced-toggle"
+                type="button"
+                onClick={() => setShowAdvanced((v) => !v)}
+                aria-expanded={showAdvanced}
+            >
+                {showAdvanced ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                {showAdvanced ? 'Weniger Optionen' : 'Weitere Optionen'}
+            </button>
 
-                <label className="obs-form-label">
-                    Sensitivität
-                    <select
-                        className="obs-form-select"
-                        value={form.sensitivityLevel}
-                        onChange={(e) => patch({ sensitivityLevel: e.target.value as SensitivityLevel })}
-                    >
-                        {SENSITIVITY_OPTIONS.map((o) => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                    </select>
-                </label>
-            </div>
+            {showAdvanced && (
+                <div className="obs-form-row">
+                    <label className="obs-form-label">
+                        Konfidenz
+                        <select
+                            className="obs-form-select"
+                            value={form.confidence}
+                            onChange={(e) => patch({ confidence: e.target.value as DataConfidence })}
+                        >
+                            {CONFIDENCE_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                        </select>
+                    </label>
+
+                    <label className="obs-form-label">
+                        Sensitivität
+                        <select
+                            className="obs-form-select"
+                            value={form.sensitivityLevel}
+                            onChange={(e) => patch({ sensitivityLevel: e.target.value as SensitivityLevel })}
+                        >
+                            {SENSITIVITY_OPTIONS.map((o) => (
+                                <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                        </select>
+                    </label>
+                </div>
+            )}
 
             {form.error && <p className="obs-form-error">{form.error}</p>}
 

@@ -145,16 +145,16 @@ export function ImportedSiteMapPanel({
                                 'fill-color': [
                                     'case',
                                     ['all', ['==', ['get', 'confirmed'], 1], ['==', ['get', 'selected'], 1]],
-                                    '#8ab592',
+                                    '#2d7a52',
                                     ['==', ['get', 'confirmed'], 1],
-                                    '#9dba9f',
+                                    '#3d9465',
                                     '#b8c5b2',
                                 ],
                                 'fill-opacity': [
                                     'case',
                                     ['==', ['get', 'confirmed'], 1],
-                                    0.48,
-                                    0.25,
+                                    0.6,
+                                    0.3,
                                 ],
                             }}
                         />
@@ -165,15 +165,15 @@ export function ImportedSiteMapPanel({
                                 'line-color': [
                                     'case',
                                     ['==', ['get', 'confirmed'], 1],
-                                    '#23614b',
+                                    '#1a5c38',
                                     '#7a9084',
                                 ],
                                 'line-width': [
                                     'case',
                                     ['all', ['==', ['get', 'confirmed'], 1], ['==', ['get', 'selected'], 1]],
-                                    3,
+                                    4,
                                     ['==', ['get', 'confirmed'], 1],
-                                    2,
+                                    2.5,
                                     1,
                                 ],
                             }}
@@ -199,7 +199,7 @@ export function ImportedSiteMapPanel({
 
                 {onUpdateProject && (
                     <div className="map-edit-hint">
-                        <span className="map-hint-confirmed">■ Grüngrau = Projektgebäude</span>
+                        <span className="map-hint-confirmed">■ Grün = ausgewählt</span>
                         <span className="map-hint-sep">·</span>
                         <span>Klick → auswählen / abwählen</span>
                     </div>
@@ -208,7 +208,7 @@ export function ImportedSiteMapPanel({
             <div className="map-meta">
                 <strong>{address}</strong>
                 <span>
-                    {candidates.length} Gebäude · {confirmedIds.length} bestätigt ·{' '}
+                    {candidates.length} Gebäude · {confirmedIds.length} ausgewählt ·{' '}
                     E {geocode.utm32.easting.toFixed(0)} / N {geocode.utm32.northing.toFixed(0)} ·{' '}
                     {geocode.tileId}
                 </span>

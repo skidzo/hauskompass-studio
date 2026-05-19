@@ -872,7 +872,7 @@ function ImportedCandidatePanel({
   return (
     <div className="imported-candidate-panel">
       <p className="imported-candidate-heading">
-        {candidates.length} Gebäude aus GML · {confirmedIds.length} bestätigt
+        {candidates.length} Gebäude aus GML · {confirmedIds.length} ausgewählt
       </p>
       <div className="imported-candidate-list">
         {candidates.slice(0, 20).map((c) => {

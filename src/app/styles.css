@@ -5879,6 +5879,148 @@ td {
   background: #ecf5ee;
 }
 
+/* Wrapper that holds card + edit pencil */
+.ph-project-card-wrap {
+  position: relative;
+  display: contents; /* transparent wrapper — card keeps its grid sizing */
+}
+
+.ph-project-card-wrap .ph-project-card {
+  width: 100%;
+}
+
+.ph-card-edit-btn {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid #c8d8cc;
+  border-radius: 5px;
+  padding: 3px 6px;
+  cursor: pointer;
+  color: #5a7a60;
+  opacity: 0;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  z-index: 1;
+}
+
+.ph-project-card-wrap:hover .ph-card-edit-btn {
+  opacity: 1;
+}
+
+/* Edit overlay / dialog */
+.ph-edit-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ph-edit-dialog {
+  background: #fff;
+  border-radius: 12px;
+  width: min(420px, 92vw);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+.ph-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.1rem;
+  background: #f4faf5;
+  border-bottom: 1px solid #d4e8d8;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1a3a22;
+}
+
+.ph-edit-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #5a7a60;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.ph-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.1rem;
+}
+
+.ph-edit-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #3a5a42;
+}
+
+.ph-edit-input {
+  font-size: 0.9rem;
+  padding: 0.4rem 0.6rem;
+  border: 1.5px solid #c8d8cc;
+  border-radius: 6px;
+  color: #1a2a1e;
+  background: #fafffe;
+  outline: none;
+  font-family: inherit;
+}
+
+.ph-edit-input:focus {
+  border-color: #3a7a48;
+}
+
+.ph-edit-textarea {
+  resize: vertical;
+}
+
+.ph-edit-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 0.8rem 1.1rem;
+  border-top: 1px solid #d4e8d8;
+  background: #f9fdfb;
+}
+
+.ph-edit-cancel {
+  background: none;
+  border: 1.5px solid #b8cfc0;
+  border-radius: 7px;
+  padding: 0.38rem 0.9rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+  color: #4a6a52;
+}
+
+.ph-edit-save {
+  background: #2e7d42;
+  border: none;
+  border-radius: 7px;
+  padding: 0.38rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  transition: background 0.15s;
+}
+
+.ph-edit-save:hover {
+  background: #256035;
+}
+
 .ph-project-card-new {
   border-style: dashed;
   border-color: var(--surface-border, #d8d3c8);

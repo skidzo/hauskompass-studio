@@ -10,7 +10,7 @@
 import { listProjects, loadProject, saveProject } from '@/features/project-store/projectStore';
 import type { ImportedProject } from '@/features/project-store/types';
 import { importWorkshopBundle, importWorkshopBundleZip, type WorkshopBundleExport } from '@/features/workshop/db/workshopDb';
-import { Building2, FolderOpen, Home, Layers, MapPin, Plus, Upload, Wrench } from 'lucide-react';
+import { Building2, FolderOpen, Home, Layers, MapPin, Pencil, Plus, Upload, Wrench, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 // ── Built-in pre-existing projects ──────────────────────────────────────────
@@ -55,8 +55,48 @@ interface ProjectHomeProps {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
+const LS_OVERRIDES_KEY = 'hk_builtin_overrides';
+
 export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject, onStartWorkshop, onImportBackup }: ProjectHomeProps) {
     const builtinProjects = useBuiltinProjects();
+
+    // ── Local metadata overrides (localStorage) ───────────────────────────────
+    const [overrides, setOverrides] = useState<Record<string, Partial<BuiltinProject>>>(() => {
+        try { return JSON.parse(localStorage.getItem(LS_OVERRIDES_KEY) ?? '{}'); }
+        catch { return {}; }
+    });
+
+    function applyOverride(proj: BuiltinProject): BuiltinProject {
+        return { ...proj, ...(overrides[proj.id] ?? {}) };
+    }
+
+    // ── Edit state ────────────────────────────────────────────────────────────
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editTitle, setEditTitle] = useState('');
+    const [editSubtitle, setEditSubtitle] = useState('');
+    const [editLocation, setEditLocation] = useState('');
+    const [editDescription, setEditDescription] = useState('');
+
+    function openEdit(proj: BuiltinProject, e: React.MouseEvent) {
+        e.stopPropagation();
+        const eff = applyOverride(proj);
+        setEditTitle(eff.title);
+        setEditSubtitle(eff.subtitle);
+        setEditLocation(eff.location);
+        setEditDescription(eff.description);
+        setEditingId(proj.id);
+    }
+
+    function saveEdit() {
+        if (!editingId) return;
+        const next = {
+            ...overrides,
+            [editingId]: { title: editTitle, subtitle: editSubtitle, location: editLocation, description: editDescription },
+        };
+        setOverrides(next);
+        localStorage.setItem(LS_OVERRIDES_KEY, JSON.stringify(next));
+        setEditingId(null);
+    }
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [importError, setImportError] = useState<string | null>(null);
     const [importing, setImporting] = useState(false);
@@ -159,31 +199,42 @@ export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject,
                 <section className="ph-section">
                     <h2 className="ph-section-title">Projekte</h2>
                     <div className="ph-project-grid">
-                        {builtinProjects.map((proj) => (
-                            <button
-                                key={proj.id}
-                                className="ph-project-card ph-project-card-builtin"
-                                onClick={() => onSelectBuiltin(proj)}
-                                type="button"
-                            >
-                                <div className="ph-card-icon">
-                                    {proj.type === 'workshop' ? <Wrench size={22} /> : <Home size={22} />}
-                                </div>
-                                <div className="ph-card-body">
-                                    <span className="ph-card-label">
-                                        {proj.type === 'workshop' ? 'Workshop-Projekt' : 'Renovierungsprojekt'}
-                                    </span>
-                                    <strong className="ph-card-title">{proj.title}</strong>
-                                    <span className="ph-card-sub">{proj.subtitle}</span>
-                                    <span className="ph-card-loc">
-                                        <MapPin size={11} />
-                                        {proj.location}
-                                    </span>
-                                    <p className="ph-card-desc">{proj.description}</p>
-                                </div>
-                            </button>
-                        ))}
-
+                        {builtinProjects.map((proj) => {
+                            const eff = applyOverride(proj);
+                            return (
+                            <div key={proj.id} className="ph-project-card-wrap">
+                                <button
+                                    className="ph-project-card ph-project-card-builtin"
+                                    onClick={() => onSelectBuiltin(eff)}
+                                    type="button"
+                                >
+                                    <div className="ph-card-icon">
+                                        {eff.type === 'workshop' ? <Wrench size={22} /> : <Home size={22} />}
+                                    </div>
+                                    <div className="ph-card-body">
+                                        <span className="ph-card-label">
+                                            {eff.type === 'workshop' ? 'Workshop-Projekt' : 'Renovierungsprojekt'}
+                                        </span>
+                                        <strong className="ph-card-title">{eff.title}</strong>
+                                        <span className="ph-card-sub">{eff.subtitle}</span>
+                                        <span className="ph-card-loc">
+                                            <MapPin size={11} />
+                                            {eff.location}
+                                        </span>
+                                        <p className="ph-card-desc">{eff.description}</p>
+                                    </div>
+                                </button>
+                                <button
+                                    className="ph-card-edit-btn"
+                                    onClick={(e) => openEdit(proj, e)}
+                                    type="button"
+                                    title="Metadaten bearbeiten"
+                                >
+                                    <Pencil size={12} />
+                                </button>
+                            </div>
+                            );
+                        })}
                         {/* Saved renovation projects */}
                         {savedProjects.map((proj) => (
                             <button
@@ -308,6 +359,38 @@ export function ProjectHome({ onSelectBuiltin, onSelectRenovation, onNewProject,
                     </div>
                 </section>
             </div>
+
+            {/* ── Edit metadata overlay ── */}
+            {editingId && (
+                <div className="ph-edit-overlay" role="dialog" aria-modal="true">
+                    <div className="ph-edit-dialog">
+                        <header className="ph-edit-header">
+                            <span>Projektmetadaten bearbeiten</span>
+                            <button className="ph-edit-close" onClick={() => setEditingId(null)} type="button">
+                                <X size={16} />
+                            </button>
+                        </header>
+                        <div className="ph-edit-fields">
+                            <label className="ph-edit-label">Titel
+                                <input className="ph-edit-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                            </label>
+                            <label className="ph-edit-label">Untertitel
+                                <input className="ph-edit-input" value={editSubtitle} onChange={(e) => setEditSubtitle(e.target.value)} />
+                            </label>
+                            <label className="ph-edit-label">Standort
+                                <input className="ph-edit-input" value={editLocation} onChange={(e) => setEditLocation(e.target.value)} />
+                            </label>
+                            <label className="ph-edit-label">Beschreibung
+                                <textarea className="ph-edit-input ph-edit-textarea" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} />
+                            </label>
+                        </div>
+                        <footer className="ph-edit-footer">
+                            <button className="ph-edit-cancel" onClick={() => setEditingId(null)} type="button">Abbrechen</button>
+                            <button className="ph-edit-save" onClick={saveEdit} type="button">Speichern</button>
+                        </footer>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

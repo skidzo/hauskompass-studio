@@ -2,6 +2,7 @@ import type { ImportedProject, Lod2Candidate } from '@/features/project-store/ty
 import { useState } from 'react';
 import { LocalAssessmentPackagePanel } from './LocalAssessmentPackagePanel';
 import { LocalRegistersPanel } from './LocalRegistersPanel';
+import { RenovationPhotoPlacementPanel } from './RenovationPhotoPlacementPanel';
 import { SiteVisitImportPanel } from './SiteVisitImportPanel';
 import {
   buildAgenticReasoningSnapshot,
@@ -14,10 +15,11 @@ import {
 } from './renovationPlanningSelectors';
 import type { BuildingFact } from './renovationPlanningTypes';
 
-type PlanningTab = 'overview' | 'facts' | 'assumptions' | 'measurements' | 'decisions' | 'reasoning' | 'package' | 'local' | 'siteVisit';
+type PlanningTab = 'overview' | 'photos' | 'facts' | 'assumptions' | 'measurements' | 'decisions' | 'reasoning' | 'package' | 'local' | 'siteVisit';
 
 const DEMO_TABS: Array<{ id: PlanningTab; label: string }> = [
   { id: 'overview', label: 'Übersicht' },
+  { id: 'photos', label: 'Fotos' },
   { id: 'facts', label: 'Fakten' },
   { id: 'assumptions', label: 'Annahmen' },
   { id: 'measurements', label: 'Messungen' },
@@ -30,6 +32,7 @@ const DEMO_TABS: Array<{ id: PlanningTab; label: string }> = [
 
 const PROJECT_TABS: Array<{ id: PlanningTab; label: string }> = [
   { id: 'overview', label: 'Übersicht' },
+  { id: 'photos', label: 'Fotos' },
   { id: 'facts', label: 'Gebäudefakten' },
   { id: 'measurements', label: 'Messungen' },
   { id: 'decisions', label: 'Entscheidungen' },
@@ -87,8 +90,6 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-// ── Derive structured building facts from LoD2 candidates ──────────────────
-
 function deriveProjectBuildingFacts(
   project: ImportedProject,
   confirmed: Lod2Candidate[],
@@ -97,7 +98,6 @@ function deriveProjectBuildingFacts(
   const source = `LoD2-Import · ${project.geocode.tileId}`;
   const facts: BuildingFact[] = [];
 
-  // Per-part facts
   confirmed.forEach((c, idx) => {
     const groundArea = c.surfaces.ground.reduce((s, f) => s + f.areaM2, 0);
     const roofArea = c.surfaces.roof.reduce((s, f) => s + f.areaM2, 0);
@@ -119,7 +119,6 @@ function deriveProjectBuildingFacts(
     );
   });
 
-  // Totals when multiple parts
   if (confirmed.length > 1) {
     const total = {
       ground: confirmed.reduce((s, c) => s + c.surfaces.ground.reduce((ss, f) => ss + f.areaM2, 0), 0),
@@ -127,13 +126,12 @@ function deriveProjectBuildingFacts(
       wall: confirmed.reduce((s, c) => s + c.surfaces.wall.reduce((ss, f) => ss + f.areaM2, 0), 0),
     };
     facts.push(
-      { id: 'total-ground', label: 'Gesamtgrundfläche', value: total.ground.toFixed(1), unit: 'm²', source, confidence: 'generated', last_updated: today, evidence_links: confirmed.map(c => c.id) },
-      { id: 'total-roof', label: 'Gesamtdachfläche', value: total.roof.toFixed(1), unit: 'm²', source, confidence: 'generated', last_updated: today, evidence_links: confirmed.map(c => c.id) },
-      { id: 'total-wall', label: 'Gesamtwandfläche', value: total.wall.toFixed(1), unit: 'm²', source, confidence: 'generated', last_updated: today, evidence_links: confirmed.map(c => c.id) },
+      { id: 'total-ground', label: 'Gesamtgrundfläche', value: total.ground.toFixed(1), unit: 'm²', source, confidence: 'generated', last_updated: today, evidence_links: confirmed.map((c) => c.id) },
+      { id: 'total-roof', label: 'Gesamtdachfläche', value: total.roof.toFixed(1), unit: 'm²', source, confidence: 'generated', last_updated: today, evidence_links: confirmed.map((c) => c.id) },
+      { id: 'total-wall', label: 'Gesamtwandfläche', value: total.wall.toFixed(1), unit: 'm²', source, confidence: 'generated', last_updated: today, evidence_links: confirmed.map((c) => c.id) },
     );
   }
 
-  // Geocode fact
   facts.push({
     id: 'geocode',
     label: 'Koordinaten UTM32',
@@ -148,17 +146,13 @@ function deriveProjectBuildingFacts(
   return facts;
 }
 
-// ── Main panel ──────────────────────────────────────────────────────────────
-
 export function RenovationPlanningPanel({ project }: { project?: ImportedProject | null }) {
   const [activeTab, setActiveTab] = useState<PlanningTab>('overview');
 
   if (project) {
     const confirmed = project.candidates.filter((c) => project.confirmedIds.includes(c.id));
     const buildingFacts = deriveProjectBuildingFacts(project, confirmed);
-
-    const TABS = PROJECT_TABS;
-    const visibleTab = TABS.some((t) => t.id === activeTab) ? activeTab : 'overview';
+    const visibleTab = PROJECT_TABS.some((t) => t.id === activeTab) ? activeTab : 'overview';
 
     return (
       <div className="planning-layout">
@@ -169,7 +163,7 @@ export function RenovationPlanningPanel({ project }: { project?: ImportedProject
             Messungen und Entscheidungen werden nach Begehung ergänzt.
           </p>
           <div className="tab-strip planning-tab-strip">
-            {TABS.map((tab) => (
+            {PROJECT_TABS.map((tab) => (
               <button
                 className={`tab-btn ${visibleTab === tab.id ? 'tab-btn-active' : ''}`}
                 key={tab.id}
@@ -220,6 +214,8 @@ export function RenovationPlanningPanel({ project }: { project?: ImportedProject
           </>
         )}
 
+        {visibleTab === 'photos' && <RenovationPhotoPlacementPanel project={project} />}
+
         {visibleTab === 'facts' && (
           <section className="panel">
             <div className="panel-title">Gebäudefakten — automatisch aus LoD2</div>
@@ -261,7 +257,6 @@ export function RenovationPlanningPanel({ project }: { project?: ImportedProject
     );
   }
 
-  // ── Demo project mode — unchanged behavior ─────────────────────────────
   const reasoning = buildAgenticReasoningSnapshot();
   const openAssumptions = getOpenAssumptions();
   const highPriorityNeeds = getHighPriorityMeasurementNeeds();
@@ -332,6 +327,8 @@ export function RenovationPlanningPanel({ project }: { project?: ImportedProject
           </section>
         </>
       )}
+
+      {activeTab === 'photos' && <RenovationPhotoPlacementPanel />}
 
       {activeTab === 'facts' && (
         <section className="panel">

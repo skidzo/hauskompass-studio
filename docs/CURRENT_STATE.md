@@ -18,7 +18,7 @@ The repository is a local-first renovation planning prototype for a private hous
 - generated TypeScript data derived from geodata, terrain, roof/PV studies, Part 1 floor/elevation reasoning and scenario work;
 - Python utilities for LoD2/DGM-derived data generation and IFC export;
 - documentation for privacy, BIM/AAS-inspired metadata, source registration, evidence workflow, evidence inspection, site visit planning, photo capture, local assessment packages and asset/finding models.
-- an OpenSpec baseline under `openspec/` with project context, current-state specifications for project context, evidence baseline, privacy/local data, metadata validation and renovation planning workflow, plus the active `improve-ifc-model-viewer` proposal for the Building tab IFC inspection surface.
+- an OpenSpec baseline under `../..//docs/openspec/` with project context, current-state specifications for project context, evidence baseline, privacy/local data, metadata validation and renovation planning workflow, plus the active `improve-ifc-model-viewer` proposal for the Building tab IFC inspection surface.
 
 This is not a finished BIM model, not a full digital twin, not construction documentation and not a replacement for architects, engineers, energy consultants or craftspeople.
 

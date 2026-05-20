@@ -9,11 +9,6 @@ coverage/
 build_output.txt
 build_output_full.txt
 
-# Project-specific utilities (contain hardcoded GPS coordinates for local sites)
-utils/find-local-media-eiermann.mjs
-utils/tests/find-local-media-eiermann.test.mjs
-scripts/generate-eiermann-spatial-context.mjs
-
 # Environment
 .env
 .env.local

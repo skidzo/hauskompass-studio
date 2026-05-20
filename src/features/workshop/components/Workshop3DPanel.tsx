@@ -1,5 +1,17 @@
 import type { SpatialScene } from '@/domain/spatial/types';
 import { fetchProjectJson } from '@/features/project-data/projectDataLoader';
+import {
+    WORKSHOP_3D_CONFIDENCE_LABEL,
+    WORKSHOP_3D_LAYER_LABEL,
+    buildWorkshop3DObjectMeta,
+    buildWorkshopAssetEyebrow,
+    findSpatialSceneObjectById,
+    getSpatialObjectZoneId,
+    getSpatialSceneObjectsForZone,
+    type LayerKey,
+    type LayerState,
+    type SpatialSceneObject,
+} from '@/features/workshop/rendering/workshop3DAdapter';
 import type { WorkshopFocusKind } from '@/features/workshop/WorkshopRoute';
 import { useInterpretations, useObservations, useWorkshopScenes, useZone, useZoneDetail } from '@/features/workshop/hooks/useWorkshopData';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -15,35 +27,6 @@ interface Workshop3DPanelProps {
     onSelectZone: (zoneId: string) => void;
     onOpenEvidence: (focus: { kind: WorkshopFocusKind; id: string; zoneId?: string }) => void;
 }
-
-type LayerKey = 'terrain' | 'buildingHulls' | 'vegetation';
-type LayerState = Record<LayerKey, boolean>;
-type SpatialSceneObject =
-    | SpatialScene['terrain'][number]
-    | SpatialScene['buildingHulls'][number]
-    | SpatialScene['vegetation'][number];
-
-const CONFIDENCE_LABEL: Record<string, string> = {
-    rough: 'grob',
-    inferred: 'abgeleitet',
-    imported: 'importiert',
-    workshop_sketch: 'Workshop-Skizze',
-    measured: 'gemessen',
-    verified: 'verifiziert',
-};
-
-const VERIFICATION_LABEL: Record<string, string> = {
-    verified_geometry: 'Geometrie: verifiziert',
-    inferred_geometry: 'Geometrie: abgeleitet (LOD2)',
-    placeholder_geometry: 'Geometrie: Platzhalter',
-    unknown_geometry: 'Geometrie: unbekannt',
-};
-
-const LAYER_LABEL: Record<LayerKey, string> = {
-    terrain: 'Gelände',
-    buildingHulls: 'Hüllen',
-    vegetation: 'Vegetation',
-};
 
 export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = null, onOpenEvidence, onSelectZone }: Workshop3DPanelProps) {
     const wrapRef = useRef<HTMLDivElement>(null);
@@ -67,11 +50,7 @@ export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = n
     );
 
     const selectedObjects = useMemo(() => {
-        if (!selectedZoneId || !sceneData) return [];
-        return [
-            ...sceneData.buildingHulls.filter((item) => item.zoneId === selectedZoneId),
-            ...sceneData.vegetation.filter((item) => item.zoneId === selectedZoneId),
-        ];
+        return getSpatialSceneObjectsForZone(sceneData, selectedZoneId);
     }, [sceneData, selectedZoneId]);
 
     useEffect(() => {
@@ -279,12 +258,7 @@ export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = n
 
     const sourceMap = useMemo(() => new Map((sceneData?.sources ?? []).map((source) => [source.id, source])), [sceneData]);
     const activeObject = useMemo(() => {
-        if (!sceneData) return undefined;
-        return [
-            ...sceneData.terrain,
-            ...sceneData.buildingHulls,
-            ...sceneData.vegetation,
-        ].find((item) => item.id === activeObjectId);
+        return findSpatialSceneObjectById(sceneData, activeObjectId);
     }, [activeObjectId, sceneData]);
     const activeZoneId = getSpatialObjectZoneId(activeObject) ?? selectedZoneId;
     const activeZone = useZone(activeZoneId);
@@ -341,7 +315,7 @@ export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = n
                             onClick={() => setLayers((current) => ({ ...current, [key]: !current[key] }))}
                             type="button"
                         >
-                            {LAYER_LABEL[key]}
+                            {WORKSHOP_3D_LAYER_LABEL[key]}
                         </button>
                     ))}
                 </div>
@@ -373,7 +347,7 @@ export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = n
                 <div className="ws-3d-meta-grid">
                     <div>
                         <dt>Terrain</dt>
-                        <dd>{sceneData?.terrain.length ?? '…'} layer · {CONFIDENCE_LABEL[sceneData?.terrain[0]?.confidence ?? ''] ?? 'unknown'}</dd>
+                        <dd>{sceneData?.terrain.length ?? '…'} layer · {WORKSHOP_3D_CONFIDENCE_LABEL[sceneData?.terrain[0]?.confidence ?? ''] ?? 'unknown'}</dd>
                     </div>
                     <div>
                         <dt>Hulls</dt>
@@ -398,24 +372,21 @@ export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = n
                             onClick={() => setActiveObjectId(object.id)}
                             type="button"
                         >
-                            {object.label} · {CONFIDENCE_LABEL[object.confidence] ?? object.confidence}
+                            {object.label} · {WORKSHOP_3D_CONFIDENCE_LABEL[object.confidence] ?? object.confidence}
                         </button>
                     ))}
                 </div>
                 {activeObject && (
                     <div className="ws-3d-object-detail">
                         <strong>{activeObject.label}</strong>
-                        <span>Confidence: {CONFIDENCE_LABEL[activeObject.confidence] ?? activeObject.confidence}</span>
-                        {'verificationStatus' in activeObject && activeObject.verificationStatus && (
-                            <span>{VERIFICATION_LABEL[activeObject.verificationStatus] ?? activeObject.verificationStatus}</span>
-                        )}
-                        {'sourceId' in activeObject && (
-                            <span>Source: {sourceMap.get(activeObject.sourceId)?.label ?? activeObject.sourceId}</span>
-                        )}
-                        {'role' in activeObject && activeObject.role && <span>Role: {activeObject.role}</span>}
-                        {'historicalStatus' in activeObject && activeObject.historicalStatus && <span>Status: {activeObject.historicalStatus}</span>}
-                        {activeZone && <span>Zone: {activeZone.name}</span>}
-                        <span>Direct media links: {linkedAssetsForActiveObject.length}</span>
+                        {buildWorkshop3DObjectMeta({
+                            object: activeObject,
+                            sourceLabel: 'sourceId' in activeObject && activeObject.sourceId ? sourceMap.get(activeObject.sourceId)?.label : undefined,
+                            zoneName: activeZone?.name,
+                            linkedAssetCount: linkedAssetsForActiveObject.length,
+                        }).map((line) => (
+                            <span key={line}>{line}</span>
+                        ))}
                     </div>
                 )}
                 <div className="ws-3d-evidence-panel">
@@ -437,7 +408,7 @@ export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = n
                         items={(activeObject ? linkedAssetsForActiveObject : (assets ?? [])).slice(0, 3).map((asset) => ({
                             kind: 'asset' as const,
                             id: asset.id,
-                            eyebrow: buildAssetEyebrow(asset, activeZone),
+                            eyebrow: buildWorkshopAssetEyebrow(asset, activeZone),
                             text: asset.title,
                             zoneId: activeZoneId ?? undefined,
                         }))}
@@ -450,7 +421,7 @@ export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = n
                             items={zoneAssetsWithoutDirectObjectLink.slice(0, 3).map((asset) => ({
                                 kind: 'asset' as const,
                                 id: asset.id,
-                                eyebrow: buildAssetEyebrow(asset, activeZone),
+                                eyebrow: buildWorkshopAssetEyebrow(asset, activeZone),
                                 text: asset.title,
                                 zoneId: activeZoneId ?? undefined,
                             }))}
@@ -522,28 +493,6 @@ export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = n
             </aside>
         </section>
     );
-}
-
-function getSpatialObjectZoneId(object: SpatialSceneObject | undefined): string | undefined {
-    return object && 'zoneId' in object ? object.zoneId : undefined;
-}
-
-function buildAssetEyebrow(
-    asset: {
-        assetType: string;
-        spatialAnchorType?: string;
-        bearingConfidence?: string;
-        targetZoneId?: string;
-    },
-    activeZone?: { id: string; name: string } | undefined,
-): string {
-    const parts = [
-        asset.assetType,
-        asset.spatialAnchorType,
-        asset.bearingConfidence,
-        asset.targetZoneId && activeZone && asset.targetZoneId !== activeZone.id ? `target:${asset.targetZoneId}` : null,
-    ].filter(Boolean);
-    return parts.join(' · ');
 }
 
 function EvidenceList({

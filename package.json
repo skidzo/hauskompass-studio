@@ -9,7 +9,6 @@
     "preview": "vite preview",
     "test": "vitest",
     "validate:metadata": "node scripts/validate-metadata.mjs",
-    "generate:eiermann-spatial": "node scripts/generate-eiermann-spatial-context.mjs",
     "verify:workshop-3d": "node scripts/verify-workshop-3d-render.mjs",
     "handoff:codex": "node scripts/generate-codex-handoff.mjs",
     "generate:showcase-pdf": "node scripts/generate-showcase-pdf.mjs"

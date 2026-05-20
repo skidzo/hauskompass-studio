@@ -13,7 +13,6 @@ export default defineConfig({
       ...configDefaults.exclude,
       'tests/usability/06-laien-workshop-workflow.test.mjs',
       'utils/tests/generate-media-manifest.test.mjs',
-      'utils/tests/find-local-media-eiermann.test.mjs',
     ],
   },
 });

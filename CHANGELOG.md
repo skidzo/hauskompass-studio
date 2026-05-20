@@ -1,7 +1,22 @@
 # Changelog
 
+- Documentation surface reduction session: moved most product and historical docs from `apps/hauskompass-studio/docs/` to `../../docs/hauskompass-studio-docs/`; kept only the subset still referenced by runtime seeds, handoff tooling, and showcase export workflows inside the repo
+- Legacy utility cleanup session: removed the broken `generate:eiermann-spatial` package entry, dropped stale Vitest exclusion and `.gitignore` rules for retired Eiermann-only helpers, and archived deprecated local/exploratory utilities outside the repo in `../../docs/hauskompass-studio-dev/legacy-utility-archive/`
+- Utility inventory and migration planning session: classified every current file in `scripts/` and `utils/` as keep/move/merge/deprecate; documented the target split across `scripts/`, `tools/*` and `utils/py/*`; identified example-specific utilities that should be deprecated instead of endlessly generalized; moved the solo-development planning notes for this cleanup to `../../docs/hauskompass-studio-dev/` while keeping executable utilities in the repo
+- Repo governance and tooling structure session: accepted ADR-0004 to keep Hauskompass Studio a local-first frontend with Python restricted to offline tooling; moved solo-development governance and architecture-planning docs to the workspace-level developer area at `../../docs/hauskompass-studio-dev/`; kept executable tooling under `tools/` and `utils/py/` in the repo
+- Adapter seam sprint: added shared `studio-core/spatial-rendering` primitives for render-neutral polygon/view-cone geometry; moved Workshop map GeoJSON enrichment and 3D object metadata/selection helpers into dedicated adapter modules so MapLibre and Three.js components keep rendering duties while domain translation leaves the view layer
+- Open-source reuse / architecture sprint: added `src/lib/studio-core/` as a new shared boundary for commodity photo/spatial/evidence primitives; moved EXIF parsing into shared media-core; kept `src/features/workshop/ingest/exifReader.ts` as a compatibility re-export; migrated Renovation photo placement to shared origin/placement/orientation/view-direction primitives; added pure shared-helper tests; documented dependency/license posture, architectural decision rules, shared-core extraction plan and bounded sprint decision without adding dependencies
+
 ## v0.1.0 — 2026-05-20
 
+- **Renovierungsmodus: Foto-Platzierung**: neuer Tab Fotos in der Renovierungsplanung mit lokaler Registrierung von aktuellen und historischen Fotos samt Raum-, Bauteil-, Oberflächen-, Karten- oder Planbezug
+- **Historische Bild-Evidenz**: Renovierungsfotos koennen jetzt als historisch markiert werden und speichern Zustand (`before|during|after|unknown`), Datums-Konfidenz, Sichtbarkeitsnotizen und Entscheidungsnutzen
+- **Blickrichtung und Unsicherheit**: Fotoeintraege tragen `viewDirectionLabel`, optionale Gradwerte sowie getrennte Platzierungs- und Orientierungs-Konfidenz; EXIF bleibt Hinweis, nicht Wahrheit
+- **Renovierungsbeobachtung / Frage**: aus einem Foto kann direkt eine lokale Beobachtung oder offene Frage erzeugt werden; verdeckte Infrastruktur bleibt bewusst bei `visible | historical_photo_only | inferred | unknown` und kennt keinen impliziten `verified`-Status
+- **Projektbezogene Persistenz**: neue lokale Speicherstruktur `hauskompass.renovationPhotoPlacement.v1.<projectSlug>` trennt Renovierungs-Fotoeintraege pro Projekt, ohne Workshop-Persistenz anzutasten
+- **Tests erweitert**: neue Suite `tests/renovationPhotoPlacement.test.ts`; Verifikation mit Renovierungs-, Workshop- und Metadata-Suites sowie `npm run build` grün
+
+## v0.1.0 — 2026-05-20
 - **Workshop export hardening**: Öffentliche Workshop-Exporte prüfen jetzt die verknüpfte Evidenzkette von Szenen mit (`selectedAssetIds`, `selectedObservationIds`, `selectedClaimIds`, `selectedQuestionIds`) statt nur die Asset-Auswahl
 - **Striktere Public-Eligibility**: Öffentlicher HTML-Export verlangt jetzt sowohl `publicationStatus: 'publishable'` als auch `visibility: 'public'`; interne Exporte schließen weiterhin `do_not_publish` aus
 - **Export-Vorschau im Szenen-Tab**: `WorkshopExportBar` zeigt jetzt, wie viele Szenen öffentlich exportierbar sind und nennt erste Ausschlussgründe für blockierte Szenen
@@ -162,7 +177,7 @@
 - Evidence Inspection Panel: EvidenceInspectionPanel in Assessment → Evidence tab; renders synthetic IFC-adapter output with confidence badges, quality flags and recommended actions
 - IFC model viewer redesign: responsive viewport (calc(100svh − 130px)), compact overlay toolbar, 4 named camera presets (Oblique/Top/South/East), collapsible info drawer, in-app focus mode, edge outlines for walls/roofs/ground, narrow-screen stacking; all inline styles moved to named CSS classes
 - project.config.json: central per-project config (cacheSlug, dgmTile, targetEasting/Northing, mapElevationM, confirmedLod2Ids, referenceLod2Ids, ifc roof surface IDs); all 4 pipeline scripts (extract_lod2_candidates, generate_site_context_data, generate_assessment_data, export_ifc) now read from this file instead of hardcoded constants
-- OpenSpec baseline: initialized `openspec/`, added project context and current-state specs for project context, evidence baseline, privacy/local data, metadata validation and renovation planning workflow
+- OpenSpec baseline: initialized `../..//docs/openspec/`, added project context and current-state specs for project context, evidence baseline, privacy/local data, metadata validation and renovation planning workflow
 - OpenSpec IFC viewer proposal: added `improve-ifc-model-viewer` change request covering viewport sizing, visual inspection polish, compact controls and evidence-aware model context
 - Usability-Test 2 (Pascalstraße 100 / Eiermann-Campus): Wizard-Verbesserungen (20 Kandidaten-Limit, Gebäudegröße 81×81m in Kandidaten-Karte, Kachelgrenze-Hinweis auf Nachbarkachel, Distanzwarnung >30m), BW-Kachel 505_5396 korrekt identifiziert, 2 Eiermann-Pavillons (DEBW_) bestätigt, IFC-Flachdach-Quader generiert, Projekt-Wechsel Demo↔Pascalstraße bidirektional verifiziert
 

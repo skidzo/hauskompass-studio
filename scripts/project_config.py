@@ -1,22 +1,12 @@
-import json
-import os
+import importlib.util
 from pathlib import Path
 
+CANONICAL = Path(__file__).resolve().parents[1] / "utils/py/common/project_config.py"
+SPEC = importlib.util.spec_from_file_location("_hauskompass_project_config", CANONICAL)
+MODULE = importlib.util.module_from_spec(SPEC)
+assert SPEC and SPEC.loader
+SPEC.loader.exec_module(MODULE)
 
-def load_project_config(root: Path) -> dict:
-    configured_path = os.environ.get("HAUSKOMPASS_PROJECT_CONFIG")
-    candidates = []
-    if configured_path:
-        candidates.append(Path(configured_path).expanduser())
-    candidates.extend([
-        root / "project.config.json",
-        root / "project.config.example.json",
-    ])
+load_project_config = MODULE.load_project_config
 
-    for path in candidates:
-        if path.exists():
-            return json.loads(path.read_text(encoding="utf-8"))
-
-    raise FileNotFoundError(
-        "No project config found. Set HAUSKOMPASS_PROJECT_CONFIG or create project.config.json.",
-    )
+__all__ = ["load_project_config"]

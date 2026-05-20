@@ -2,7 +2,7 @@
 
 Repo-governance, ADR, tooling-structure, and architecture-reuse working documents for `hauskompass-studio` now live outside the public app repo at:
 
-- `../..//docs/hauskompass-studio-dev/`
+- `../../docs/hauskompass-studio-dev/`
 
 Rationale:
 - these files support solo development and agent-assisted planning,

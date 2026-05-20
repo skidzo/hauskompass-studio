@@ -78,3 +78,7 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .lean-ctx/
+
+# Python bytecode caches
+__pycache__/
+*.pyc

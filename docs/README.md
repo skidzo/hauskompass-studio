@@ -2,7 +2,7 @@
 
 Most documentation for `hauskompass-studio` now lives outside the source repo at:
 
-- `../..//docs/hauskompass-studio-docs/`
+- `../../docs/hauskompass-studio-docs/`
 
 This in-repo `docs/` folder keeps only files still used by active app/tool workflows, such as:
 
@@ -15,4 +15,4 @@ This in-repo `docs/` folder keeps only files still used by active app/tool workf
 See also:
 
 - [DEVELOPMENT_WORKSPACE_POINTER.md](./DEVELOPMENT_WORKSPACE_POINTER.md)
-- `../..//docs/hauskompass-studio-dev/`
+- `../../docs/hauskompass-studio-dev/`

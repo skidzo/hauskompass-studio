@@ -53,7 +53,7 @@ Dexie-Datenbank (`src/features/workshop/db/workshopDb.ts`) mit 15 + 1 Tabellen, 
 
 ### Seed-Daten: Eiermann-Campus
 
-`examples/eiermann/` enthält den gesamten Ausgangsbestand für den Eiermann-Campus Stuttgart-Vaihingen (IBM-Hauptverwaltung, Egon Eiermann). Seed-Version: `'4'`.
+`examples/workshop/` enthält den gesamten Ausgangsbestand für den Eiermann-Campus Stuttgart-Vaihingen (IBM-Hauptverwaltung, Egon Eiermann). Seed-Version: `'4'`.
 
 - 12 Zonen (Parkdecks, Pavillons, NuCOS-Büro, Kantine, Zugang, …)
 - 8 Ereignisphasen (1960er Bau → IBM-Betrieb → Leerstand → NuCOS-Übernahme → …)

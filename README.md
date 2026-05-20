@@ -101,7 +101,7 @@ export HAUSKOMPASS_PROJECT_CONFIG=$HOME/projekte/mein-projekt/project.config.jso
 npm run dev
 ```
 
-Projektdaten liegen lokal in `public/projects/<slug>/` — dieses Verzeichnis ist aus git ausgeschlossen und wird nicht synchronisiert.
+Projektdaten liegen lokal in `/projects/<slug>/` — dieses Verzeichnis ist aus git ausgeschlossen und wird nicht synchronisiert.
 
 ---
 

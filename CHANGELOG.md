@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.1.0 — 2026-05-20
+
+- **Workshop export hardening**: Öffentliche Workshop-Exporte prüfen jetzt die verknüpfte Evidenzkette von Szenen mit (`selectedAssetIds`, `selectedObservationIds`, `selectedClaimIds`, `selectedQuestionIds`) statt nur die Asset-Auswahl
+- **Striktere Public-Eligibility**: Öffentlicher HTML-Export verlangt jetzt sowohl `publicationStatus: 'publishable'` als auch `visibility: 'public'`; interne Exporte schließen weiterhin `do_not_publish` aus
+- **Export-Vorschau im Szenen-Tab**: `WorkshopExportBar` zeigt jetzt, wie viele Szenen öffentlich exportierbar sind und nennt erste Ausschlussgründe für blockierte Szenen
+- **Scene-Editor-Warnungen erweitert**: `WorkshopSceneEditor` bewertet verknüpfte Beobachtungen, Claims und Fragen mit und stuft unsichere öffentliche Szenen beim Speichern wieder auf `internal` / `needs_review` zurück
+- **Tests aktualisiert**: neue Export-/Safety-Checks in `tests/workshop-scene-editor.test.ts`; Seed-Integritätstest auf aktuelle `WorkshopScene.exportStatus`-Werte korrigiert
+- **Verifikation**: `npm test -- --run tests/workshop-scene-editor.test.ts tests/usability/03-workshop-seed-integrity.test.ts` und `npm run build` grün
+
 ## v0.1.0 — 2026-05-19
 
 - **IFC: Alle bestätigten Gebäude gemeinsam**: `generateCombinedIfcStep()` generiert ein einziges IFC für alle bestätigten Kandidaten; gemeinsamer Ursprung, korrekte Relativlage der Gebäude zueinander
@@ -25,7 +34,7 @@
 
 - **GitHub-Readiness**: Standalone Git-Repo in `apps/hauskompass-studio/` initialisiert (Branch `main`), erster öffentlicher Commit `5d243b9` mit 272 Dateien. Alle privaten Strings aus src/ + docs/ bereinigt (0 Treffer), project-spezifische Scripts (find-local-media-eiermann, generate-eiermann-spatial-context) gitignored, build_output-Logs gitignored, docs/RELEASE_DECISION.md + initial_repository_assessment.md + ADR-0003 generalisiert.
 
-- Release-Readiness Cleanup: alle privaten Projekt-Strings aus src/ entfernt (Schönseer, Oberviechtach, Eiermann-IDs, /home/johannes-Pfade), seedLoader.ts generalisiert (seedProject/isProjectSeeded/clearProjectSeed), generated-Dateien durch leere Stubs ersetzt, public/projects/index.json auf [], .gitignore um output/, public/local-media/, examples/eiermann/, private Docs ergänzt. Build: 0 TS-Fehler, 1704 Module.
+- Release-Readiness Cleanup: alle privaten Projekt-Strings aus src/ entfernt (Schönseer, Oberviechtach, Eiermann-IDs, /home/johannes-Pfade), seedLoader.ts generalisiert (seedProject/isProjectSeeded/clearProjectSeed), generated-Dateien durch leere Stubs ersetzt, /projects/index.json auf [], .gitignore um output/, public/local-media/, examples/workshop/, private Docs ergänzt. Build: 0 TS-Fehler, 1704 Module.
 
 - Codex-Session 019e3bed vorbereitet: RELEASE_DECISION.md (NEEDS_CLEANUP, 10 priorisierte Schritte), ADR-0003-python-utility-layer.md (Entscheidung: Option B — utils/py/ CLI-Layer), Code-Review-Befunde dokumentiert (seedLoader Eiermann-spezifisch: major; Utils: minor)
 
@@ -41,25 +50,25 @@
 
 - Medienordner auf Projekt-Slug-Konvention erweitert: neuer Pfad `public/local-media/eiermann-campus-pascalstrasse-100/` angelegt, Manifest-URLs dorthin umgeschrieben und `generate-media-manifest.mjs` auf die slug-basierte Medienstruktur umgestellt
 
-- Projektbezogener Medien-Restore: `public/projects/index.json` traegt nun `mediaManifestUrl`; `projectDataLoader` loest den Manifest-Pfad pro Projekt auf und `seedLoader.ts` verwendet ihn fuer den Restore statt eines festen Eiermann-Medienpfads
+- Projektbezogener Medien-Restore: `/projects/index.json` traegt nun `mediaManifestUrl`; `projectDataLoader` loest den Manifest-Pfad pro Projekt auf und `seedLoader.ts` verwendet ihn fuer den Restore statt eines festen Eiermann-Medienpfads
 
 - Workshop-Persistenz pro Projekt isoliert: Seed-Version und Media-Restore-Version werden jetzt ueber projektbezogene `localStorage`-Keys gespeichert; Bundle-Export liest die Seed-Version ebenfalls aus dem projektspezifischen Schluesselraum
 
 - Workshop-Kontext dynamisiert: `App.tsx` und `ProjectHome.tsx` leiten den aktiven Workshop jetzt aus dem gewaehlten Built-in-Projekt inklusive `projectId` und `siteId` ab; `WorkshopApp` laeuft nicht mehr implizit gegen fest verdrahtete Eiermann-Konstanten
 
-- Projekt-Registry aktiviert: `public/projects/index.json` traegt jetzt `slug`, `projectId` und `siteId`; `projectDataLoader` nutzt diese Registry als Primaerquelle fuer die Runtime-Aufloesung und faellt nur noch bei Bedarf auf einen kleinen internen Fallback zurueck
+- Projekt-Registry aktiviert: `/projects/index.json` traegt jetzt `slug`, `projectId` und `siteId`; `projectDataLoader` nutzt diese Registry als Primaerquelle fuer die Runtime-Aufloesung und faellt nur noch bei Bedarf auf einen kleinen internen Fallback zurueck
 
 - Runtime-Projektdaten zentralisiert: neuer `projectDataLoader` loest `projectId` auf `slug/siteId` auf; `WorkshopMapPanel`, `Workshop3DPanel`, `BulkImportPanel` und `seedLoader.ts` laden Projektdaten jetzt ueber zentrale Projekt-URLs statt ueber verstreute harte Pfade; Pipeline in `docs/project_data_pipeline.md` dokumentiert
 
 - Gebäudehöhen aus ZITRONENWOLF-Geschosszählung (2016) aktualisiert: P1=16m (EG+UG+3OG), P2=17m, P3=14m, P4=17m, Kantine=8m; Working Model bereinigt (keine Absolutpfade, Geschosszahlen ergänzt); project_materials/ ins Projektverzeichnis kopiert; Handoff + codex-cli-Prompt erstellt in docs/handoffs/
 
-- Migration F: Build grün (tsc + vite); 12 migrierte JSON-Dateien aus `examples/eiermann/` entfernt; verbleiben: `project_materials/`, GeoJSON-Referenzdateien
+- Migration F: Build grün (tsc + vite); 12 migrierte JSON-Dateien aus `examples/workshop/` entfernt; verbleiben: `project_materials/`, GeoJSON-Referenzdateien
 
-- Migration E: verbleibende 4 static imports aus `examples/eiermann/` in Komponenten durch fetch() ersetzt (`Workshop3DPanel`, `WorkshopMapPanel`, `BulkImportPanel`); Geodateien nach `public/projects/eiermann-campus-pascalstrasse-100/` kopiert
+- Migration E: verbleibende 4 static imports aus `examples/workshop/` in Komponenten durch fetch() ersetzt (`Workshop3DPanel`, `WorkshopMapPanel`, `BulkImportPanel`); Geodateien nach `/projects/eiermann-campus-pascalstrasse-100/` kopiert
 
-- Migration D: `seedLoader.ts` — 9 statische JSON-Imports durch `fetchSeedBundle()` ersetzt; Seed-JSON nach `public/projects/eiermann-campus-pascalstrasse-100/seed/` kopiert
+- Migration D: `seedLoader.ts` — 9 statische JSON-Imports durch `fetchSeedBundle()` ersetzt; Seed-JSON nach `/projects/eiermann-campus-pascalstrasse-100/seed/` kopiert
 
-- Migration C: `ProjectHome` lädt Projektliste aus `public/projects/index.json` (fetch, Fallback auf Inline-Daten); `BUILTIN_PROJECTS`-Export entfernt
+- Migration C: `ProjectHome` lädt Projektliste aus `/projects/index.json` (fetch, Fallback auf Inline-Daten); `BUILTIN_PROJECTS`-Export entfernt
 
 - Migration B: `WorkshopRoute` akzeptiert nun `projectId`/`siteId` als Props (mit Defaults); `App.tsx` übergibt `WS_PROJECT_ID`/`WS_SITE_ID` explizit — Hardcodes im Komponenten-Scope entfernt
 
@@ -77,13 +86,13 @@
 
 - Pavillon-Nummerierung nach Nutzerkorrektur synchronisiert: In der 2D-Ansicht wurde die bisherige Position von Pavillon 3 als Pavillon 2 und die bisherige Position von Pavillon 2 als Pavillon 3 korrigiert; Pavillon 1 und Pavillon 4/NuCOS bleiben unverändert; Pavillon 5 als planned_not_built-Zone, Marker und 2D-Schemafläche ergänzt; 3D-Spatial-Seed und Projektmaterialien auf diese Nummerierung umgestellt; Seed-Version auf 9 angehoben
 
-- Workshop 3D Geometrie-Kalibrierung: Zusatzmaterial zum Eiermann-Areal ab 1984 in `examples/eiermann/project_materials/eiermann_spatial_working_model_1984.md` gesichert; Spatial Seed auf die Zeichnungs-/Schema-Logik umgestellt; Pavillon 5 als planned_not_built-Ghost ergänzt; Quellen SFP Architekten, ZITRONENWOLF Rundgang und Projektzeichnungen in `spatial_context.json` referenziert
+- Workshop 3D Geometrie-Kalibrierung: Zusatzmaterial zum Eiermann-Areal ab 1984 in `examples/workshop/project_materials/eiermann_spatial_working_model_1984.md` gesichert; Spatial Seed auf die Zeichnungs-/Schema-Logik umgestellt; Pavillon 5 als planned_not_built-Ghost ergänzt; Quellen SFP Architekten, ZITRONENWOLF Rundgang und Projektzeichnungen in `spatial_context.json` referenziert
 
 - Workshop 3D Evidence-Navigation: Evidence-Items im 3D-Seitenpanel sind interaktiv; Klick auf Asset/Observation/Interpretation/Claim/Question wechselt in den Workshop-Kontext, öffnet die passende Zone und fokussiert das Evidenzobjekt; Fotos öffnen den Viewer, Szenen öffnen direkt die WorkshopScene-Detailansicht
 
 - Workshop 3D Stage 4 begonnen: 3D-Objekte sind nun mit der Workshop-Evidenz zurückgekoppelt; Auswahl eines Hüll-/Vegetationsobjekts setzt die Zone und zeigt im 3D-Seitenpanel zonenbezogene Assets, Observations, Interpretations, Claims, Questions und referenzierende WorkshopScenes; `spatial_context.json` enthält nun einen expliziten Scene-Link für die Sukzessionsvegetation
 
-- Studio-Spatial-Sprint gestartet: Architekturentscheid in `docs/next_spatial_sprint_decision.md`, Masterplan `docs/studio_spatial_master_plan.md`, Workshop-3D-Plan und Projektcharaktermodell ergänzt; neue Studio-Typen für Projektcharakter und Spatial-Layer (`domain/project`, `domain/spatial`); Eiermann-Projekt als hybrides Campus-/Workshopprojekt klassifiziert; erster Workshop-3D-Tab mit rough terrain, inferierten Gebäudehüllen, Vegetationsclustern, Layer-Toggles, Quellen-/Konfidenzhinweis und Zone-Linking aus `examples/eiermann/spatial_context.json`; Seed-Version auf 8 angehoben
+- Studio-Spatial-Sprint gestartet: Architekturentscheid in `docs/next_spatial_sprint_decision.md`, Masterplan `docs/studio_spatial_master_plan.md`, Workshop-3D-Plan und Projektcharaktermodell ergänzt; neue Studio-Typen für Projektcharakter und Spatial-Layer (`domain/project`, `domain/spatial`); Eiermann-Projekt als hybrides Campus-/Workshopprojekt klassifiziert; erster Workshop-3D-Tab mit rough terrain, inferierten Gebäudehüllen, Vegetationsclustern, Layer-Toggles, Quellen-/Konfidenzhinweis und Zone-Linking aus `examples/workshop/spatial_context.json`; Seed-Version auf 8 angehoben
 
 - SOUP-Rueckmeldung Kurt Grunow (2026-05-17) in das Eiermann-Seed-Modell aufgenommen: `M-SEED-004`, `C-000006`, `Q-000009`, `Q-000010`, Eventphase `E-soup-brasilien-2023`, Workshop-Szene `WS-006` zu `BRASILIEN`, Max Bense, Brasilia und Urbanistik; Seed-Version auf 5 angehoben; alle neuen Eintraege bewusst `internal` / `needs_review`
 
@@ -119,7 +128,7 @@
 - AssessmentFinding issue model: lightweight BCF-inspired internal finding schema and example links photos, roof defects/missing information, requirements, asset instances and renovation decisions without implementing BCF exchange
 - Agentic renovation planning app sprint: CURRENT_STATE, renovation loop, pragmatic app data model, agent behavior spec, AGENTS guidance, Planning UI, planning seed data, Codex handoff generator and selector tests
 - Building-section redesign: segment control for part selection (Teil 1/2), combined tab+selector bar, context-aware detail tabs (Elemente/Ansichten only when IFC generated), demo-only panels gated for imported projects in Assessment section
-- Workshop-Assessment-Fundament für Eiermann-Campus: Domain-Typen (Zone, Place, Asset, Observation, Claim, Question, Memory, EventPhase, WorkshopScene, Assessment, Scenario mit SensitivityLevel + PublicationStatus + EpistemicType) in src/domain/workshop/types.ts; Seed-Daten in examples/eiermann/ (12 Zonen, 8 historische Phasen, 5 Claims, 8 Questions, 3 Workshop-Szenen); docs/domain_model.md, docs/project_vision.md, docs/implementation_plan.md, docs/initial_repository_assessment.md angelegt; README aktualisiert
+- Workshop-Assessment-Fundament für Eiermann-Campus: Domain-Typen (Zone, Place, Asset, Observation, Claim, Question, Memory, EventPhase, WorkshopScene, Assessment, Scenario mit SensitivityLevel + PublicationStatus + EpistemicType) in src/domain/workshop/types.ts; Seed-Daten in examples/workshop/ (12 Zonen, 8 historische Phasen, 5 Claims, 8 Questions, 3 Workshop-Szenen); docs/domain_model.md, docs/project_vision.md, docs/implementation_plan.md, docs/initial_repository_assessment.md angelegt; README aktualisiert
 - Workshop-UI implementiert: Dexie.js + dexie-react-hooks als IndexedDB-Layer (14 Tabellen); idempotenter Seed-Loader; Badges/Cards/ZoneList/Timeline/WorkshopSceneViewer-Komponenten; WorkshopRoute mit Zonen-Tabs, Zone-Detail-Panel und Szenen-Viewer; Workshop-Section in App.tsx-Navigation integriert; schemas/workshop-ontology.jsonld (JSON-LD, aligniert mit bot:, cidoc:, schema.org); Build-Fehler (doppelter Funktionsblock, ReactNode-Import, Confidence-Typ) behoben
 - Asset-Ingest-Workflow: Drag-and-Drop-Upload (Fotos, Videos, Dokumente, CAD) direkt in eine Zone; automatische Sensitivity-Klassifizierung via MIME+Dateinamen-Heuristik; Thumbnail-Generierung via Canvas; Blob-Storage in IndexedDB (Dexie v2 mit assetBlobs-Tabelle); AssetIngestPanel mit per-Datei-Metadateneditor; AssetCard mit Thumbnail-Anzeige; Zonen-Detail-Panel mit „Hinzufügen"-Button integriert
 - Prototype-fragment audit: demo data leaks into imported project workflow eliminated — RenovationPlanningPanel, DataInventoryPanel, AssessmentReadinessPanel, ScenarioRegistryPanel now derive from real LoD2/project state for imported projects; demo fixtures remain intact for the demo project; MetadataExplorerPanel/BuildingCandidateTable/SurfaceMetricsTable gated to demo-only in data section

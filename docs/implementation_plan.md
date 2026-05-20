@@ -35,7 +35,7 @@ Jede Iteration beantwortet vier Fragen:
 ### Laufende Aufgaben
 
 - [ ] TypeScript-Domain-Typen anlegen: `src/domain/workshop/types.ts`
-- [ ] Seed-Daten Eiermann-Campus: `examples/eiermann/`
+- [ ] Seed-Daten Eiermann-Campus: `examples/workshop/`
   - `site.json`
   - `zones.json`
   - `event_phases.json`

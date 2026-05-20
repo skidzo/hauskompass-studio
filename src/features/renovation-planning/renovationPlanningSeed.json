@@ -116,7 +116,7 @@
       "source": "metadata-first sprint",
       "confidence": "documented",
       "last_updated": "2026-05-12",
-      "evidence_links": ["schemas/", "examples/building-assessment/", "src/validation/metadataValidator.js"]
+      "evidence_links": ["schemas/", "examples/renovation/", "src/validation/metadataValidator.js"]
     }
   ],
   "assumptions": [
@@ -212,7 +212,7 @@
       "options": ["Exterior insulation", "Interior insulation", "Hybrid or deferred strategy"],
       "dependencies": ["need-roof-build-up", "need-eaves-ridge-heights", "assumption-roof-build-up"],
       "risks": ["risk-moisture-trap", "risk-structural-overclaim"],
-      "evidence_links": ["docs/architecture/asset-data-model.md", "examples/building-assessment/assessment-findings.example.json"],
+      "evidence_links": ["docs/architecture/asset-data-model.md", "examples/renovation/assessment-findings.example.json"],
       "next_action": "Inspect roof build-up and timber condition before narrowing insulation options."
     },
     {
@@ -262,7 +262,7 @@
       "options": ["Retain in place", "Remove and reuse", "Dispose after condition check"],
       "dependencies": ["need-roof-build-up", "need-keller-confirmation"],
       "risks": ["risk-unsupported-reuse-claim"],
-      "evidence_links": ["examples/building-assessment/building-elements.example.json"],
+      "evidence_links": ["examples/renovation/building-elements.example.json"],
       "next_action": "Use site photos and timber condition checks before assigning reuse status."
     }
   ],

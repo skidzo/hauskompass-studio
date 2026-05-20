@@ -46,7 +46,7 @@ scripts/          Node-Hilfsskripte (Validierung, Handoff-Generator, PDF)
 tests/            Vitest-Tests für Schemas, Selektoren, Adapter
 utils/            Python-Utilities (IFC-Export, Terrain, LoD2-Download)
 cache/            Heruntergeladene Geodaten (gitignore)
-private/          Lokale Sensitivdaten (gitignore)
+local/          Lokale Sensitivdaten (gitignore)
 ```
 
 ---

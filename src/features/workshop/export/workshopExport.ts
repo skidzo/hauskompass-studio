@@ -33,7 +33,7 @@ export function buildExportBlob(
 
   const filtered = scenes.filter((s) => {
     if (s.publicationStatus === 'do_not_publish') return false;
-    if (mode === 'public') return s.publicationStatus === 'publishable';
+    if (mode === 'public') return s.publicationStatus === 'publishable' && s.visibility === 'public';
     return true; // internal mode: all except do_not_publish (already excluded above)
   });
 

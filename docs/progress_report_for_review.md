@@ -13,7 +13,7 @@ Date: 2026-05-18
 - Studio-level spatial direction documented in `docs/next_spatial_sprint_decision.md`, `docs/studio_spatial_master_plan.md`, `docs/workshop_3d_extension_plan.md` and `docs/project_character_model.md`.
 - Project character metadata introduced so the Studio can distinguish focused assessment projects from larger workshop-oriented spatial projects.
 - Shared spatial domain types introduced for terrain, building hulls, vegetation, source/confidence metadata and spatial evidence links.
-- Eiermann-Campus now has a rough `examples/eiermann/spatial_context.json` seed for a first workshop-oriented 3D model.
+- Eiermann-Campus now has a rough `examples/workshop/spatial_context.json` seed for a first workshop-oriented 3D model.
 - Workshop navigation now includes a 3D view with terrain, building hulls, vegetation, layer toggles, source/confidence note and zone-linked selection.
 - Stage 4 evidence linking has started: the 3D side panel now surfaces zone-linked assets, observations, interpretations, claims, questions and workshop scenes for the selected spatial object.
 - Stage 4 navigation is interactive: clicking evidence in the 3D panel opens the corresponding Workshop zone, scene or photo/detail focus.
@@ -28,7 +28,7 @@ This is intentionally not a digital twin or modeling editor. It is a first sourc
 Date: 2026-05-19
 
 - Runtime project loading was tightened further. `App.tsx`, `ProjectHome.tsx`, `projectDataLoader.ts`, `seedLoader.ts`, `WorkshopMapPanel.tsx`, `Workshop3DPanel.tsx` and `BulkImportPanel.tsx` now operate against registry-driven project configuration instead of scattered Eiermann-specific public paths.
-- `public/projects/index.json` now acts as the technical registry for built-in workshop projects, including `slug`, `projectId`, `siteId` and `mediaManifestUrl`.
+- `/projects/index.json` now acts as the technical registry for built-in workshop projects, including `slug`, `projectId`, `siteId` and `mediaManifestUrl`.
 - Seed restore state and media restore state are now isolated per `projectId` in localStorage. This reduces cross-project contamination when more than one workshop project is opened in the same browser profile.
 - The local media folder was migrated to a slug-based convention: `public/local-media/eiermann-campus-pascalstrasse-100/`. Runtime restore already resolves the manifest path per project through the registry.
 - 42 local Eiermann photos were integrated into the runtime media manifest and are restored into IndexedDB-backed workshop state on app startup.
@@ -136,7 +136,7 @@ The application has two distinct modes controlled by `AppMode`:
 | Item | Status |
 |------|--------|
 | Tests | ✅ 169 tests, 14 files, all green |
-| Seed data | ✅ `examples/eiermann/` — full JSON dataset |
+| Seed data | ✅ `examples/workshop/` — full JSON dataset |
 | Seed versioning | ✅ `SEED_VERSION = '4'`, localStorage key, auto-re-seed |
 | Documentation | ✅ extensive (see section 10) |
 | DB migrations | ✅ Dexie versioned schema (v1 → v3) |
@@ -299,7 +299,7 @@ All 15 entities listed below are defined in `src/domain/workshop/types.ts`.
 | SQLite used? | No. Dexie/IndexedDB only. |
 | Other database? | No. |
 | Migrations present? | Yes — Dexie versioned schema (v1 → v3). Additive only. |
-| File-based storage? | Seed data only (JSON in `examples/eiermann/`). Runtime data is IndexedDB. |
+| File-based storage? | Seed data only (JSON in `examples/workshop/`). Runtime data is IndexedDB. |
 | CSV as primary storage? | No. CSVs exist only for terrain cross-sections (`output/*.csv`). |
 | CSV for import/export? | Not currently. Export is HTML only. |
 | Migration path to PostgreSQL? | Yes — `WorkshopProjectBundle` is fully JSON-serializable with stable string IDs throughout. Documented in `docs/persistence_strategy.md`. |
@@ -323,7 +323,7 @@ All 15 entities listed below are defined in `src/domain/workshop/types.ts`.
 
 ## 5. Seed Data and Example Content
 
-**Seed location:** `examples/eiermann/`  
+**Seed location:** `examples/workshop/`  
 **Seed version:** `'4'` (localStorage key `eiermann-seed-version`)
 
 | Entity | Seed count | File |

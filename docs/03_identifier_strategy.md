@@ -24,7 +24,7 @@ observation://{project_id}/{stream_id}
 
 ## Private Data Boundary
 
-Committed IDs must be pseudonymous. Private address, cadastral details, exact coordinates, photos, scans, and field measurements belong in ignored local storage such as `.env.local`, `private/`, or another non-committed location.
+Committed IDs must be pseudonymous. Private address, cadastral details, exact coordinates, photos, scans, and field measurements belong in ignored local storage such as `.env.local`, `local/`, or another non-committed location.
 
 ## Reference Integrity
 

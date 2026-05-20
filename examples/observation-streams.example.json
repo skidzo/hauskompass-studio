@@ -7,7 +7,7 @@
     "relatedObjectRefs": ["building://example-renovation/element/north-wall"],
     "source": "fictional future sensor",
     "samplingInterval": "15 minutes",
-    "dataPath": "private/local-only/example-humidity.csv",
+    "dataPath": "local/local-only/example-humidity.csv",
     "status": "draft"
   }
 ]

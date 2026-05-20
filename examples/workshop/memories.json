@@ -1,0 +1,15 @@
+[
+  {
+    "id": "M-EX-001",
+    "projectId": "proj-workshop-example",
+    "title": "First recollection",
+    "summary": "An internal memory placeholder for testing the model.",
+    "zoneId": "z-memory",
+    "themes": ["access"],
+    "citability": "internal_only",
+    "releaseStatus": "pending_consent",
+    "sensitivityLevel": "sensitive_personal",
+    "publicationStatus": "internal_only",
+    "createdAt": "2026-05-20T00:00:00Z"
+  }
+]

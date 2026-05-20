@@ -18,7 +18,7 @@ The main weakness is not the geometry pipeline. The view is visually boxed and s
 - No IFC exporter changes.
 - No new 3D engine or IFC viewer dependency.
 - No full element-property inspector, BCF workflow or BIM issue workflow.
-- No private/georeferenced data exposure.
+- No local/georeferenced data exposure.
 
 ## Decisions
 

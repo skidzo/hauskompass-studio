@@ -18,7 +18,7 @@ The system SHALL keep exact address data, exact coordinates, photos, scans, priv
 
 ### Requirement: Local-only storage paths
 
-The system SHALL direct real project data and downloaded geodata into ignored or machine-local locations such as `.env.local`, `private/`, `cache/` or external local folders.
+The system SHALL direct real project data and downloaded geodata into ignored or machine-local locations such as `.env.local`, `local/`, `cache/` or external local folders.
 
 #### Scenario: Local assessment material is imported
 

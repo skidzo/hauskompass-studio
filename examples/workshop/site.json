@@ -1,0 +1,9 @@
+{
+  "id": "site-workshop-example",
+  "projectId": "proj-workshop-example",
+  "name": "Workshop Example Site",
+  "shortDescription": "Generic multi-zone workshop example.",
+  "currentAccess": "unknown",
+  "sensitivityLevel": "internal",
+  "publicationStatus": "needs_review"
+}

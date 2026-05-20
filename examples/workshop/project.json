@@ -1,0 +1,13 @@
+{
+  "id": "proj-workshop-example",
+  "slug": "workshop-example",
+  "title": "Workshop Example Site",
+  "description": "Neutral workshop fixture data for tests and documentation.",
+  "siteId": "site-workshop-example",
+  "projectMode": "active",
+  "createdAt": "2026-05-20T00:00:00Z",
+  "updatedAt": "2026-05-20T00:00:00Z",
+  "version": "1.0.0",
+  "sensitivityDefault": "internal",
+  "publicationDefault": "needs_review"
+}

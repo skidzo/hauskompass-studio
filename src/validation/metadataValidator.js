@@ -82,7 +82,7 @@ export function loadMetadataDataset(rootDir) {
 }
 
 export function loadBuildingAssessmentDataset(rootDir) {
-  const examplesDir = path.join(rootDir, 'examples', 'building-assessment');
+  const examplesDir = path.join(rootDir, 'examples', 'renovation');
   const schemasDir = path.join(rootDir, 'schemas');
   return {
     schemas: Object.fromEntries(

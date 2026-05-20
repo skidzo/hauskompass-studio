@@ -2,7 +2,7 @@
 
 Local assessment packages let the app load a private assessment case without committing an exact address, coordinates, parcel records, screenshots or downloaded source files.
 
-The committed app only knows this generic JSON shape. Real packages should stay under ignored paths such as `private/local-assessments/<case>/`.
+The committed app only knows this generic JSON shape. Real packages should stay under ignored paths such as `local/local-assessments/<case>/`.
 
 ## Package Shape
 

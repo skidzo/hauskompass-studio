@@ -36,4 +36,4 @@ Evidence reliability should reflect the source and certainty:
 
 ## Local File Handling
 
-Example data may use fictional paths such as `private/local-only/example-photo.jpg`. Real files must remain uncommitted unless they are deliberately anonymized and cleared for repository use.
+Example data may use fictional paths such as `local/local-only/example-photo.jpg`. Real files must remain uncommitted unless they are deliberately anonymized and cleared for repository use.

@@ -1,0 +1,21 @@
+[
+  {
+    "id": "WS-EX-001",
+    "projectId": "proj-workshop-example",
+    "title": "Arrival and Threshold",
+    "guidingQuestion": "How should the site be introduced to first-time workshop participants?",
+    "selectedAssetIds": [],
+    "contextText": "This example scene frames the site through entry, access, and first orientation.",
+    "observations": ["The current arrival sequence is fragmented."],
+    "interpretations": ["The threshold experience shapes trust and negotiation."],
+    "openQuestions": ["What can be shown publicly without overstating certainty?"],
+    "discussionPrompt": "What would a responsible first walkthrough need to show?",
+    "exportStatus": "draft",
+    "visibility": "internal",
+    "sortOrder": 1,
+    "sensitivityLevel": "internal",
+    "publicationStatus": "needs_review",
+    "createdAt": "2026-05-20T00:00:00Z",
+    "updatedAt": "2026-05-20T00:00:00Z"
+  }
+]

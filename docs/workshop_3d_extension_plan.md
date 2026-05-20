@@ -30,7 +30,7 @@ Implement a Workshop tab that:
 
 Geometry calibration note:
 
-- Pavillon 1-4 and Kantine now follow the project material `examples/eiermann/project_materials/eiermann_spatial_working_model_1984.md` and the user-supplied cropped navigation schema.
+- Pavillon 1-4 and Kantine now follow the project material `examples/workshop/project_materials/eiermann_spatial_working_model_1984.md` and the user-supplied cropped navigation schema.
 - The current 3D model is generated from the corrected 2D zone polygons via `npm run generate:eiermann-spatial`; this makes the 2D Lage view the source of truth for pavilion placement.
 - The latest 3D correction also swaps Pavillon 1 and Pavillon 3 in the generated 3D mapping: the object labelled Pavillon 1 now uses the former Pavillon 3 geometry position and the object labelled Pavillon 3 uses the former Pavillon 1 geometry position. Pavillon 4/NuCOS remains unchanged. Pavillon 5 is added as a planned-not-built 2D/3D reference.
 - Pavillon 5 is retained only as a ghosted planned-not-built extension placeholder.

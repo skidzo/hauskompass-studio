@@ -24,7 +24,7 @@ eine direkte Veröffentlichung ohne Datenschutzrisiko.
 | B-02 | `src/features/welcome/WelcomeScreen.tsx:149` | Persönlicher Lokalpfad im Code-Beispiel | **major** |
 | B-03 | `src/app/App.tsx:50` | Privates Projekt-Label als Fallback hardcodiert | **major** |
 | B-04 | `src/features/project-home/ProjectHome.tsx:36` | Privates Projekt hardcodiert | **major** |
-| B-05 | `public/projects/eiermann-campus-pascalstrasse-100/` | Echte Projektdaten im `public/`-Ordner (nicht gitignored) | **major** |
+| B-05 | `/projects/eiermann-campus-pascalstrasse-100/` | Echte Projektdaten im `public/`-Ordner (nicht gitignored) | **major** |
 | B-06 | `public/local-media/eiermann-campus-pascalstrasse-100/` | Mediendaten lokal generiert, aber Ordner nicht in `.gitignore` | **major** |
 | B-07 | `output/` | Nicht in `.gitignore` — enthält lokale Dateipfade | **major** |
 | B-08 | `README.md` | Nennt real-world Adressen als Anwendungsbeispiele | **minor** |
@@ -48,7 +48,7 @@ eine direkte Veröffentlichung ohne Datenschutzrisiko.
 ## Was aus dem OSS-Branch ausgeschlossen werden muss
 
 1. `src/features/deconstruction/generated/` — projektspezifisch generierte Dateien
-2. `public/projects/eiermann-campus-pascalstrasse-100/` → ersetzen durch Demo-Datensatz
+2. `/projects/eiermann-campus-pascalstrasse-100/` → ersetzen durch Demo-Datensatz
 3. `public/local-media/` → gitignore, nur Ordnerstruktur behalten
 4. `output/` → in `.gitignore` aufnehmen
 5. `docs/FOTOLISTE_BEGEHUNG_S01_S20.md`, `docs/PART1_FIRST_SITE_VISIT_GUIDE.md`, alle Feldbesuchs-Checklisten
@@ -71,7 +71,7 @@ In dieser Reihenfolge abarbeiten:
 
 5. **public/local-media/ gitignoren** — `.gitignore` erweitern um `public/local-media/` (Ordner-Struktur per `.gitkeep` erhalten)
 
-6. **Demo-Datensatz** — `public/projects/demo-campus/` mit anonymisierten Koordinaten als Beispielprojekt erstellen; reale Eiermann-Daten aus Repo entfernen oder in separates privates Datenrepo auslagern
+6. **Demo-Datensatz** — `/projects/demo-campus/` mit anonymisierten Koordinaten als Beispielprojekt erstellen; reale Eiermann-Daten aus Repo entfernen oder in separates privates Datenrepo auslagern
 
 7. **README bereinigen** — Adressen entfernen, generischen Workflow beschreiben, `npm run dev` Demo dokumentieren
 

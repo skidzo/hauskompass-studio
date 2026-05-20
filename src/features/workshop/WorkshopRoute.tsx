@@ -39,6 +39,7 @@ import type { MergeResult, ObservationRecord, WorkshopBundleExport } from './db/
 import { deleteAsset, exportWorkshopBundle, exportWorkshopBundleZip, getAssetObjectUrl, mergeWorkshopBundle, mergeWorkshopBundleZip, saveObservation } from './db/workshopDb';
 import type { ExportMode } from './export/workshopExport';
 import { buildExportBlob, buildExportFilename, downloadExportBlob } from './export/workshopExport';
+import { buildSceneExportReport } from './sceneSafety';
 
 type WorkshopTab = 'zones' | 'timeline' | 'questions' | 'scenes';
 
@@ -195,6 +196,10 @@ export function WorkshopRoute({
                             {(scenes ?? []).length > 0 && (
                                 <WorkshopExportBar
                                     scenes={scenes ?? []}
+                                    assets={sceneEditorAssets}
+                                    observations={sceneEditorObservations}
+                                    claims={sceneEditorClaims}
+                                    questions={allQuestions ?? []}
                                     projectTitle={PROJECT_ID}
                                 />
                             )}
@@ -794,18 +799,29 @@ function WorkshopWelcome({
 
 function WorkshopExportBar({
     scenes,
+    assets,
+    observations,
+    claims,
+    questions,
     projectTitle,
 }: {
     scenes: import('./db/workshopDb').WorkshopScene[];
+    assets: import('./db/workshopDb').AssetRecord[];
+    observations: ObservationRecord[];
+    claims: import('./db/workshopDb').ClaimRecord[];
+    questions: import('./db/workshopDb').Question[];
     projectTitle: string;
 }) {
-    const [exporting, setExporting] = useState(false);
+    const [exporting, setExporting] = useState<null | ExportMode>(null);
+    const publicReport = buildSceneExportReport(scenes, { assets, observations, claims, questions }, 'public');
+    const internalReport = buildSceneExportReport(scenes, { assets, observations, claims, questions }, 'internal');
 
     async function handleExport(mode: ExportMode) {
-        setExporting(true);
-        const blob = buildExportBlob(scenes, { mode, projectTitle });
+        setExporting(mode);
+        const report = mode === 'public' ? publicReport : internalReport;
+        const blob = buildExportBlob(report.included.map((item) => item.scene), { mode, projectTitle });
         downloadExportBlob(blob, buildExportFilename(projectTitle, mode));
-        setExporting(false);
+        setExporting(null);
     }
 
     return (
@@ -813,23 +829,41 @@ function WorkshopExportBar({
             <span className="ws-export-label">
                 <Download size={13} /> Export
             </span>
+            <div className="ws-export-summary" style={{ fontSize: '0.75rem', color: '#566473' }}>
+                <span>{publicReport.included.length}/{scenes.length} öffentlich exportierbar</span>
+                {publicReport.excluded.length > 0 && (
+                    <span> · {publicReport.excluded.length} ausgeschlossen</span>
+                )}
+                {internalReport.excluded.length > 0 && (
+                    <span> · {internalReport.excluded.length} gesperrt auch intern</span>
+                )}
+            </div>
+            {publicReport.excluded.length > 0 && (
+                <div className="ws-export-summary" style={{ fontSize: '0.72rem', color: '#8a5a12' }}>
+                    {publicReport.excluded.slice(0, 2).map((item) => (
+                        <div key={item.scene.id}>
+                            {item.scene.title}: {item.evaluation.blockingIssues[0]?.label ?? 'Nicht exportierbar'}
+                        </div>
+                    ))}
+                </div>
+            )}
             <button
                 className="ws-export-btn ws-export-btn-public"
                 onClick={() => handleExport('public')}
-                disabled={exporting}
+                disabled={exporting !== null || publicReport.included.length === 0}
                 type="button"
-                title="Nur veröffentlichbare Szenen exportieren"
+                title="Nur öffentlich freigegebene und vollständig sichere Szenen exportieren"
             >
-                Öffentliche Mappe
+                {exporting === 'public' ? 'Exportiert …' : 'Öffentliche Mappe'}
             </button>
             <button
                 className="ws-export-btn ws-export-btn-internal"
                 onClick={() => handleExport('internal')}
-                disabled={exporting}
+                disabled={exporting !== null || internalReport.included.length === 0}
                 type="button"
-                title="Alle Szenen inkl. internen exportieren"
+                title="Alle Szenen außer explizit gesperrten exportieren"
             >
-                Interne Arbeitsmappe
+                {exporting === 'internal' ? 'Exportiert …' : 'Interne Arbeitsmappe'}
             </button>
         </div>
     );

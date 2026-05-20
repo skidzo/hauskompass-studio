@@ -8,13 +8,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import claimsRaw from '../../public/projects/eiermann-campus-pascalstrasse-100/seed/claims.json';
-import eventPhasesRaw from '../../public/projects/eiermann-campus-pascalstrasse-100/seed/event_phases.json';
-import projectRaw from '../../public/projects/eiermann-campus-pascalstrasse-100/seed/project.json';
-import questionsRaw from '../../public/projects/eiermann-campus-pascalstrasse-100/seed/questions.json';
-import siteRaw from '../../public/projects/eiermann-campus-pascalstrasse-100/seed/site.json';
-import workshopScenesRaw from '../../public/projects/eiermann-campus-pascalstrasse-100/seed/workshop_scenes.json';
-import zonesRaw from '../../public/projects/eiermann-campus-pascalstrasse-100/seed/zones.json';
+import claimsRaw from '../../examples/workshop/claims.json';
+import eventPhasesRaw from '../../examples/workshop/event_phases.json';
+import projectRaw from '../../examples/workshop/project.json';
+import questionsRaw from '../../examples/workshop/questions.json';
+import siteRaw from '../../examples/workshop/site.json';
+import workshopScenesRaw from '../../examples/workshop/workshop_scenes.json';
+import zonesRaw from '../../examples/workshop/zones.json';
 
 const PROJECT_ID = (projectRaw as { id: string }).id;
 const SITE_ID = (siteRaw as { id: string }).id;
@@ -200,7 +200,7 @@ describe('Usability Test 3: Workshop Seed-Daten Integrität', () => {
         });
 
         it('exportStatus ist ein gültiger Wert', () => {
-            const valid = ['draft', 'review', 'approved', 'exported'];
+            const valid = ['not_ready', 'draft', 'ready'];
             for (const s of scenes) {
                 expect(valid).toContain(s.exportStatus);
             }

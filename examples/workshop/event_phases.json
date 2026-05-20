@@ -1,0 +1,4 @@
+[
+  {"id":"E-EX-001","projectId":"proj-workshop-example","title":"Initial Occupation","phaseType":"operation","description":"The site enters active use.","sortOrder":1,"sensitivityLevel":"public","publicationStatus":"publishable"},
+  {"id":"E-EX-002","projectId":"proj-workshop-example","title":"Transition Period","phaseType":"transition","description":"The site enters a period of uncertainty and reinterpretation.","sortOrder":2,"sensitivityLevel":"internal","publicationStatus":"needs_review"}
+]

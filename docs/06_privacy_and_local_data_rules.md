@@ -17,7 +17,7 @@ This repository must be safe to commit.
 - fictional project names
 - pseudonymous IDs
 - approximate and non-identifying location descriptions
-- fictional paths under `private/local-only/`
+- fictional paths under `local/local-only/`
 - placeholder evidence and decisions
 
 ## Local Storage
@@ -25,7 +25,7 @@ This repository must be safe to commit.
 Private project data should remain in ignored locations such as:
 
 - `.env.local`
-- `private/`
+- `local/`
 - `cache/`
 - machine-local external folders
 

@@ -90,7 +90,7 @@ Das `WorkshopProjectBundle`-Interface (in `types.ts`) beschreibt das vollständi
 
 1. **Lokaler Snapshot** (geplant): JSON-Download für Backup
 2. **Migrationspfad** zu einer Datenbank-Backend-Variante (s. u.)
-3. **Test-Fixture** in `tests/` und `examples/eiermann/`
+3. **Test-Fixture** in `tests/` und `examples/workshop/`
 
 ---
 

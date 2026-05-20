@@ -1,0 +1,7 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","properties":{"zoneId":"z-entry","name":"Entry"},"geometry":{"type":"Polygon","coordinates":[[[9.0,48.0],[9.0002,48.0],[9.0002,48.0002],[9.0,48.0002],[9.0,48.0]]]}},
+    {"type":"Feature","properties":{"zoneId":"z-core","name":"Core Building"},"geometry":{"type":"Polygon","coordinates":[[[9.0003,48.0],[9.0005,48.0],[9.0005,48.0002],[9.0003,48.0002],[9.0003,48.0]]]}}
+  ]
+}

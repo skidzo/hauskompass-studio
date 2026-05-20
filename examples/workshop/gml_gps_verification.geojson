@@ -1,0 +1,353 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000QjN0",
+        "zone": "",
+        "dist_m": 10,
+        "area_m2": 3644
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.074390635594606,
+          48.726306072629015
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000QlXE",
+        "zone": "",
+        "dist_m": 41,
+        "area_m2": 68
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.075003791934428,
+          48.72629122490952
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000Qlay",
+        "zone": "",
+        "dist_m": 82,
+        "area_m2": 848
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.07556103068677,
+          48.72631681028033
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000Qj0P",
+        "zone": "",
+        "dist_m": 85,
+        "area_m2": 3646
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.073685360668586,
+          48.72565767712728
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000QjrU",
+        "zone": "",
+        "dist_m": 94,
+        "area_m2": 3644
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.073455169172332,
+          48.72675265765092
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000Qivp",
+        "zone": "",
+        "dist_m": 136,
+        "area_m2": 2216
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.072627569142742,
+          48.72603468267144
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000Qizx",
+        "zone": "",
+        "dist_m": 195,
+        "area_m2": 11
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.07403067875861,
+          48.72449677405669
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000QjaT",
+        "zone": "",
+        "dist_m": 197,
+        "area_m2": 32
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.073974978530613,
+          48.72448728888799
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000RzM7",
+        "zone": "",
+        "dist_m": 204,
+        "area_m2": 2
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.073938940066903,
+          48.724427179044994
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000QlTs",
+        "zone": "",
+        "dist_m": 255,
+        "area_m2": 9
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.077841225677425,
+          48.72674126147767
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000QlbK",
+        "zone": "",
+        "dist_m": 257,
+        "area_m2": 18
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.077890854763728,
+          48.72667450602764
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "B010000BTB3",
+        "zone": "",
+        "dist_m": 273,
+        "area_m2": 28
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.078169148024859,
+          48.726327975547505
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "B010000BTs2",
+        "zone": "",
+        "dist_m": 301,
+        "area_m2": 586
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.07060800164003,
+          48.72530185787745
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "B010001cq2I",
+        "zone": "",
+        "dist_m": 329,
+        "area_m2": 31
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.070341456071333,
+          48.727385922914195
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "B010000BTEm",
+        "zone": "",
+        "dist_m": 391,
+        "area_m2": 13
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.069359477464308,
+          48.72722870520813
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000QliY",
+        "zone": "",
+        "dist_m": 411,
+        "area_m2": 137
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.078729172148591,
+          48.72861314266093
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000QktK",
+        "zone": "",
+        "dist_m": 421,
+        "area_m2": 549
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.079289318438118,
+          48.72825797104364
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000RzM5",
+        "zone": "",
+        "dist_m": 432,
+        "area_m2": 72
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.079516691313623,
+          48.72819665645407
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000QlR4",
+        "zone": "",
+        "dist_m": 441,
+        "area_m2": 386
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.080179938725315,
+          48.72503066380822
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "5221000QlLV",
+        "zone": "",
+        "dist_m": 457,
+        "area_m2": 432
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.080260513461388,
+          48.72476096944663
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "AERIAL_LUFTBILD_27022022",
+        "zone": "reference"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.074362,
+          48.726217
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "CAMPUS_CENTRE_kalibriert",
+        "zone": "reference"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.075894,
+          48.726961
+        ]
+      }
+    }
+  ]
+}

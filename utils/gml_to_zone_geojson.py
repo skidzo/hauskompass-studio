@@ -9,7 +9,7 @@ Verwendung:
     python3 utils/gml_to_zone_geojson.py --radius 400 --out output/zones.geojson
 
 Ergebnis:
-    - examples/eiermann/zone_geometry.json  (wird überschrieben)
+    - examples/workshop/zone_geometry.json  (wird überschrieben)
     - Konsolen-Ausgabe: Foto → nächstes GML-Gebäude → Zone
 """
 
@@ -27,7 +27,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 GML_DIR = ROOT / "cache/lgl-bw/lod2"   # alle Tiles (*.gml) werden durchsucht
 GML_PATH = ROOT / "cache/lgl-bw/lod2/LoD2_32_505_5397_1_BW.gml"  # legacy fallback
-ZONE_JSON_OUT = ROOT / "examples/eiermann/zone_geometry.json"
+ZONE_JSON_OUT = ROOT / "examples/workshop/zone_geometry.json"
 
 NS_BLDG = "http://www.opengis.net/citygml/building/1.0"
 NS_GML = "http://www.opengis.net/gml"

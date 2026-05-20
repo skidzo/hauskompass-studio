@@ -8,7 +8,7 @@ Projektbezogene Laufzeitdaten sollen nicht mehr verteilt oder implizit verdrahte
 
 ## Kanonische Laufzeitquellen
 
-`public/projects/{slug}/`
+`/projects/{slug}/`
 
 - `zone_geometry.json`
 - `campus_locations.json`
@@ -34,7 +34,7 @@ Neue Konvention:
 
 `src/features/project-data/projectDataLoader.ts`
 
-- liest `public/projects/index.json` als primaere Projekt-Registry
+- liest `/projects/index.json` als primaere Projekt-Registry
 - ordnet `projectId` auf `slug` und `siteId` ab
 - erzeugt URLs fuer Projektdateien und Seed-Dateien
 - kapselt `fetch()` fuer Map, 3D, Bulk-Import und Seed-Loader
@@ -48,7 +48,7 @@ Neue Konvention:
 - `BulkImportPanel` laedt `zone_geometry.json` ueber den Loader
 - `seedLoader.ts` laedt Seed-JSON ueber den Loader
 - Seed-Version und Media-Restore-Version werden pro `projectId` in `localStorage` isoliert gespeichert
-- der Media-Manifest-Pfad wird pro Projekt aus `public/projects/index.json` aufgeloest
+- der Media-Manifest-Pfad wird pro Projekt aus `/projects/index.json` aufgeloest
 - Eiermann-Medien liegen jetzt auch unter der slug-basierten Struktur `public/local-media/eiermann-campus-pascalstrasse-100/`
 - 42 lokale Eiermann-Fotos wurden ueber das Manifest in die laufende Workshop-Ansicht integriert
 - Karte und Lage-Foto-Panel teilen jetzt einen gemeinsamen Asset-Fokus statt getrennter UI-Zustaende

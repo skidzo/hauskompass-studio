@@ -1,0 +1,290 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Großes Gebäude S (76 m, ~3693 m²)",
+        "gmlId": "DEBW_5221000Qlay",
+        "zoneId": "z-nucos-gebaeude",
+        "area_m2": 3693,
+        "dist_m": 76,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.075561,
+          48.7263168
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Großes Gebäude SW (132 m, ~3644 m²)",
+        "gmlId": "DEBW_5221000QjN0",
+        "zoneId": "z-pavillon-3",
+        "area_m2": 3644,
+        "dist_m": 132,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.0743906,
+          48.7263061
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Großes Gebäude SW (217 m, ~3646 m²)",
+        "gmlId": "DEBW_5221000Qj0P",
+        "zoneId": "z-pavillon-2",
+        "area_m2": 3646,
+        "dist_m": 217,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.0736854,
+          48.7256577
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mittleres Gebäude SW (261 m, ~2216 m²)",
+        "gmlId": "DEBW_5221000Qivp",
+        "zoneId": "z-kantine-gemeinschaft",
+        "area_m2": 2216,
+        "dist_m": 261,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.0726276,
+          48.7260347
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kleines Gebäude SW (306 m, ~11 m²)",
+        "gmlId": "DEBW_5221000Qizx",
+        "zoneId": "→ HIER ZONE-ID EINTRAGEN",
+        "area_m2": 11,
+        "dist_m": 306,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.0740307,
+          48.7244968
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kleines Gebäude SW (309 m, ~32 m²)",
+        "gmlId": "DEBW_5221000QjaT",
+        "zoneId": "→ HIER ZONE-ID EINTRAGEN",
+        "area_m2": 32,
+        "dist_m": 309,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.073975,
+          48.7244873
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kleines Gebäude SW (316 m, ~2 m²)",
+        "gmlId": "DEBW_5221000RzM7",
+        "zoneId": "→ HIER ZONE-ID EINTRAGEN",
+        "area_m2": 2,
+        "dist_m": 316,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.0739389,
+          48.7244272
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kleines Gebäude SW (99 m, ~68 m²)",
+        "gmlId": "DEBW_5221000QlXE",
+        "zoneId": "→ HIER ZONE-ID EINTRAGEN",
+        "area_m2": 68,
+        "dist_m": 99,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.0750038,
+          48.7262912
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kleines Gebäude O (145 m, ~9 m²)",
+        "gmlId": "DEBW_5221000QlTs",
+        "zoneId": "→ HIER ZONE-ID EINTRAGEN",
+        "area_m2": 9,
+        "dist_m": 145,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.0778412,
+          48.7267413
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kleines Gebäude O (150 m, ~18 m²)",
+        "gmlId": "DEBW_5221000QlbK",
+        "zoneId": "→ HIER ZONE-ID EINTRAGEN",
+        "area_m2": 18,
+        "dist_m": 150,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.0778909,
+          48.7266745
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Großes Gebäude W (180 m, ~3644 m²)",
+        "gmlId": "DEBW_5221000QjrU",
+        "zoneId": "z-pavillon-1",
+        "area_m2": 3644,
+        "dist_m": 180,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.0734552,
+          48.7267527
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kleines Gebäude SO (181 m, ~215 m²)",
+        "gmlId": "DEBW_B010000BTB3",
+        "zoneId": "→ HIER ZONE-ID EINTRAGEN",
+        "area_m2": 215,
+        "dist_m": 181,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.0781691,
+          48.726328
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kleines Gebäude NO (277 m, ~137 m²)",
+        "gmlId": "DEBW_5221000QliY",
+        "zoneId": "→ HIER ZONE-ID EINTRAGEN",
+        "area_m2": 137,
+        "dist_m": 277,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.0787292,
+          48.7286131
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mittleres Gebäude NO (288 m, ~853 m²)",
+        "gmlId": "DEBW_5221000QktK",
+        "zoneId": "→ HIER ZONE-ID EINTRAGEN",
+        "area_m2": 853,
+        "dist_m": 288,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.0792893,
+          48.728258
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kleines Gebäude NO (299 m, ~72 m²)",
+        "gmlId": "DEBW_5221000RzM5",
+        "zoneId": "→ HIER ZONE-ID EINTRAGEN",
+        "area_m2": 72,
+        "dist_m": 299,
+        "marker-color": "#e65100",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.0795167,
+          48.7281967
+        ]
+      }
+    }
+  ]
+}

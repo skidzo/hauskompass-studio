@@ -198,7 +198,7 @@ describe('Usability Test 5: Workshop Daten-Logik', () => {
 
     describe('Zone-GeoJSON Integrität', () => {
         it('zone_geometry.json hat korrekte GeoJSON-Struktur', async () => {
-            const geoData = await import('../../public/projects/eiermann-campus-pascalstrasse-100/zone_geometry.json');
+            const geoData = await import('../../examples/workshop/zone_geometry.json');
             const fc = geoData.default as { type: string; features: Array<{ properties: { zoneId: string } }> };
             expect(fc.type).toBe('FeatureCollection');
             expect(fc.features.length).toBeGreaterThan(0);
@@ -209,8 +209,8 @@ describe('Usability Test 5: Workshop Daten-Logik', () => {
 
         it('alle GeoJSON-Zonen sind auch in zones.json vorhanden', async () => {
             const [geoData, zonesData] = await Promise.all([
-                import('../../public/projects/eiermann-campus-pascalstrasse-100/zone_geometry.json'),
-                import('../../public/projects/eiermann-campus-pascalstrasse-100/seed/zones.json'),
+                import('../../examples/workshop/zone_geometry.json'),
+                import('../../examples/workshop/zones.json'),
             ]);
             const geoIds = new Set(
                 (geoData.default as { features: Array<{ properties: { zoneId: string } }> })

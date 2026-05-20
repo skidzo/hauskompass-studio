@@ -9,7 +9,7 @@ coverage/
 build_output.txt
 build_output_full.txt
 
-# Project-specific utilities (contain hardcoded GPS coordinates for private sites)
+# Project-specific utilities (contain hardcoded GPS coordinates for local sites)
 utils/find-local-media-eiermann.mjs
 utils/tests/find-local-media-eiermann.test.mjs
 scripts/generate-eiermann-spatial-context.mjs
@@ -19,9 +19,9 @@ scripts/generate-eiermann-spatial-context.mjs
 .env.local
 .env.*.local
 
-# Private house data
-private/**
-!private/.gitkeep
+# Local project data
+local/**
+!local/.gitkeep
 
 # Generated output (contains local filesystem paths)
 output/
@@ -29,12 +29,6 @@ output/
 # Local workbench project data — bring your own, not committed
 public/local-media/*
 !public/local-media/.gitkeep
-public/projects/eiermann-campus-pascalstrasse-100/*
-!public/projects/eiermann-campus-pascalstrasse-100/.gitkeep
-
-# Eiermann example data
-examples/eiermann/*
-!examples/eiermann/.gitkeep
 
 # Private field and session docs
 docs/handoffs/

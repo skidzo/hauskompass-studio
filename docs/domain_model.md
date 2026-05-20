@@ -433,15 +433,15 @@ interface WorkshopScene {
 
 | Entität | Anzahl | Dateipfad |
 |---------|--------|-----------|
-| Project | 1 | `examples/eiermann/project.json` |
-| Site | 1 | `examples/eiermann/site.json` |
-| Zone | 12 | `examples/eiermann/zones.json` |
-| EventPhase | 8 | `examples/eiermann/event_phases.json` |
-| Claim | 5 | `examples/eiermann/claims.json` |
-| Question | 8 | `examples/eiermann/questions.json` |
-| Memory | 3 | `examples/eiermann/memories.json` |
-| Observation (Seed) | 6 | `examples/eiermann/observations.json` |
-| WorkshopScene | 5 | `examples/eiermann/workshop_scenes.json` |
+| Project | 1 | `examples/workshop/project.json` |
+| Site | 1 | `examples/workshop/site.json` |
+| Zone | 12 | `examples/workshop/zones.json` |
+| EventPhase | 8 | `examples/workshop/event_phases.json` |
+| Claim | 5 | `examples/workshop/claims.json` |
+| Question | 8 | `examples/workshop/questions.json` |
+| Memory | 3 | `examples/workshop/memories.json` |
+| Observation (Seed) | 6 | `examples/workshop/observations.json` |
+| WorkshopScene | 5 | `examples/workshop/workshop_scenes.json` |
 | Asset | 0 (leer) | via Asset-Ingest UI |
 | Interpretation | 0 (leer) | via InterpretationPanel UI |
 

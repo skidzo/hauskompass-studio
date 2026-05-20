@@ -10,7 +10,7 @@ import type {
 } from '@/domain/workshop/types';
 import type { AssetRecord } from '@/features/workshop/db/workshopDb';
 import { saveWorkshopScene } from '@/features/workshop/db/workshopDb';
-import { normalizeScenePublicationForAssets } from '@/features/workshop/sceneSafety';
+import { evaluateSceneForPublicExport, normalizeScenePublicationForReferences } from '@/features/workshop/sceneSafety';
 import { AlertTriangle, Save, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -100,14 +100,66 @@ export function WorkshopSceneEditor({
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const selectedAssets = useMemo(
-        () => assets.filter((asset) => form.selectedAssetIds.includes(asset.id)),
-        [assets, form.selectedAssetIds],
-    );
+    const publicExportEvaluation = useMemo(() => evaluateSceneForPublicExport({
+        id: scene?.id ?? 'WS-PREVIEW',
+        projectId,
+        scenarioId: scene?.scenarioId,
+        title: form.title.trim(),
+        guidingQuestion: form.guidingQuestion.trim(),
+        dramaturgy: form.dramaturgy.trim() || undefined,
+        selectedAssetIds: form.selectedAssetIds,
+        selectedObservationIds: form.selectedObservationIds,
+        selectedClaimIds: form.selectedClaimIds,
+        selectedQuestionIds: form.selectedQuestionIds,
+        contextText: form.contextText.trim(),
+        observations: splitLines(form.manualObservations),
+        interpretations: splitLines(form.manualInterpretations),
+        openQuestions: splitLines(form.manualQuestions),
+        discussionPrompt: form.discussionPrompt.trim(),
+        targetAudience: form.targetAudience.trim() || undefined,
+        exportStatus: form.exportStatus,
+        visibility: form.visibility,
+        sortOrder: scene?.sortOrder,
+        sensitivityLevel: form.sensitivityLevel,
+        publicationStatus: form.publicationStatus,
+        createdAt: scene?.createdAt ?? '',
+        updatedAt: scene?.updatedAt ?? '',
+    }, {
+        assets,
+        observations,
+        claims,
+        questions,
+    }), [
+        assets,
+        claims,
+        form.contextText,
+        form.discussionPrompt,
+        form.dramaturgy,
+        form.exportStatus,
+        form.guidingQuestion,
+        form.manualInterpretations,
+        form.manualObservations,
+        form.manualQuestions,
+        form.publicationStatus,
+        form.selectedAssetIds,
+        form.selectedClaimIds,
+        form.selectedObservationIds,
+        form.selectedQuestionIds,
+        form.sensitivityLevel,
+        form.targetAudience,
+        form.title,
+        form.visibility,
+        observations,
+        projectId,
+        questions,
+        scene?.createdAt,
+        scene?.id,
+        scene?.scenarioId,
+        scene?.sortOrder,
+        scene?.updatedAt,
+    ]);
 
-    const hasUnsafePublicAssets = selectedAssets.some(
-        (asset) => asset.sensitivityLevel !== 'public' || asset.publicationStatus !== 'publishable',
-    );
+    const requestsPublicUse = form.visibility === 'public' || form.publicationStatus === 'publishable';
 
     function patch(patchState: Partial<SceneFormState>) {
         setForm((prev) => ({ ...prev, ...patchState }));
@@ -141,7 +193,7 @@ export function WorkshopSceneEditor({
             .filter((question) => form.selectedQuestionIds.includes(question.id))
             .map((question) => question.text);
 
-        const nextScene: WorkshopScene = normalizeScenePublicationForAssets({
+        const nextScene: WorkshopScene = normalizeScenePublicationForReferences({
             id: scene?.id ?? generateSceneId(),
             projectId,
             scenarioId: scene?.scenarioId,
@@ -165,7 +217,12 @@ export function WorkshopSceneEditor({
             publicationStatus: form.publicationStatus,
             createdAt: scene?.createdAt ?? now,
             updatedAt: now,
-        }, assets);
+        }, {
+            assets,
+            observations,
+            claims,
+            questions,
+        });
 
         await saveWorkshopScene(nextScene);
         setSaving(false);
@@ -238,10 +295,18 @@ export function WorkshopSceneEditor({
                 </label>
             </div>
 
-            {hasUnsafePublicAssets && (form.visibility === 'public' || form.publicationStatus === 'publishable') && (
+            {requestsPublicUse && publicExportEvaluation.blockingIssues.length > 0 && (
                 <div className="ws-editor-warning">
                     <AlertTriangle size={14} />
-                    Ausgewählte Assets sind nicht vollständig öffentlich freigegeben. Beim Speichern wird die Szene auf intern / Review gesetzt.
+                    <div>
+                        <strong>Öffentliche Freigabe ist blockiert.</strong>
+                        <ul>
+                            {publicExportEvaluation.blockingIssues.slice(0, 4).map((issue) => (
+                                <li key={`${issue.code}-${issue.linkedId ?? 'scene'}`}>{issue.label}</li>
+                            ))}
+                        </ul>
+                        <span>Beim Speichern wird die Szene auf intern / Review gesetzt.</span>
+                    </div>
                 </div>
             )}
 

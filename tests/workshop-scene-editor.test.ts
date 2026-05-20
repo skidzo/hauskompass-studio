@@ -1,7 +1,11 @@
 import 'fake-indexeddb/auto';
 
 import type { WorkshopScene } from '../src/domain/workshop/types';
-import { normalizeScenePublicationForAssets } from '../src/features/workshop/sceneSafety';
+import {
+    buildSceneExportReport,
+    normalizeScenePublicationForAssets,
+    normalizeScenePublicationForReferences,
+} from '../src/features/workshop/sceneSafety';
 import {
     exportWorkshopBundle,
     saveAsset,
@@ -97,10 +101,13 @@ afterAll(async () => {
     await workshopDb.projects.delete(PROJECT_ID);
 });
 
-describe('normalizeScenePublicationForAssets', () => {
+describe('scene publication safety', () => {
     it('keeps a public scene when all selected assets are public and publishable', () => {
         const scene = makeScene({
             selectedAssetIds: [PUBLIC_ASSET_ID],
+            selectedObservationIds: [],
+            selectedClaimIds: [],
+            selectedQuestionIds: [],
             visibility: 'public',
             publicationStatus: 'publishable',
             exportStatus: 'ready',
@@ -122,6 +129,26 @@ describe('normalizeScenePublicationForAssets', () => {
         });
 
         expect(normalizeScenePublicationForAssets(scene, [internalAsset])).toMatchObject({
+            visibility: 'internal',
+            publicationStatus: 'needs_review',
+            exportStatus: 'draft',
+        });
+    });
+
+    it('downgrades public scenes that link internal observations even when assets are public', () => {
+        const scene = makeScene({
+            selectedAssetIds: [PUBLIC_ASSET_ID],
+            visibility: 'public',
+            publicationStatus: 'publishable',
+            exportStatus: 'ready',
+        });
+
+        expect(normalizeScenePublicationForReferences(scene, {
+            assets: [publicAsset],
+            observations: [{ id: 'OBS-1', sensitivityLevel: 'internal', publicationStatus: 'needs_review' }],
+            claims: [{ id: 'C-1', sensitivityLevel: 'public', publicationStatus: 'publishable' }],
+            questions: [{ id: 'Q-1', sensitivityLevel: 'public', publicationStatus: 'publishable' }],
+        })).toMatchObject({
             visibility: 'internal',
             publicationStatus: 'needs_review',
             exportStatus: 'draft',
@@ -159,5 +186,49 @@ describe('saveWorkshopScene', () => {
 
         const blob = buildExportBlob([downgraded], { mode: 'public', projectTitle: 'Test' });
         await expect(blob.text()).resolves.not.toContain('Should not be public');
+    });
+
+    it('keeps publishable-but-internal scenes out of public HTML export', async () => {
+        const internalVisibilityScene = makeScene({
+            title: 'Still internal',
+            visibility: 'internal',
+            publicationStatus: 'publishable',
+            selectedAssetIds: [PUBLIC_ASSET_ID],
+        });
+
+        const blob = buildExportBlob([internalVisibilityScene], { mode: 'public', projectTitle: 'Test' });
+        await expect(blob.text()).resolves.not.toContain('Still internal');
+    });
+
+    it('builds a public export report that excludes linked internal evidence', () => {
+        const report = buildSceneExportReport([
+            makeScene({
+                id: 'WS-PUBLIC-OK',
+                visibility: 'public',
+                publicationStatus: 'publishable',
+                selectedAssetIds: [PUBLIC_ASSET_ID],
+                selectedObservationIds: [],
+                selectedClaimIds: [],
+                selectedQuestionIds: [],
+            }),
+            makeScene({
+                id: 'WS-PUBLIC-BLOCKED',
+                title: 'Blocked by question',
+                visibility: 'public',
+                publicationStatus: 'publishable',
+                selectedAssetIds: [PUBLIC_ASSET_ID],
+                selectedObservationIds: [],
+            }),
+        ], {
+            assets: [publicAsset],
+            observations: [],
+            claims: [{ id: 'C-1', sensitivityLevel: 'public', publicationStatus: 'publishable' }],
+            questions: [{ id: 'Q-1', sensitivityLevel: 'internal', publicationStatus: 'internal_only' }],
+        }, 'public');
+
+        expect(report.included.map((item) => item.scene.id)).toEqual(['WS-PUBLIC-OK']);
+        expect(report.excluded.map((item) => item.scene.id)).toContain('WS-PUBLIC-BLOCKED');
+        const blocked = report.excluded.find((item) => item.scene.id === 'WS-PUBLIC-BLOCKED');
+        expect(blocked?.evaluation.blockingIssues.some((issue) => issue.code === 'question_not_public')).toBe(true);
     });
 });

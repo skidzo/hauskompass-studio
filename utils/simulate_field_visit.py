@@ -23,8 +23,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 PHOTO_DIR_DEFAULT = Path("/home/johannes/Bilder/2026-04_Fotos_Eimermann_Campus")
-ZONE_GEOMETRY = ROOT / "examples/eiermann/zone_geometry.json"
-ZONES_JSON = ROOT / "examples/eiermann/zones.json"
+ZONE_GEOMETRY = ROOT / "examples/workshop/zone_geometry.json"
+ZONES_JSON = ROOT / "examples/workshop/zones.json"
 
 PROJECT_ID = "proj-eiermann-campus"
 SITE_ID = "site-eiermann-campus"

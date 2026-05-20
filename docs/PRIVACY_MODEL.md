@@ -19,7 +19,7 @@ Use:
 
 ```txt
 .env.local
-private/
+local/
 cache/
 ```
 

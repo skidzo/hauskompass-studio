@@ -1,0 +1,440 @@
+{
+    "_comment": "Approximate zone geometries for Eiermann Campus (Pascalstr. 100, Stuttgart-Vaihingen). Coordinates are based on known campus layout and approximate positioning from public satellite imagery. All polygons must be verified and refined during/after site visit. WGS84 decimal degrees.",
+    "_generated": "2026-05-17",
+    "_accuracy": "rough-approximation — ±20m positioning error expected",
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "zoneId": "z-zugang-tor",
+                "name": "Zugang / Tor / Ankommen",
+                "sortOrder": 1,
+                "documentationPriority": "critical"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            9.09310,
+                            48.72530
+                        ],
+                        [
+                            9.09520,
+                            48.72530
+                        ],
+                        [
+                            9.09520,
+                            48.72570
+                        ],
+                        [
+                            9.09310,
+                            48.72570
+                        ],
+                        [
+                            9.09310,
+                            48.72530
+                        ]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "zoneId": "z-besucherparkplaetze",
+                "name": "Ehemalige Besucherparkplätze",
+                "sortOrder": 2,
+                "documentationPriority": "medium"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            9.09190,
+                            48.72545
+                        ],
+                        [
+                            9.09310,
+                            48.72545
+                        ],
+                        [
+                            9.09310,
+                            48.72610
+                        ],
+                        [
+                            9.09190,
+                            48.72610
+                        ],
+                        [
+                            9.09190,
+                            48.72545
+                        ]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "zoneId": "z-nucos-gebaeude",
+                "name": "NuCOS-Gebäude",
+                "sortOrder": 3,
+                "documentationPriority": "critical"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            9.09350,
+                            48.72590
+                        ],
+                        [
+                            9.09480,
+                            48.72590
+                        ],
+                        [
+                            9.09480,
+                            48.72640
+                        ],
+                        [
+                            9.09350,
+                            48.72640
+                        ],
+                        [
+                            9.09350,
+                            48.72590
+                        ]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "zoneId": "z-nucos-buero-flur-kueche",
+                "name": "NuCOS – Büro / Flur / Küche",
+                "sortOrder": 4,
+                "documentationPriority": "high"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            9.09360,
+                            48.72595
+                        ],
+                        [
+                            9.09430,
+                            48.72595
+                        ],
+                        [
+                            9.09430,
+                            48.72625
+                        ],
+                        [
+                            9.09360,
+                            48.72625
+                        ],
+                        [
+                            9.09360,
+                            48.72595
+                        ]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "zoneId": "z-pavillon-aussenraeume",
+                "name": "Pavillon-Außenräume",
+                "sortOrder": 5,
+                "documentationPriority": "high"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            9.09180,
+                            48.72630
+                        ],
+                        [
+                            9.09510,
+                            48.72630
+                        ],
+                        [
+                            9.09510,
+                            48.72680
+                        ],
+                        [
+                            9.09180,
+                            48.72680
+                        ],
+                        [
+                            9.09180,
+                            48.72630
+                        ]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "zoneId": "z-parkdeck-1",
+                "name": "Parkdeck 1",
+                "sortOrder": 6,
+                "documentationPriority": "critical"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            9.09180,
+                            48.72680
+                        ],
+                        [
+                            9.09350,
+                            48.72680
+                        ],
+                        [
+                            9.09350,
+                            48.72730
+                        ],
+                        [
+                            9.09180,
+                            48.72730
+                        ],
+                        [
+                            9.09180,
+                            48.72680
+                        ]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "zoneId": "z-parkdeck-2",
+                "name": "Parkfläche Ost",
+                "sortOrder": 7,
+                "documentationPriority": "critical"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            9.09350,
+                            48.72680
+                        ],
+                        [
+                            9.09530,
+                            48.72680
+                        ],
+                        [
+                            9.09530,
+                            48.72730
+                        ],
+                        [
+                            9.09350,
+                            48.72730
+                        ],
+                        [
+                            9.09350,
+                            48.72680
+                        ]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "zoneId": "z-kantine-gemeinschaft",
+                "name": "Kantine / Gemeinschaft",
+                "sortOrder": 8,
+                "documentationPriority": "high"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            9.09530,
+                            48.72630
+                        ],
+                        [
+                            9.09660,
+                            48.72630
+                        ],
+                        [
+                            9.09660,
+                            48.72700
+                        ],
+                        [
+                            9.09530,
+                            48.72700
+                        ],
+                        [
+                            9.09530,
+                            48.72630
+                        ]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "zoneId": "z-gruenraeume-sukzession",
+                "name": "Grünräume & Sukzessionsflächen",
+                "sortOrder": 9,
+                "documentationPriority": "medium"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            9.09150,
+                            48.72730
+                        ],
+                        [
+                            9.09660,
+                            48.72730
+                        ],
+                        [
+                            9.09660,
+                            48.72810
+                        ],
+                        [
+                            9.09150,
+                            48.72810
+                        ],
+                        [
+                            9.09150,
+                            48.72730
+                        ]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "zoneId": "z-raender-strassen-autobahn",
+                "name": "Ränder / Straßen / Autobahn",
+                "sortOrder": 10,
+                "documentationPriority": "low"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            9.09080,
+                            48.72520
+                        ],
+                        [
+                            9.09190,
+                            48.72520
+                        ],
+                        [
+                            9.09190,
+                            48.72830
+                        ],
+                        [
+                            9.09080,
+                            48.72830
+                        ],
+                        [
+                            9.09080,
+                            48.72520
+                        ]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "zoneId": "z-technische-infrastruktur",
+                "name": "Technische Infrastruktur",
+                "sortOrder": 11,
+                "documentationPriority": "medium"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            9.09560,
+                            48.72700
+                        ],
+                        [
+                            9.09680,
+                            48.72700
+                        ],
+                        [
+                            9.09680,
+                            48.72770
+                        ],
+                        [
+                            9.09560,
+                            48.72770
+                        ],
+                        [
+                            9.09560,
+                            48.72700
+                        ]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "zoneId": "z-uebergaenge-stege-wege",
+                "name": "Übergänge / Stege / Wege",
+                "sortOrder": 12,
+                "documentationPriority": "high"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            9.09180,
+                            48.72560
+                        ],
+                        [
+                            9.09650,
+                            48.72560
+                        ],
+                        [
+                            9.09650,
+                            48.72590
+                        ],
+                        [
+                            9.09180,
+                            48.72590
+                        ],
+                        [
+                            9.09180,
+                            48.72560
+                        ]
+                    ]
+                ]
+            }
+        }
+    ]
+}

@@ -29,7 +29,7 @@ This is not a finished BIM model, not a full digital twin, not construction docu
 - 3D/geospatial: Three.js, MapLibre/react-map-gl, web-ifc.
 - Validation/tests: Vitest plus custom JSON-schema-shape/reference/privacy/modeling validator.
 - Data generation: Python scripts in `scripts/` and IFC export in `utils/export_ifc.py`.
-- Local privacy approach: private data and downloaded geodata belong in ignored/local paths such as `.env.local`, `private/` and `cache/`.
+- Local privacy approach: private data and downloaded geodata belong in ignored/local paths such as `.env.local`, `local/` and `cache/`.
 
 ## Data Sources In Use Or Referenced
 
@@ -45,7 +45,7 @@ The repository references or uses:
 - project-specific Part 1 decomposition and site-visit guidance;
 - BIM/AAS-inspired architecture sources, including the uploaded IDTA/buildingSMART PDF and project handoff;
 - fictional example metadata under `examples/`;
-- optional local assessment packages under ignored `private/` paths.
+- optional local assessment packages under ignored `local/` paths.
 
 Committed example data must remain fictional or privacy-safe. Real address data, photos, scans, measurements and downloaded source files should stay local-only.
 

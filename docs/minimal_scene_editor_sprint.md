@@ -41,6 +41,13 @@ Interne Bearbeiterinnen und Workshop-Vorbereitung: Personen, die nach einer Orts
 - Die Szene ist eine kuratierte Sicht, keine fachlich geprüfte Bewertung.
 - Claims werden im bestehenden Export weiterhin als Text in der Szene dargestellt, nicht als eigener Abschnitt mit Reviewstatus.
 
+## Follow-up Hardening (2026-05-20)
+
+- Öffentlicher Export prüft jetzt nicht nur `selectedAssetIds`, sondern auch verknüpfte Beobachtungen, Claims und Fragen.
+- Öffentliche HTML-Exporte verlangen jetzt sowohl `publicationStatus: 'publishable'` als auch `visibility: 'public'`.
+- Die Exportleiste zeigt an, wie viele Szenen öffentlich exportierbar sind und nennt Ausschlussgründe für blockierte Szenen.
+- Der Scene-Editor warnt jetzt vor blockierenden verknüpften Evidenzen und stuft unsichere Szenen beim Speichern wieder auf `internal` / `needs_review` zurück.
+
 ## Akzeptanzkriterien
 
 - Neue Szene kann ohne Seed-Datei erstellt werden.

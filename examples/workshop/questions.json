@@ -1,0 +1,15 @@
+[
+  {
+    "id": "Q-EX-001",
+    "projectId": "proj-workshop-example",
+    "text": "Which parts of the site can be discussed publicly today?",
+    "questionType": "organizational",
+    "priority": "high",
+    "zoneId": "z-entry",
+    "status": "open",
+    "sensitivityLevel": "internal",
+    "publicationStatus": "needs_review",
+    "createdAt": "2026-05-20T00:00:00Z",
+    "updatedAt": "2026-05-20T00:00:00Z"
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "C-EX-001",
+    "projectId": "proj-workshop-example",
+    "statement": "The entry sequence shapes how stakeholders understand the site.",
+    "claimType": "spatial",
+    "epistemic": "interpretation",
+    "confidence": "medium",
+    "sourceRefs": ["A-EX-001"],
+    "zoneId": "z-entry",
+    "reviewStatus": "under_review",
+    "sensitivityLevel": "internal",
+    "publicationStatus": "needs_review",
+    "createdAt": "2026-05-20T00:00:00Z",
+    "updatedAt": "2026-05-20T00:00:00Z"
+  }
+]

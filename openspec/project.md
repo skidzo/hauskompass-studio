@@ -28,7 +28,7 @@ The project collects public geodata, local observations and renovation planning 
 
 ## Project Rules
 
-- Preserve existing data, generated artifacts, docs and private/local workflows unless explicitly asked to replace them.
+- Preserve existing data, generated artifacts, docs and local/local workflows unless explicitly asked to replace them.
 - Keep changes small, coherent and reviewable.
 - Update `docs/CURRENT_STATE.md` and `CHANGELOG.md` after meaningful project changes.
 - Treat generated artifacts as reasoning aids unless site measurement and expert review confirm them.

@@ -18,7 +18,7 @@ After the site visit, keep the photo capture context useful for Gaussian-Splatti
 Real photo files stay local. The import records should be stored in browser localStorage first or in ignored private folders such as:
 
 ```text
-private/site-visits/
+local/site-visits/
 ```
 
 Do not commit private photos, exact coordinates or address-bearing metadata.

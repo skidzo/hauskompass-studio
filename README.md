@@ -132,7 +132,7 @@ MIT License — siehe [LICENSE](LICENSE)
 - React 18 + TypeScript + Vite
 - Dexie.js (IndexedDB-Wrapper) für lokale Datenhaltung
 - Three.js (3D-Viewer) + MapLibre (Karte)
-- Node.js `node:test` für Tests (keine externen Test-Frameworks)
+- Vitest + jsdom für Tests
 
 ### Entwicklung
 

@@ -19,6 +19,7 @@ import {
 import {
     assetHasBlob,
     exportWorkshopBundle,
+    inspectWorkshopBundleImport,
     saveAsset,
     updateAssetSpatialContext,
     workshopDb,
@@ -115,6 +116,7 @@ describe('computeAssetCompleteness', () => {
 // ---------------------------------------------------------------------------
 
 const TEST_PROJECT_ID = 'proj-field-readiness-test';
+const TEST_SITE_ID = 'site-test';
 const TEST_ZONE_ID = 'z-test-zone';
 
 const placeholderAssetId = 'A-PLACEHOLDER-TEST-001';
@@ -127,13 +129,23 @@ beforeAll(async () => {
         slug: 'field-readiness-test',
         title: 'Field Readiness Test Project',
         description: 'Automated test project',
-        siteId: 'site-test',
+        siteId: TEST_SITE_ID,
         projectMode: 'active',
         createdAt: '2026-01-01T00:00:00',
         updatedAt: '2026-01-01T00:00:00',
         version: '0.0.1',
         sensitivityDefault: 'internal',
         publicationDefault: 'internal_only',
+    });
+
+    await workshopDb.sites.put({
+        id: TEST_SITE_ID,
+        projectId: TEST_PROJECT_ID,
+        name: 'Field Readiness Test Site',
+        shortDescription: 'Automated test site',
+        currentAccess: 'unknown',
+        sensitivityLevel: 'internal',
+        publicationStatus: 'internal_only',
     });
 
     // Save a placeholder asset (no blob)
@@ -172,6 +184,7 @@ afterAll(async () => {
     await workshopDb.assets.delete(placeholderAssetId);
     await workshopDb.assets.delete(blobAssetId);
     await workshopDb.assetBlobs.delete(blobAssetId);
+    await workshopDb.sites.delete(TEST_SITE_ID);
     await workshopDb.projects.delete(TEST_PROJECT_ID);
 });
 
@@ -249,6 +262,10 @@ describe('exportWorkshopBundle', () => {
         expect(bundle).toHaveProperty('observations');
         expect(bundle).toHaveProperty('interpretations');
         expect(bundle).toHaveProperty('memories');
+        expect(bundle).toHaveProperty('format', 'hauskompass.bundle');
+        expect(bundle).toHaveProperty('bundleIntent', 'full_backup');
+        expect(bundle).toHaveProperty('projectMode', 'workshop');
+        expect(bundle).toHaveProperty('payloadType', 'workshop_bundle');
     });
 
     it('includes placeholder asset in assets array', async () => {
@@ -279,12 +296,30 @@ describe('exportWorkshopBundle', () => {
         const bundle = await exportWorkshopBundle(TEST_PROJECT_ID);
         expect(bundle.project?.id).toBe(TEST_PROJECT_ID);
         expect(bundle.project?.title).toBe('Field Readiness Test Project');
+        expect(bundle.projectRef.projectId).toBe(TEST_PROJECT_ID);
+        expect(bundle.projectRef.title).toBe('Field Readiness Test Project');
     });
 
     it('exportedAt is a valid ISO string', async () => {
         const bundle = await exportWorkshopBundle(TEST_PROJECT_ID);
         expect(() => new Date(bundle.exportedAt)).not.toThrow();
         expect(new Date(bundle.exportedAt).getFullYear()).toBeGreaterThan(2024);
+    });
+
+    it('inspects valid workshop bundles with project metadata', async () => {
+        const bundle = await exportWorkshopBundle(TEST_PROJECT_ID);
+        const inspection = inspectWorkshopBundleImport(bundle, bundle.blobAssetIds.length);
+        expect(inspection.ok).toBe(true);
+        expect(inspection.projectId).toBe(TEST_PROJECT_ID);
+        expect(inspection.siteId).toBe(TEST_SITE_ID);
+        expect(inspection.title).toBe('Field Readiness Test Project');
+    });
+
+    it('warns when zip photo blobs are missing from inspection', async () => {
+        const bundle = await exportWorkshopBundle(TEST_PROJECT_ID);
+        const inspection = inspectWorkshopBundleImport(bundle, 0);
+        expect(inspection.ok).toBe(true);
+        expect(inspection.warnings.join(' ')).toContain('ZIP-Inhalt unvollständig');
     });
 });
 

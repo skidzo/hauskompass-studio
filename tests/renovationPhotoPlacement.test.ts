@@ -61,8 +61,8 @@ describe('renovation photo placement', () => {
     expect(bundle.photo.exifGpsLat).toBeCloseTo(48.123456, 6);
     expect(bundle.placement.mapPoint).toEqual({ lat: 48.123456, lon: 11.654321 });
     expect(bundle.placement.placementSource).toBe('exif');
-    expect(bundle.placement.placementConfidence).toBe('likely');
-    expect(bundle.placement.orientationConfidence).toBe('likely');
+    expect(bundle.placement.placementConfidence).toBe('verified');
+    expect(bundle.placement.orientationConfidence).toBe('verified');
     expect(bundle.placement.roomId).toBe('kitchen');
   });
 

@@ -34,6 +34,8 @@ export const allowedShotIds: ShotId[] = [
   'S16', 'S17', 'S18', 'S19', 'S20',
 ];
 
+const STORAGE_KEY = 'hauskompass.siteVisitImports.v1';
+
 export const siteVisitTemplate: SiteVisitImport = {
   visitId: 'local-visit-YYYY-MM-DD',
   visitDate: 'YYYY-MM-DD',
@@ -119,4 +121,24 @@ export function summarizeSiteVisitImport(importData: SiteVisitImport) {
     measurementCount,
     missingBlocks: allowedShotIds.filter((id) => !importData.blocks.some((block) => block.id === id)),
   };
+}
+
+export function parseStoredSiteVisitImports(raw: string | null): SiteVisitImport[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function loadSiteVisitImports(): SiteVisitImport[] {
+  if (typeof window === 'undefined') return [];
+  return parseStoredSiteVisitImports(window.localStorage.getItem(STORAGE_KEY));
+}
+
+export function saveSiteVisitImports(imports: SiteVisitImport[]) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(imports, null, 2));
 }

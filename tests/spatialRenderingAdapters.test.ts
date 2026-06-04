@@ -3,9 +3,14 @@ import { describe, expect, it } from 'vitest';
 import type { SpatialScene } from '@/domain/spatial/types';
 import type { Zone } from '@/features/workshop/db/workshopDb';
 import {
+  buildFallbackWorkshopCampusLocations,
+  buildFallbackWorkshopZoneGeometry,
   buildWorkshopCameraFrustumCollection,
   buildWorkshopZoneFeatureCollection,
+  deriveWorkshopMapAnchor,
   findWorkshopZoneCentroid,
+  hasMatchingWorkshopCampusLocations,
+  hasMatchingWorkshopZoneGeometry,
 } from '@/features/workshop/rendering/workshopMapAdapter';
 import {
   WORKSHOP_3D_CONFIDENCE_LABEL,
@@ -61,6 +66,118 @@ describe('spatial rendering adapters', () => {
     expect(geojson.features[0].properties.label).toBe('Pavillon 1');
     expect(geojson.features[0].properties.selected).toBe(1);
     expect(findWorkshopZoneCentroid(geojson, 'z-1')).toEqual([9.666666666666666, 48.333333333333336]);
+  });
+
+  it('derives fallback workshop map geometry and labels from the spatial scene', () => {
+    const zones: Zone[] = [{
+      id: 'zone-1',
+      siteId: 'site-1',
+      name: 'Pavillon 1',
+      description: 'Fallback zone',
+      documentationStatus: 'partial',
+      documentationPriority: 'high',
+      openQuestionIds: [],
+      linkedAssetIds: [],
+      linkedAssessmentIds: [],
+      sensitivityLevel: 'internal',
+      publicationStatus: 'internal_only',
+    }];
+
+    const sceneData: SpatialScene = {
+      id: 'scene-1',
+      projectId: 'project-1',
+      siteId: 'site-1',
+      label: 'Fallback scene',
+      sources: [{ id: 'source-1', label: 'Survey', kind: 'manual_seed' }],
+      terrain: [],
+      buildingHulls: [{
+        id: 'hull-1',
+        label: 'Pavillon 1 Hull',
+        zoneId: 'zone-1',
+        footprint: [
+          { x: -10, y: 0, z: -5 },
+          { x: 10, y: 0, z: -5 },
+          { x: 10, y: 0, z: 5 },
+          { x: -10, y: 0, z: 5 },
+        ],
+        baseElevation: 0,
+        height: 8,
+        confidence: 'verified',
+        verificationStatus: 'verified_geometry',
+        historicalStatus: 'original_phase',
+        levelOfDetail: 'lod2',
+        sourceId: 'source-1',
+      }],
+      vegetation: [],
+      evidenceLinks: [],
+    };
+
+    const anchor = deriveWorkshopMapAnchor([{
+      id: 'asset-1',
+      title: 'Anchor photo',
+      lat: 48.726961,
+      lon: 9.075894,
+    }], { lat: 0, lon: 0 });
+    const geojson = buildFallbackWorkshopZoneGeometry(sceneData, zones, anchor);
+    const locations = buildFallbackWorkshopCampusLocations(sceneData, zones, anchor);
+
+    expect(anchor).toEqual({ lat: 48.726961, lon: 9.075894 });
+    expect(geojson?.features).toHaveLength(1);
+    expect(geojson?.features[0].properties.zoneId).toBe('zone-1');
+    expect(geojson?.features[0].geometry.coordinates[0]).toHaveLength(5);
+    expect(locations).toEqual([expect.objectContaining({
+      zoneId: 'zone-1',
+      label: 'Pavillon 1',
+      kind: 'pavilion',
+      source: 'spatial_scene_fallback',
+    })]);
+    expect(Math.abs(locations[0].lat - anchor.lat)).toBeLessThan(0.0001);
+    expect(Math.abs(locations[0].lon - anchor.lon)).toBeLessThan(0.0001);
+  });
+
+  it('ignores mismatched static workshop geometry instead of placing labels on the wrong project', () => {
+    const zones: Zone[] = [{
+      id: 'z-pavillon-1',
+      siteId: 'site-1',
+      name: 'Pavillon 1',
+      description: 'Eiermann zone',
+      documentationStatus: 'partial',
+      documentationPriority: 'high',
+      openQuestionIds: [],
+      linkedAssetIds: [],
+      linkedAssessmentIds: [],
+      sensitivityLevel: 'internal',
+      publicationStatus: 'internal_only',
+    }];
+
+    const genericGeometry = {
+      type: 'FeatureCollection' as const,
+      features: [{
+        type: 'Feature' as const,
+        properties: { zoneId: 'z-entry', name: 'Generic core' },
+        geometry: {
+          type: 'Polygon' as const,
+          coordinates: [[
+            [9, 48] as [number, number],
+            [10, 48] as [number, number],
+            [10, 49] as [number, number],
+            [9, 48] as [number, number],
+          ]],
+        },
+      }],
+    };
+
+    expect(hasMatchingWorkshopZoneGeometry(zones, genericGeometry)).toBe(false);
+    expect(hasMatchingWorkshopCampusLocations(zones, [{
+      id: 'loc-1',
+      zoneId: 'z-entry',
+      label: 'Generic core',
+      kind: 'pavilion',
+      lat: 48.1,
+      lon: 9.1,
+      source: 'static',
+    }])).toBe(false);
+    expect(buildWorkshopZoneFeatureCollection(zones, null, genericGeometry).features).toHaveLength(0);
   });
 
   it('builds workshop camera frustums from asset markers', () => {

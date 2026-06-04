@@ -8,27 +8,11 @@
  *         CORS-enabled, no API key, free (fair-use)
  */
 
-import type { ProjectGeocodeResult } from '@/features/project-store/types';
+import type { ImportedTerrainData, ImportedTerrainPoint, ProjectGeocodeResult } from '@/features/project-store/types';
+export type { ImportedTerrainData, ImportedTerrainPoint } from '@/features/project-store/types';
 
 const HALF_M = 120; // transect half-length in metres
 const STEP_M = 6;   // sample spacing — gives 41 points per arm (–120..+120)
-
-export interface ImportedTerrainPoint {
-  dist: number;    // signed metres from centre
-  z: number;       // raw elevation m a.s.l.
-  zSmooth: number; // median-smoothed elevation
-}
-
-export interface ImportedTerrainData {
-  centerZ: number;
-  nsProfile: ImportedTerrainPoint[];
-  ewProfile: ImportedTerrainPoint[];
-  reliefM: number;
-  meanElevationM: number;
-  slopePercent: number;
-  fetchedAt: string;
-  source: string;
-}
 
 function runningMedian(values: number[], w = 3): number[] {
   const half = Math.floor(w / 2);

@@ -1,0 +1,65 @@
+[
+  {
+    "address": "Workshop-Campus Demo, 70569 Stuttgart",
+    "mode": "workshop",
+    "entry": "builtin",
+    "region": "BW",
+    "status": "supported",
+    "tileId": "513_5403",
+    "nominatimState": "Baden-Württemberg"
+  },
+  {
+    "address": "Demohaus BW 29, 70563 Stuttgart",
+    "mode": "renovation",
+    "entry": "wizard",
+    "region": "BW",
+    "status": "supported",
+    "tileId": "513_5403",
+    "nominatimState": "Baden-Württemberg"
+  },
+  {
+    "address": "Demohaus BY 31, 92526 Beispielstadt",
+    "mode": "renovation",
+    "entry": "wizard",
+    "region": "Bayern",
+    "status": "supported",
+    "tileId": "691_5480",
+    "nominatimState": "Bayern"
+  },
+  {
+    "address": "Demohaus BY 1, 80331 München",
+    "mode": "renovation",
+    "entry": "wizard",
+    "region": "Bayern",
+    "status": "supported",
+    "tileId": "691_5334",
+    "nominatimState": "Bayern"
+  },
+  {
+    "address": "Demohaus BY 2, 86150 Augsburg",
+    "mode": "renovation",
+    "entry": "wizard",
+    "region": "Bayern",
+    "status": "supported",
+    "tileId": "655_5363",
+    "nominatimState": "Bayern"
+  },
+  {
+    "address": "Demohaus BE 1, 10178 Berlin",
+    "mode": "unsupported",
+    "entry": "wizard",
+    "region": "Berlin",
+    "status": "unsupported_state",
+    "tileId": "799_5829",
+    "nominatimState": "Berlin"
+  },
+  {
+    "address": "Demohaus AT 1, 1010 Wien, Österreich",
+    "mode": "unsupported",
+    "entry": "wizard",
+    "region": "outside_de",
+    "status": "outside_de",
+    "tileId": "968_5342",
+    "nominatimState": ""
+  }
+]

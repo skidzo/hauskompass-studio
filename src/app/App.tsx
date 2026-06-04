@@ -8,6 +8,7 @@ import { fetchedGeodataSummary } from '@/features/building-hull-import/fetchedGe
 import { lod2CandidateGeometry } from '@/features/building-hull-import/generated/lod2CandidateGeometry';
 import { Part1ElementPlanPanel } from '@/features/building-parts/Part1ElementPlanPanel';
 import { Part1SectionDrawingsPanel } from '@/features/building-parts/Part1SectionDrawingsPanel';
+import { buildLod2ProjectionLayout } from '@/features/building-parts/lod2Projection';
 import { DataInventoryPanel } from '@/features/data-inventory/DataInventoryPanel';
 import { buildProjectInventory } from '@/features/data-inventory/buildProjectInventory';
 import { dataInventorySeed } from '@/features/data-inventory/dataInventorySeed';
@@ -22,6 +23,7 @@ import { LocationContextPanel } from '@/features/map-view/LocationContextPanel';
 import { MetadataExplorerPanel } from '@/features/metadata/MetadataExplorerPanel';
 import { NewProjectWizard } from '@/features/new-project/NewProjectWizard';
 import { ProjectHome, type BuiltinProject } from '@/features/project-home/ProjectHome';
+import { saveProjectHomeRecord, workshopProjectHomeRecord } from '@/features/project-home/projectHomeRegistry';
 import { ProjectProvider, useProject } from '@/features/project-store/ProjectContext';
 import { listProjects, loadProject } from '@/features/project-store/projectStore';
 import type { ImportedProject, Lod2Candidate } from '@/features/project-store/types';
@@ -43,9 +45,10 @@ import { WorkshopMapPanel } from '@/features/workshop/components/WorkshopMapPane
 import { seedProject } from '@/features/workshop/db/seedLoader';
 import { type QuickStartResult } from '@/features/workshop/db/workshopDb';
 import { useGpsAssets, useZones } from '@/features/workshop/hooks/useWorkshopData';
-import { BrainCircuit, Building2, CheckCircle2, Circle, ClipboardList, Combine, Compass, Database, FolderOpen, Home, Layers, MapPinned, Mountain, Play, Plus, ShieldCheck, Upload, Wrench, X } from 'lucide-react';
+import { BrainCircuit, Building2, CheckCircle2, Circle, ClipboardList, Combine, Compass, Database, FolderOpen, Home, Layers, MapPinned, Mountain, Play, Plus, Upload, Wrench, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useCandidateSelection } from './hooks/useCandidateSelection';
+import { routePath, useHashRouter } from './hooks/useHashRouter';
 import { useIfcGeneration } from './hooks/useIfcGeneration';
 import { useTerrainData } from './hooks/useTerrainData';
 
@@ -71,60 +74,98 @@ export function App() {
 
 function HauskompassApp() {
   const { activeProject, activateProject, deactivateProject } = useProject();
-  const [appMode, setAppMode] = useState<AppMode>(() =>
-    activeProject ? 'renovation' : 'home',
-  );
+  const { route, navigate } = useHashRouter();
   const [showNewProject, setShowNewProject] = useState(false);
   const [showWorkshopQuickStart, setShowWorkshopQuickStart] = useState(false);
-  const [activeWorkshopProject, setActiveWorkshopProject] = useState<BuiltinProject | null>(null);
+  const [activeWorkshopProject, setActiveWorkshopProject] = useState<BuiltinProject | null>(() => {
+    try {
+      const raw = localStorage.getItem('hk_active_workshop_project');
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as BuiltinProject;
+      if (!parsed.projectId || !parsed.siteId) return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  });
 
-  const goHome = () => setAppMode('home');
+  // Persist active workshop project across browser restarts
+  useEffect(() => {
+    if (activeWorkshopProject) {
+      localStorage.setItem('hk_active_workshop_project', JSON.stringify(activeWorkshopProject));
+    } else {
+      localStorage.removeItem('hk_active_workshop_project');
+    }
+  }, [activeWorkshopProject]);
+
+  // Derive appMode from hash route
+  const appMode: AppMode = route.mode;
+
+  const goHome = () => navigate(routePath.home());
 
   const handleSelectBuiltin = (project: BuiltinProject) => {
     if (project.type === 'workshop') {
       setActiveWorkshopProject(project);
-      setAppMode('workshop');
+      navigate(routePath.workshop());
       return;
     }
     deactivateProject();
-    setAppMode('renovation');
+    navigate(routePath.renovation('demo'));
   };
 
   const handleSelectRenovation = (slug: string) => {
     activateProject(slug);
-    setAppMode('renovation');
+    navigate(routePath.renovation(slug));
   };
 
   const handleQuickStartWorkshop = (result: QuickStartResult) => {
     setShowWorkshopQuickStart(false);
-    setActiveWorkshopProject({
+    const workshopProject = {
       id: result.projectId,
       projectId: result.projectId,
       siteId: result.siteId,
       title: result.title,
       subtitle: 'Schnell-Start',
-      type: 'workshop',
+      type: 'workshop' as const,
       location: '',
       description: '',
-    });
-    setAppMode('workshop');
+    };
+    saveProjectHomeRecord(workshopProjectHomeRecord({
+      projectId: result.projectId,
+      siteId: result.siteId,
+      title: result.title,
+      subtitle: 'Schnell-Start',
+      description: 'Workshop Schnellstart',
+      createdAt: new Date().toISOString(),
+    }));
+    setActiveWorkshopProject(workshopProject);
+    navigate(routePath.workshop());
   };
 
   const handleImportBackup = (projectId: string, siteId: string, title: string) => {
-    setActiveWorkshopProject({
+    const workshopProject = {
       id: projectId,
       projectId,
       siteId,
       title,
       subtitle: 'Aus Backup importiert',
-      type: 'workshop',
+      type: 'workshop' as const,
       location: '',
       description: '',
-    });
-    setAppMode('workshop');
+    };
+    saveProjectHomeRecord(workshopProjectHomeRecord({
+      projectId,
+      siteId,
+      title,
+      subtitle: 'Aus Backup importiert',
+      description: 'Workshop-Backup importiert',
+      createdAt: new Date().toISOString(),
+    }));
+    setActiveWorkshopProject(workshopProject);
+    navigate(routePath.workshop());
   };
 
-  // Workshop full-screen mode
+  // Workshop full-screen mode — restore project from route on initial deep-link if needed
   if (appMode === 'workshop') {
     return <WorkshopApp onGoHome={goHome} project={activeWorkshopProject} />;
   }
@@ -145,7 +186,7 @@ function HauskompassApp() {
             onProjectActivated={(slug) => {
               activateProject(slug);
               setShowNewProject(false);
-              setAppMode('renovation');
+              navigate(routePath.renovation(slug));
             }}
           />
         )}
@@ -160,20 +201,34 @@ function HauskompassApp() {
     );
   }
 
-  // Renovation mode
+  // Renovation mode — on deep-link, activate project from slug in route
+  const renovSlug = route.mode === 'renovation' ? route.slug : null;
+  if (renovSlug && (!activeProject || activeProject.slug !== renovSlug)) {
+    activateProject(renovSlug);
+  }
   return <RenovationApp onGoHome={goHome} />;
 }
 
 function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
   const { activeProject, activateProject, deactivateProject, updateProject } = useProject();
+  const { route, replace } = useHashRouter();
   const [showNewProject, setShowNewProject] = useState(false);
   const [showProjectDrawer, setShowProjectDrawer] = useState(false);
-  const [activeSection, setActiveSection] = useState<Section>('site');
+  const initialSection: Section =
+    route.mode === 'renovation' ? (route.section as Section) : 'site';
+  const [activeSection, setActiveSectionState] = useState<Section>(initialSection);
   const [siteTab, setSiteTab] = useState<'evidence' | 'terrain' | 'crosssection' | 'crosssectionew'>('evidence');
   const [buildingTab, setBuildingTab] = useState<'lod2' | 'parts' | 'sections' | 'ifc'>('lod2');
   const [assessmentTab, setAssessmentTab] = useState<AssessmentTab>('hull');
 
-  const { terrainData, terrainFetchState, terrainFetchError, fetchTerrain } = useTerrainData(activeProject);
+  /** Navigate to a renovation section and sync URL */
+  const setActiveSection = (s: Section) => {
+    setActiveSectionState(s);
+    const slug = activeProject?.slug ?? 'demo';
+    replace(routePath.renovation(slug, s as import('./hooks/useHashRouter').RenovationSection));
+  };
+
+  const { terrainData, terrainFetchState, terrainFetchError, fetchTerrain } = useTerrainData(activeProject, updateProject);
   const {
     selectedCandidateId,
     setSelectedCandidateId,
@@ -184,10 +239,13 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
     runtimeCandidates,
     runtimeConfirmedIds,
   } = useCandidateSelection(activeProject);
-  const { lod2IfcContent, setGenerated, resetGeneration } = useIfcGeneration();
+  const { lod2IfcContent, setGenerated } = useIfcGeneration(activeProject, updateProject);
 
   const projectLabel = activeProject ? activeProject.address : demoLabel;
   const isImportedProject = !!activeProject;
+  const projectionCandidates = isImportedProject
+    ? (confirmedCandidates.length > 0 ? confirmedCandidates : (selectedCandidate ? [selectedCandidate] : []))
+    : [];
 
   // Detail-Tabs (Elemente/Ansichten) nur anzeigen wenn IFC generiert oder Demo-Modus
   const showDetailTabs = !isImportedProject || lod2IfcContent !== null;
@@ -203,9 +261,8 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
     return () => document.removeEventListener('keydown', handler);
   }, [showProjectDrawer]);
 
-  // Reset IFC-Generierung beim Projekt-Wechsel
+  // Beim Projekt-Wechsel zurück auf LoD2; persistierte IFC-Daten bleiben erhalten.
   useEffect(() => {
-    resetGeneration();
     setBuildingTab('lod2');
   }, [activeProject?.slug]);
 
@@ -241,12 +298,8 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
               >
                 <X size={16} />
               </button>
-              <p className="eyebrow">{isImportedProject ? 'Importiertes Projekt' : 'Demo-Modus'}</p>
+              <p className="eyebrow">{isImportedProject ? 'Importiertes Projekt' : 'Demo'}</p>
               <h1 title={projectLabel}>{projectLabel}</h1>
-              <div className="privacy-pill">
-                <ShieldCheck size={13} />
-                Local-first · keine Adresse übertragen
-              </div>
             </div>
             {listProjects().filter(slug => slug !== activeProject?.slug).map(slug => {
               const proj = loadProject(slug);
@@ -264,34 +317,6 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
                 </button>
               );
             })}
-            <button
-              className="sidebar-demo-btn"
-              onClick={() => { setShowProjectDrawer(false); onGoHome(); }}
-              title="Zur Projektstartseite"
-              type="button"
-            >
-              <Home size={12} />
-              Zur Startseite
-            </button>
-            <button
-              className="sidebar-new-project-btn"
-              onClick={() => { setShowNewProject(true); setShowProjectDrawer(false); }}
-              title="Neues Projekt für eine andere Adresse einrichten"
-              type="button"
-            >
-              <Plus size={13} />
-              Neues Projekt anlegen
-            </button>
-            <div className="sidebar-footer">
-              <button
-                className="sidebar-stat sidebar-stat-link"
-                onClick={() => { setActiveSection('data'); setShowProjectDrawer(false); }}
-                type="button"
-              >
-                <span className="sidebar-stat-label">Datenquellen bereit</span>
-                <strong className="sidebar-stat-value">{availableSources}&thinsp;/&thinsp;{dataInventorySeed.length} →</strong>
-              </button>
-            </div>
           </div>
         </div>
       )}
@@ -387,7 +412,7 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
         {activeSection === 'building' && (
           <div className="section-page">
             <header className="section-header">
-              <h2 className="section-title">Gebäude — {isImportedProject ? activeProject.address : 'LoD2 Geometrie'}</h2>
+              <h2 className="section-title">Gebäude — {projectLabel}</h2>
             </header>
 
             {/* Tab-Leiste (ohne Teil-Selektor — alle Gebäude werden gemeinsam dargestellt) */}
@@ -459,13 +484,13 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
 
             {buildingTab === 'parts' && showDetailTabs && (
               isImportedProject && lod2IfcContent !== null
-                ? <Lod2FloorPlanPanel candidate={selectedCandidate!} />
+                ? <Lod2FloorPlanPanel candidates={projectionCandidates} />
                 : <Part1ElementPlanPanel />
             )}
 
             {buildingTab === 'sections' && showDetailTabs && (
               isImportedProject && lod2IfcContent !== null
-                ? <Lod2ElevationsPanel candidate={selectedCandidate!} />
+                ? <Lod2ElevationsPanel candidates={projectionCandidates} />
                 : <Part1SectionDrawingsPanel />
             )}
 
@@ -483,7 +508,7 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
         {activeSection === 'site' && (
           <div className="section-page">
             <header className="section-header">
-              <h2 className="section-title">Lage — {isImportedProject ? activeProject.address : 'Demo-Standort'}</h2>
+              <h2 className="section-title">Lage — {projectLabel}</h2>
             </header>
 
             {!isImportedProject && (
@@ -665,10 +690,25 @@ function RenovationApp({ onGoHome }: { onGoHome: () => void }) {
 
 type WorkshopSection = 'workshop' | 'map' | 'spatial3d' | 'import';
 
+/** Map internal WorkshopSection to URL segment and back */
+function wsToUrlSection(s: WorkshopSection): import('./hooks/useHashRouter').WorkshopSection {
+  if (s === 'workshop') return 'zones';
+  if (s === 'spatial3d') return '3d';
+  return s as import('./hooks/useHashRouter').WorkshopSection;
+}
+function urlToWsSection(s: import('./hooks/useHashRouter').WorkshopSection): WorkshopSection {
+  if (s === 'zones') return 'workshop';
+  if (s === '3d') return 'spatial3d';
+  return s as WorkshopSection;
+}
+
 function WorkshopApp({ onGoHome, project }: { onGoHome: () => void; project: BuiltinProject | null }) {
   const workshopProjectId = project?.projectId ?? '';
   const workshopSiteId = project?.siteId ?? '';
-  const [section, setSection] = useState<WorkshopSection>('workshop');
+  const { route, replace } = useHashRouter();
+  const initialSection: WorkshopSection =
+    route.mode === 'workshop' ? urlToWsSection(route.section) : 'map';
+  const [section, setSection] = useState<WorkshopSection>(initialSection);
   const [wsSeeded, setWsSeeded] = useState(false);
   const [flyToPos, setFlyToPos] = useState<{ lat: number; lon: number } | null>(null);
   const [selectedMapZoneId, setSelectedMapZoneId] = useState<string | null>(null);
@@ -676,18 +716,29 @@ function WorkshopApp({ onGoHome, project }: { onGoHome: () => void; project: Bui
   const [workshopFocus, setWorkshopFocus] = useState<WorkshopFocusRequest | null>(null);
 
   useEffect(() => {
+    if (!workshopProjectId) {
+      // No project in state — redirect to home so user can select one
+      window.location.hash = '/';
+      return;
+    }
     setWsSeeded(false);
     setFlyToPos(null);
     setSelectedMapZoneId(null);
     setSelectedMapAssetId(null);
     setWorkshopFocus(null);
-    if (workshopProjectId) seedProject(workshopProjectId)
+    seedProject(workshopProjectId)
       .then(() => setWsSeeded(true))
       .catch((err) => { console.error('seedProject failed:', err); setWsSeeded(true); });
   }, [workshopProjectId]);
 
   const zones = useZones(workshopSiteId);
   const gpsAssets = useGpsAssets(workshopProjectId);
+
+  /** Navigate to a workshop section and sync URL */
+  const navigateSection = (s: WorkshopSection) => {
+    setSection(s);
+    replace(routePath.workshop(wsToUrlSection(s)));
+  };
 
   return (
     <div className="app-shell">
@@ -699,7 +750,7 @@ function WorkshopApp({ onGoHome, project }: { onGoHome: () => void; project: Bui
           <button
             className={`nav-icon-btn${section === 'workshop' ? ' nav-icon-btn-active' : ''}`}
             data-label="Workshop"
-            onClick={() => setSection('workshop')}
+            onClick={() => navigateSection('workshop')}
             title="Workshop — Zonen, Timeline, Szenen"
             type="button"
           >
@@ -708,7 +759,7 @@ function WorkshopApp({ onGoHome, project }: { onGoHome: () => void; project: Bui
           <button
             className={`nav-icon-btn${section === 'map' ? ' nav-icon-btn-active' : ''}`}
             data-label="Lage"
-            onClick={() => setSection('map')}
+            onClick={() => navigateSection('map')}
             title="Lage — Zonenplan mit GPS-Fotos"
             type="button"
           >
@@ -717,7 +768,7 @@ function WorkshopApp({ onGoHome, project }: { onGoHome: () => void; project: Bui
           <button
             className={`nav-icon-btn${section === 'spatial3d' ? ' nav-icon-btn-active' : ''}`}
             data-label="3D"
-            onClick={() => setSection('spatial3d')}
+            onClick={() => navigateSection('spatial3d')}
             title="3D — Gelände, Hüllen und Vegetation"
             type="button"
           >
@@ -726,7 +777,7 @@ function WorkshopApp({ onGoHome, project }: { onGoHome: () => void; project: Bui
           <button
             className={`nav-icon-btn${section === 'import' ? ' nav-icon-btn-active' : ''}`}
             data-label="Import"
-            onClick={() => setSection('import')}
+            onClick={() => navigateSection('import')}
             title="Fotos importieren — GPS-basierte Zonen-Zuweisung"
             type="button"
           >
@@ -936,6 +987,7 @@ function ImportedCandidatePanel({
         {candidates.slice(0, 20).map((c) => {
           const confirmed = confirmedIds.includes(c.id);
           const selected = c.id === selectedId;
+          const namedLabel = project.candidateNames?.[c.id]?.trim();
           return (
             <button
               className={`imported-candidate-row ${selected ? 'imported-candidate-row-selected' : ''}`}
@@ -949,8 +1001,9 @@ function ImportedCandidatePanel({
                 <Circle size={14} style={{ color: '#4b5563', flexShrink: 0 }} />
               )}
               <div>
-                <strong>{c.id}</strong>
+                <strong>{namedLabel || c.id}</strong>
                 <span>
+                  {namedLabel ? `${c.id} · ` : ''}
                   {c.measuredHeightM.toFixed(1)} m · {c.surfaces.roof.length} Dach · {c.surfaces.wall.length} Wand ·{' '}
                   {c.bboxDistanceToGeocodeM.toFixed(0)} m von Adresse
                 </span>
@@ -1209,27 +1262,11 @@ function Lod2GenerateCard({
 
 // ── Floor plan derived from LoD2 ground surface ───────────────────────────
 
-function Lod2FloorPlanPanel({ candidate }: { candidate: Lod2Candidate }) {
-  const { bboxUtm32, surfaces } = candidate;
-  const baseE = bboxUtm32.minE;
-  const baseN = bboxUtm32.minN;
-  const widthM = bboxUtm32.maxE - baseE;
-  const depthM = bboxUtm32.maxN - baseN;
-  const groundArea = surfaces.ground.reduce((s, f) => s + f.areaM2, 0);
-
-  // Project ground surface to 2D (E=X, N=Y flipped for SVG)
-  const rawPts = surfaces.ground[0]?.points ?? [];
-  // Remove closing duplicate
-  const pts =
-    rawPts.length > 3 &&
-      Math.abs(rawPts[0].e - rawPts[rawPts.length - 1].e) < 0.005 &&
-      Math.abs(rawPts[0].n - rawPts[rawPts.length - 1].n) < 0.005
-      ? rawPts.slice(0, -1)
-      : rawPts;
-
-  const svgPts = pts.map((p) => `${(p.e - baseE).toFixed(2)},${-(p.n - baseN).toFixed(2)}`).join(' ');
+function Lod2FloorPlanPanel({ candidates }: { candidates: Lod2Candidate[] }) {
+  const layout = buildLod2ProjectionLayout(candidates);
+  const planArea = candidates.reduce((sum, candidate) => sum + candidate.surfaces.ground.reduce((surfaceSum, surface) => surfaceSum + surface.areaM2, 0), 0);
   const pad = 2;
-  const vb = `${-pad} ${-depthM - pad} ${widthM + pad * 2} ${depthM + pad * 2}`;
+  const vb = `${layout.planBounds.minX - pad} ${-(layout.planBounds.maxY + pad)} ${layout.planBounds.width + pad * 2} ${layout.planBounds.height + pad * 2}`;
 
   return (
     <section className="panel">
@@ -1238,38 +1275,41 @@ function Lod2FloorPlanPanel({ candidate }: { candidate: Lod2Candidate }) {
         Grundriss (LoD2 Projektion)
       </div>
       <svg viewBox={vb} className="lod2-plan-svg" role="img" aria-label="Grundriss aus LoD2">
-        {pts.length >= 3 ? (
-          <polygon points={svgPts} fill="#e8f0fe" stroke="#3b82f6" strokeWidth={0.15} />
-        ) : (
-          <rect x={0} y={-depthM} width={widthM} height={depthM} fill="#e8f0fe" stroke="#3b82f6" strokeWidth={0.15} />
-        )}
-        {/* Width dimension */}
-        <line x1={0} y1={pad * 0.6} x2={widthM} y2={pad * 0.6} stroke="#9ca3af" strokeWidth={0.07} />
-        <line x1={0} y1={pad * 0.45} x2={0} y2={pad * 0.75} stroke="#9ca3af" strokeWidth={0.07} />
-        <line x1={widthM} y1={pad * 0.45} x2={widthM} y2={pad * 0.75} stroke="#9ca3af" strokeWidth={0.07} />
-        <text x={widthM / 2} y={pad * 0.3} textAnchor="middle" fontSize={0.55} fill="#374151">
-          {widthM.toFixed(1)} m
+        {layout.planPolygons.map((polygon, index) => (
+          <polygon
+            key={`${index}-${polygon.length}`}
+            points={polygon.map((point) => `${point.x.toFixed(2)},${(-point.y).toFixed(2)}`).join(' ')}
+            fill="#e8f0fe"
+            stroke="#3b82f6"
+            strokeWidth={0.15}
+          />
+        ))}
+        <line x1={layout.planBounds.minX} y1={-layout.planBounds.minY + pad * 0.6} x2={layout.planBounds.maxX} y2={-layout.planBounds.minY + pad * 0.6} stroke="#9ca3af" strokeWidth={0.07} />
+        <line x1={layout.planBounds.minX} y1={-layout.planBounds.minY + pad * 0.45} x2={layout.planBounds.minX} y2={-layout.planBounds.minY + pad * 0.75} stroke="#9ca3af" strokeWidth={0.07} />
+        <line x1={layout.planBounds.maxX} y1={-layout.planBounds.minY + pad * 0.45} x2={layout.planBounds.maxX} y2={-layout.planBounds.minY + pad * 0.75} stroke="#9ca3af" strokeWidth={0.07} />
+        <text x={(layout.planBounds.minX + layout.planBounds.maxX) / 2} y={-layout.planBounds.minY + pad * 1.15} textAnchor="middle" fontSize={0.55} fill="#374151">
+          {layout.planBounds.width.toFixed(1)} m
         </text>
-        {/* Depth dimension */}
-        <line x1={-pad * 0.6} y1={0} x2={-pad * 0.6} y2={-depthM} stroke="#9ca3af" strokeWidth={0.07} />
-        <line x1={-pad * 0.45} y1={0} x2={-pad * 0.75} y2={0} stroke="#9ca3af" strokeWidth={0.07} />
-        <line x1={-pad * 0.45} y1={-depthM} x2={-pad * 0.75} y2={-depthM} stroke="#9ca3af" strokeWidth={0.07} />
+        <line x1={layout.planBounds.minX - pad * 0.6} y1={-layout.planBounds.minY} x2={layout.planBounds.minX - pad * 0.6} y2={-layout.planBounds.maxY} stroke="#9ca3af" strokeWidth={0.07} />
+        <line x1={layout.planBounds.minX - pad * 0.45} y1={-layout.planBounds.minY} x2={layout.planBounds.minX - pad * 0.75} y2={-layout.planBounds.minY} stroke="#9ca3af" strokeWidth={0.07} />
+        <line x1={layout.planBounds.minX - pad * 0.45} y1={-layout.planBounds.maxY} x2={layout.planBounds.minX - pad * 0.75} y2={-layout.planBounds.maxY} stroke="#9ca3af" strokeWidth={0.07} />
         <text
-          x={-pad * 0.3}
-          y={-depthM / 2}
+          x={layout.planBounds.minX - pad * 0.3}
+          y={-(layout.planBounds.minY + layout.planBounds.maxY) / 2}
           textAnchor="middle"
           fontSize={0.55}
           fill="#374151"
-          transform={`rotate(-90, ${-pad * 0.3}, ${-depthM / 2})`}
+          transform={`rotate(-90, ${layout.planBounds.minX - pad * 0.3}, ${-(layout.planBounds.minY + layout.planBounds.maxY) / 2})`}
         >
-          {depthM.toFixed(1)} m
+          {layout.planBounds.height.toFixed(1)} m
         </text>
-        {/* North indicator */}
-        <text x={widthM + 0.4} y={-depthM + 0.6} fontSize={0.6} fill="#6b7280">N↑</text>
+        <text x={layout.planBounds.maxX + 0.4} y={-layout.planBounds.maxY + 0.6} fontSize={0.6} fill="#6b7280">
+          Hauptrichtung {layout.axisLabel}
+        </text>
       </svg>
       <p className="lod2-derive-note">
-        Grundfläche: {groundArea.toFixed(1)} m² · BBox: {widthM.toFixed(1)} × {depthM.toFixed(1)} m ·
-        Koordinatensystem: UTM32, lokalisiert
+        Grundfläche: {planArea.toFixed(1)} m² · Ensemble-BBox: {layout.planBounds.width.toFixed(1)} × {layout.planBounds.height.toFixed(1)} m ·
+        an Hauptrichtung der Außenwände orientiert
       </p>
     </section>
   );
@@ -1277,25 +1317,8 @@ function Lod2FloorPlanPanel({ candidate }: { candidate: Lod2Candidate }) {
 
 // ── Elevation views derived from LoD2 wall/roof surfaces ─────────────────
 
-function Lod2ElevationsPanel({ candidate }: { candidate: Lod2Candidate }) {
-  const { bboxUtm32, surfaces, measuredHeightM } = candidate;
-  const baseE = bboxUtm32.minE;
-  const baseN = bboxUtm32.minN;
-  const baseZ = bboxUtm32.minZ;
-  const widthEW = bboxUtm32.maxE - baseE;
-  const widthNS = bboxUtm32.maxN - baseN;
-
-  type Proj = (p: { e: number; n: number; z: number }) => { x: number; y: number };
-
-  const views: { label: string; width: number; proj: Proj }[] = [
-    { label: 'Süd', width: widthEW, proj: (p) => ({ x: p.e - baseE, y: p.z - baseZ }) },
-    { label: 'Ost', width: widthNS, proj: (p) => ({ x: p.n - baseN, y: p.z - baseZ }) },
-  ];
-
-  const allSurfs = [
-    ...surfaces.wall.map((s) => ({ ...s, kind: 'wall' as const })),
-    ...surfaces.roof.map((s) => ({ ...s, kind: 'roof' as const })),
-  ];
+function Lod2ElevationsPanel({ candidates }: { candidates: Lod2Candidate[] }) {
+  const layout = buildLod2ProjectionLayout(candidates);
 
   return (
     <section className="panel">
@@ -1303,64 +1326,57 @@ function Lod2ElevationsPanel({ candidate }: { candidate: Lod2Candidate }) {
         <Combine size={18} />
         Ansichten (LoD2 Projektion)
       </div>
-      {views.map((view) => {
-        const pad = 1;
-        const vb = `${-pad} ${-measuredHeightM - pad * 0.5} ${view.width + pad * 2} ${measuredHeightM + pad * 1.5}`;
+      <div className="lod2-elevation-grid">
+        {layout.elevationViews.map((view) => {
+          const padX = 1.1;
+          const padTop = 0.9;
+          const padBottom = 1.3;
+          const vb = `${view.bounds.minX - padX} ${-(layout.measuredHeightM + padTop)} ${view.width + padX * 2.6} ${layout.measuredHeightM + padTop + padBottom}`;
 
-        return (
-          <div key={view.label} style={{ marginBottom: 12 }}>
-            <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: '4px 0' }}>{view.label}</p>
-            <svg viewBox={vb} className="lod2-elevation-svg" role="img" aria-label={`${view.label}-Ansicht`}>
-              {/* Ground line */}
-              <line x1={-0.3} y1={0} x2={view.width + 0.3} y2={0} stroke="#6b7280" strokeWidth={0.1} />
-              {/* Wall surfaces */}
-              {allSurfs.map((surf) => {
-                let pts = surf.points;
-                if (
-                  pts.length > 3 &&
-                  Math.abs(pts[0].e - pts[pts.length - 1].e) < 0.005
-                ) {
-                  pts = pts.slice(0, -1);
-                }
-                const svgPts = pts
-                  .map(view.proj)
-                  .map((p) => `${p.x.toFixed(2)},${(-p.y).toFixed(2)}`)
-                  .join(' ');
-                return (
-                  <polygon
-                    key={surf.id}
-                    points={svgPts}
-                    fill={surf.kind === 'roof' ? '#c8862a' : '#d1c4a8'}
-                    stroke={surf.kind === 'roof' ? '#8a5a10' : '#8a7060'}
-                    strokeWidth={0.07}
-                    opacity={0.88}
-                  />
-                );
-              })}
-              {/* Height annotation */}
-              <line
-                x1={view.width + pad * 0.5}
-                y1={0}
-                x2={view.width + pad * 0.5}
-                y2={-measuredHeightM}
-                stroke="#9ca3af"
-                strokeWidth={0.07}
-              />
-              <text
-                x={view.width + pad * 0.8}
-                y={-measuredHeightM / 2}
-                fontSize={0.5}
-                fill="#374151"
-                textAnchor="start"
-              >
-                {measuredHeightM.toFixed(2)} m
-              </text>
-            </svg>
-          </div>
-        );
-      })}
+          return (
+            <div key={view.id} className="lod2-elevation-card">
+              <p className="lod2-elevation-title">{view.label}</p>
+              <svg viewBox={vb} className="lod2-elevation-svg" role="img" aria-label={`${view.label}-Ansicht`}>
+                <line x1={view.bounds.minX - 0.3} y1={0} x2={view.bounds.maxX + 0.3} y2={0} stroke="#6b7280" strokeWidth={0.1} />
+                {view.surfaces.map((surface) => {
+                  const svgPts = surface.points
+                    .map((point) => `${point.x.toFixed(2)},${(-point.y).toFixed(2)}`)
+                    .join(' ');
+                  return (
+                    <polygon
+                      key={surface.id}
+                      points={svgPts}
+                      fill={surface.kind === 'roof' ? '#c8862a' : '#d1c4a8'}
+                      stroke={surface.kind === 'roof' ? '#8a5a10' : '#8a7060'}
+                      strokeWidth={0.07}
+                      opacity={0.88}
+                    />
+                  );
+                })}
+                <line
+                  x1={view.bounds.maxX + 0.55}
+                  y1={0}
+                  x2={view.bounds.maxX + 0.55}
+                  y2={-layout.measuredHeightM}
+                  stroke="#9ca3af"
+                  strokeWidth={0.07}
+                />
+                <text
+                  x={view.bounds.maxX + 0.8}
+                  y={-layout.measuredHeightM / 2}
+                  fontSize={0.5}
+                  fill="#374151"
+                  textAnchor="start"
+                >
+                  {layout.measuredHeightM.toFixed(2)} m
+                </text>
+              </svg>
+            </div>
+          );
+        })}
+      </div>
       <p className="lod2-derive-note">
-        Orthogonale Projektion der LoD2-Flächen. Wandstärken und Öffnungen sind nicht modelliert.
+        Orthogonale Projektion der LoD2-Flächen entlang der dominanten Ensemble-Achsen, keine perspektivische Darstellung. Wandstärken und Öffnungen sind nicht modelliert.
       </p>
     </section>
   );

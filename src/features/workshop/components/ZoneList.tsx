@@ -1,5 +1,7 @@
 import type { DocumentationPriority, DocumentationStatus, Zone } from '@/domain/workshop/types';
-import { AlertCircle, Camera, ChevronRight, Circle, Eye, HelpCircle, MessageSquare } from 'lucide-react';
+import { NAMED_ENTITY_DEFAULTS, NamedEntityFields, type NamedEntityValues } from '@/lib/studio-core/forms/NamedEntityFields';
+import { AlertCircle, Camera, Check, ChevronRight, Circle, Eye, HelpCircle, MessageSquare, Plus, X } from 'lucide-react';
+import { useState } from 'react';
 import {
     ZONE_DOC_LEVEL_COLOR,
     ZONE_DOC_LEVEL_LABEL,
@@ -54,6 +56,7 @@ export function ZoneListItem({
     const docLevel = computeZoneDocLevel(assetCount, observationCount, interpretationCount);
     const docColor = ZONE_DOC_LEVEL_COLOR[docLevel];
     const docLabel = ZONE_DOC_LEVEL_LABEL[docLevel];
+    const hasData = assetCount > 0 || observationCount > 0 || claimCount > 0 || questionCount > 0;
     return (
         <button
             className={`ws-zone-item${isSelected ? ' ws-zone-item-active' : ''}`}
@@ -66,17 +69,21 @@ export function ZoneListItem({
                 {STATUS_ICON[zone.documentationStatus]}
                 <ChevronRight size={14} className="ws-zone-chevron" />
             </div>
-            <p className="ws-zone-desc">{zone.description}</p>
+            {zone.description && <p className="ws-zone-desc">{zone.description}</p>}
             <div className="ws-zone-counts">
-                {assetCount > 0 && <span><Camera size={11} /> {assetCount}</span>}
-                {observationCount > 0 && <span><Eye size={11} /> {observationCount}</span>}
-                {claimCount > 0 && <span><MessageSquare size={11} /> {claimCount}</span>}
-                {questionCount > 0 && <span><HelpCircle size={11} /> {questionCount}</span>}
+                {hasData ? (
+                    <>
+                        {assetCount > 0 && <span><Camera size={11} /> {assetCount}</span>}
+                        {observationCount > 0 && <span><Eye size={11} /> {observationCount}</span>}
+                        {claimCount > 0 && <span><MessageSquare size={11} /> {claimCount}</span>}
+                        {questionCount > 0 && <span><HelpCircle size={11} /> {questionCount}</span>}
+                    </>
+                ) : (
+                    <span className="ws-zone-empty-label" style={{ color: docColor }}>
+                        {docLabel}
+                    </span>
+                )}
                 <SensitivityBadge level={zone.sensitivityLevel} />
-            </div>
-            <div className="ws-zone-doc-level" style={{ color: docColor }} title={docLabel}>
-                <span className="ws-zone-doc-dot" style={{ background: docColor }} />
-                {docLabel}
             </div>
         </button>
     );
@@ -150,6 +157,8 @@ interface ZoneListProps {
     interpretationCountsByZone?: Record<string, number>;
     selectedZoneId: string | null;
     onSelectZone: (id: string) => void;
+    /** Called when the user submits the "Neue Zone" form. */
+    onCreateZone?: (values: NamedEntityValues) => void;
 }
 
 export function ZoneList({
@@ -161,9 +170,64 @@ export function ZoneList({
     interpretationCountsByZone = {},
     selectedZoneId,
     onSelectZone,
+    onCreateZone,
 }: ZoneListProps) {
+    const [creating, setCreating] = useState(false);
+    const [draft, setDraft] = useState<NamedEntityValues>(NAMED_ENTITY_DEFAULTS);
+
+    function handleCreate() {
+        if (!draft.name.trim() || !onCreateZone) return;
+        onCreateZone(draft);
+        setDraft(NAMED_ENTITY_DEFAULTS);
+        setCreating(false);
+    }
+
+    function handleCancel() {
+        setDraft(NAMED_ENTITY_DEFAULTS);
+        setCreating(false);
+    }
+
     return (
         <div className="ws-zone-list">
+            {/* Header with "+ Neue Zone" */}
+            <div className="ws-zone-list-header">
+                {!creating && onCreateZone && (
+                    <button
+                        type="button"
+                        className="ws-zone-new-btn"
+                        onClick={() => setCreating(true)}
+                        title="Neue Zone anlegen"
+                    >
+                        <Plus size={13} /> Neue Zone
+                    </button>
+                )}
+            </div>
+
+            {/* Inline "Neue Zone" form */}
+            {creating && (
+                <div className="ws-zone-create-form">
+                    <NamedEntityFields
+                        values={draft}
+                        onChange={(patch) => setDraft((prev) => ({ ...prev, ...patch }))}
+                        autoFocusName
+                        compact
+                    />
+                    <div className="ws-zone-create-actions">
+                        <button
+                            type="button"
+                            className="ws-zone-create-save"
+                            disabled={!draft.name.trim()}
+                            onClick={handleCreate}
+                        >
+                            <Check size={13} /> Anlegen
+                        </button>
+                        <button type="button" className="ws-zone-create-cancel" onClick={handleCancel}>
+                            <X size={13} /> Abbrechen
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <ZoneCompleteSummary
                 zones={zones}
                 assetCounts={assetCounts}

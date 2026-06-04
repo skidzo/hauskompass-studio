@@ -4,7 +4,7 @@ Download LGL BW LoD2 CityGML tile for a given UTM32 tile ID or address.
 Usage (from project root):
     python utils/py/spatial/download_lgl_bw_lod2.py 509_5396
     python utils/py/spatial/download_lgl_bw_lod2.py 509 5396
-    python utils/py/spatial/download_lgl_bw_lod2.py --address "Büsnauer Str. 29, 70563 Stuttgart"
+    python utils/py/spatial/download_lgl_bw_lod2.py --address "Demohaus BW 29, 70563 Stuttgart"
 
 Downloads the 2km ZIP to cache/lgl-bw/lod2/ and extracts the relevant 1km GML files.
 """

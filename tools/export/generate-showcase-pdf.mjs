@@ -16,7 +16,7 @@ const showcaseUrl = `http://127.0.0.1:${port}/showcase`;
 
 const forbiddenPatterns = [
   /Sch[oö]nseer/i,
-  /Oberviechtach/i,
+  /Beispielstadt/i,
   /\bDEBY\b/i,
   /\bEPSG\b/i,
   /\bUTM\b/i,

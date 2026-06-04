@@ -108,6 +108,11 @@ function bboxDist(
     return Math.sqrt(dx ** 2 + dy ** 2);
 }
 
+function inferSourceTile(tileName: string): string {
+    const match = tileName.match(/(?:LoD2_32_)?(\d{3})_(\d{4})/i);
+    return match ? `${match[1]}_${match[2]}` : tileName;
+}
+
 /** Parse a CityGML string and extract Lod2Candidates ranked by distance to the geocoded point. */
 export function parseCityGml(
     gmlText: string,
@@ -171,5 +176,5 @@ export function parseCityGml(
 
     candidates.sort((a, b) => a.bboxDistanceToGeocodeM - b.bboxDistanceToGeocodeM);
 
-    return { sourceTile: tileName, candidates };
+    return { sourceTile: inferSourceTile(tileName), candidates };
 }

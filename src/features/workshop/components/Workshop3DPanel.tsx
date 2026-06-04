@@ -1,5 +1,4 @@
 import type { SpatialScene } from '@/domain/spatial/types';
-import { fetchProjectJson } from '@/features/project-data/projectDataLoader';
 import {
     WORKSHOP_3D_CONFIDENCE_LABEL,
     WORKSHOP_3D_LAYER_LABEL,
@@ -19,6 +18,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { workshopDb } from '../db/workshopDb';
+import { loadWorkshopSpatialScene } from '../spatial/workshopSpatialScene';
 
 interface Workshop3DPanelProps {
     projectId: string;
@@ -35,11 +35,25 @@ export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = n
     const [sceneData, setSceneData] = useState<SpatialScene | null>(null);
     const [sceneLoadState, setSceneLoadState] = useState<'loading' | 'ready' | 'unavailable'>('loading');
     useEffect(() => {
+        let cancelled = false;
         setSceneData(null);
         setSceneLoadState('loading');
-        fetchProjectJson<SpatialScene>(projectId, 'spatial_context.json')
-            .then((data) => { setSceneData(data); setSceneLoadState('ready'); })
-            .catch(() => setSceneLoadState('unavailable'));
+        loadWorkshopSpatialScene(projectId)
+            .then((data) => {
+                if (cancelled) return;
+                if (data) {
+                    setSceneData(data);
+                    setSceneLoadState('ready');
+                } else {
+                    setSceneLoadState('unavailable');
+                }
+            })
+            .catch(() => {
+                if (!cancelled) setSceneLoadState('unavailable');
+            });
+        return () => {
+            cancelled = true;
+        };
     }, [projectId]);
     const [layers, setLayers] = useState<LayerState>({ terrain: true, buildingHulls: true, vegetation: true });
     const [activeObjectId, setActiveObjectId] = useState<string | null>(null);
@@ -115,24 +129,33 @@ export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = n
             for (const hull of sceneData.buildingHulls) {
                 const selected = hull.zoneId === selectedZoneId;
                 const plannedOnly = hull.historicalStatus === 'planned_not_built';
+                const connectorOnly = hull.role?.includes('connector') ?? false;
                 const geometry = buildHullGeometry(hull.footprint, hull.baseElevation, hull.height);
                 const material = new THREE.MeshPhongMaterial({
-                    color: selected ? 0x23614b : plannedOnly ? 0x9ca3af : hull.levelOfDetail === 'workshop_sketch' ? 0x7ba7d9 : 0xb98f62,
+                    color: selected ? 0x23614b : connectorOnly ? 0x8aa0b5 : plannedOnly ? 0x9ca3af : hull.levelOfDetail === 'workshop_sketch' ? 0x7ba7d9 : 0xb98f62,
                     transparent: true,
-                    opacity: plannedOnly ? 0.16 : hull.levelOfDetail === 'workshop_sketch' ? 0.55 : 0.78,
+                    opacity: plannedOnly ? 0.16 : connectorOnly ? 0.48 : hull.levelOfDetail === 'workshop_sketch' ? 0.55 : 0.78,
                     side: THREE.DoubleSide,
-                    shininess: 16,
+                    shininess: connectorOnly ? 26 : 16,
                 });
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.userData = { objectId: hull.id, zoneId: hull.zoneId, label: hull.label, confidence: hull.confidence, verificationStatus: hull.verificationStatus };
                 const edges = new THREE.LineSegments(
                     new THREE.EdgesGeometry(geometry),
-                    new THREE.LineBasicMaterial({ color: selected ? 0x123c2b : plannedOnly ? 0x6b7280 : 0x5d5145, transparent: true, opacity: plannedOnly ? 0.9 : 0.65 }),
+                    new THREE.LineBasicMaterial({ color: selected ? 0x123c2b : connectorOnly ? 0x5c7082 : plannedOnly ? 0x6b7280 : 0x5d5145, transparent: true, opacity: plannedOnly ? 0.9 : connectorOnly ? 0.78 : 0.65 }),
                 );
                 edges.userData = mesh.userData;
                 scene.add(mesh);
                 scene.add(edges);
                 objectRefs.current.push(mesh, edges);
+                if (!connectorOnly) {
+                    const label = createHullLabelSprite(hull.label, selected, plannedOnly);
+                    const labelAnchor = centerOfFootprint(hull.footprint, hull.baseElevation);
+                    label.position.set(labelAnchor.x, hull.baseElevation + hull.height + 7.5, labelAnchor.z);
+                    label.userData = mesh.userData;
+                    scene.add(label);
+                    objectRefs.current.push(label);
+                }
                 if (hull.courtyard) {
                     const courtyard = buildCourtyardOutline(hull.courtyard, hull.baseElevation + hull.height + 0.08, selected, plannedOnly);
                     courtyard.userData = mesh.userData;
@@ -140,18 +163,21 @@ export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = n
                     objectRefs.current.push(courtyard);
                 }
             }
-            [
-                ['hull-pavillon-4-nucos', 'hull-pavillon-2'],
-                ['hull-pavillon-3', 'hull-pavillon-1'],
-                ['hull-pavillon-3', 'hull-pavillon-2'],
-                ['hull-pavillon-2', 'hull-kantine'],
-                ['hull-pavillon-1', 'hull-kantine'],
-            ].forEach(([fromId, toId]) => {
-                const from = hullById.get(fromId);
-                const to = hullById.get(toId);
-                if (!from || !to) return;
-                scene.add(buildTransitionLine(centerOfFootprint(from.footprint, from.baseElevation), centerOfFootprint(to.footprint, to.baseElevation)));
-            });
+            const hasExplicitConnectors = sceneData.buildingHulls.some((hull) => hull.role?.includes('connector'));
+            if (!hasExplicitConnectors) {
+                [
+                    ['hull-pavillon-4', 'hull-pavillon-2'],
+                    ['hull-pavillon-3', 'hull-pavillon-1'],
+                    ['hull-pavillon-3', 'hull-pavillon-2'],
+                    ['hull-pavillon-2', 'hull-kantine'],
+                    ['hull-pavillon-1', 'hull-kantine'],
+                ].forEach(([fromId, toId]) => {
+                    const from = hullById.get(fromId);
+                    const to = hullById.get(toId);
+                    if (!from || !to) return;
+                    scene.add(buildTransitionLine(centerOfFootprint(from.footprint, from.baseElevation), centerOfFootprint(to.footprint, to.baseElevation)));
+                });
+            }
         }
 
         if (layers.vegetation) {
@@ -185,10 +211,8 @@ export function Workshop3DPanel({ projectId, selectedZoneId, selectedAssetId = n
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z, 1);
             controls.target.copy(center);
-            // South = +z (toward viewer), North = -z (into scene).
-            // Camera from SE: x=+0.35 (East), y=+0.55 (elevated), z=+0.78 (South = in front)
-            // → looks toward NW, North appears at top/back of screen.
-            camera.position.copy(center).add(new THREE.Vector3(0.35, 0.55, 0.78).normalize().multiplyScalar(maxDim * 1.25));
+            const preferredOffset = getPreferredCameraOffset(sceneData, maxDim);
+            camera.position.copy(center).add(preferredOffset);
             camera.near = Math.max(maxDim / 200, 0.1);
             camera.far = maxDim * 8;
             camera.updateProjectionMatrix();
@@ -551,6 +575,58 @@ function buildHullGeometry(footprint: { x: number; z: number }[], baseElevation:
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
     return geometry;
+}
+
+function getPreferredCameraOffset(sceneData: SpatialScene, maxDim: number): THREE.Vector3 {
+    const isEiermann = sceneData.projectId === 'proj-eiermann-campus' || sceneData.projectId === 'ws-pascal';
+    const direction = isEiermann
+        ? new THREE.Vector3(0.48, 0.72, 0.94)
+        : new THREE.Vector3(0.35, 0.55, 0.78);
+    const distance = isEiermann ? maxDim * 1.42 : maxDim * 1.25;
+    return direction.normalize().multiplyScalar(distance);
+}
+
+function createHullLabelSprite(label: string, selected: boolean, plannedOnly: boolean): THREE.Sprite {
+    const canvas = document.createElement('canvas');
+    canvas.width = 384;
+    canvas.height = 112;
+    const context = canvas.getContext('2d');
+    if (!context) {
+        const sprite = new THREE.Sprite();
+        sprite.scale.set(1, 1, 1);
+        return sprite;
+    }
+    context.fillStyle = plannedOnly ? 'rgba(107, 114, 128, 0.78)' : selected ? 'rgba(18, 60, 43, 0.9)' : 'rgba(32, 41, 51, 0.82)';
+    context.strokeStyle = selected ? 'rgba(198, 234, 210, 0.95)' : 'rgba(255, 255, 255, 0.88)';
+    context.lineWidth = 4;
+    roundRect(context, 8, 8, 368, 96, 20);
+    context.fill();
+    context.stroke();
+    context.fillStyle = '#f8fafc';
+    context.font = '600 34px system-ui';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(label, 192, 56, 336);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(28, 8.2, 1);
+    return sprite;
+}
+
+function roundRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+    context.beginPath();
+    context.moveTo(x + radius, y);
+    context.lineTo(x + width - radius, y);
+    context.quadraticCurveTo(x + width, y, x + width, y + radius);
+    context.lineTo(x + width, y + height - radius);
+    context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    context.lineTo(x + radius, y + height);
+    context.quadraticCurveTo(x, y + height, x, y + height - radius);
+    context.lineTo(x, y + radius);
+    context.quadraticCurveTo(x, y, x + radius, y);
+    context.closePath();
 }
 
 function buildCourtyardOutline(

@@ -10,50 +10,64 @@
  * or a dedicated surveying workflow.
  */
 
+import type { SpatialScene } from '@/domain/spatial/types';
 import { fetchProjectJson } from '@/features/project-data/projectDataLoader';
+import type { Zone } from '@/features/workshop/db/workshopDb';
 import {
+    buildFallbackWorkshopCampusLocations,
+    buildFallbackWorkshopZoneGeometry,
     buildWorkshopCameraFrustumCollection,
     buildWorkshopZoneFeatureCollection,
+    deriveWorkshopMapAnchor,
     findWorkshopZoneCentroid,
+    hasMatchingWorkshopCampusLocations,
+    hasMatchingWorkshopZoneGeometry,
     type WorkshopAssetMapMarker,
+    type WorkshopCampusLocation,
     type WorkshopZoneFeatureProperties,
 } from '@/features/workshop/rendering/workshopMapAdapter';
-import type { Zone } from '@/features/workshop/db/workshopDb';
+import { loadWorkshopSpatialScene } from '@/features/workshop/spatial/workshopSpatialScene';
 import type { StudioFeatureCollection } from '@/lib/studio-core/spatial-rendering/types';
+import type { StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MapGeoJSONFeature, MapMouseEvent, MapRef } from 'react-map-gl/maplibre';
 import Map, { Layer, Marker, NavigationControl, Popup, ScaleControl, Source } from 'react-map-gl/maplibre';
-type CampusLocation = {
-    id: string;
-    zoneId: string;
-    label: string;
-    kind: 'pavilion' | 'plannedPavilion' | 'canteen' | 'parkingDeck' | 'parkingArea' | 'visitorParking';
-    lat: number;
-    lon: number;
-    source: string;
-};
 
-// Free tile style — no API key required
-const MAP_STYLE = 'https://tiles.openfreemap.org/styles/bright';
+// Stable raster fallback style without external sprite dependencies.
+const MAP_STYLE = {
+    version: 8,
+    sources: {
+        osm: {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors',
+        },
+    },
+    layers: [
+        {
+            id: 'osm-raster',
+            type: 'raster',
+            source: 'osm',
+            minzoom: 0,
+            maxzoom: 22,
+        },
+    ],
+} as StyleSpecification;
 
-// Campus center — kalibriert aus EXIF-GPS-Daten (April 2026, 9 Fotos)
-// Korrektur: alter Wert lon=9.0947 war 1379m zu weit östlich!
+// Campus center — used only as a last-resort fallback when no GPS-backed anchor exists.
 const CAMPUS_CENTER = { lon: 9.075894, lat: 48.726961 };
 
 // Priority → fill color
 const PRIORITY_FILL: Record<string, string> = {
-    critical: '#ef5350',   // red
-    high: '#ff9800',       // orange
-    medium: '#42a5f5',     // blue
-    low: '#90a4ae',        // grey
+    critical: '#ef5350',
+    high: '#ff9800',
+    medium: '#42a5f5',
+    low: '#90a4ae',
 };
 
-const PRIORITY_FILL_SELECTED = '#23614b'; // dark green when selected
-
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
+const PRIORITY_FILL_SELECTED = '#23614b';
 
 export interface AssetMarker {
     id: string;
@@ -63,7 +77,6 @@ export interface AssetMarker {
     zoneId?: string;
     capturedAt?: string;
     isPlaceholder?: boolean;
-    /** Camera bearing in degrees clockwise from True North (EXIF GPSImgDirection) */
     bearing?: number;
 }
 
@@ -75,13 +88,8 @@ export interface WorkshopMapPanelProps {
     onSelectZone: (zoneId: string) => void;
     onSelectAsset?: (assetId: string) => void;
     assetMarkers?: AssetMarker[];
-    /** When set, the map flies to this position */
     flyToPosition?: { lat: number; lon: number } | null;
 }
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 
 export function WorkshopMapPanel({
     projectId,
@@ -94,17 +102,41 @@ export function WorkshopMapPanel({
     flyToPosition,
 }: WorkshopMapPanelProps) {
     const mapRef = useRef<MapRef>(null);
+    const hasFittedRef = useRef(false);
     const [zoneGeometry, setZoneGeometry] = useState<StudioFeatureCollection<Record<string, unknown>> | null>(null);
-    const [campusLocations, setCampusLocations] = useState<CampusLocation[]>([]);
+    const [campusLocations, setCampusLocations] = useState<WorkshopCampusLocation[]>([]);
+    const [sceneData, setSceneData] = useState<SpatialScene | null>(null);
 
     useEffect(() => {
-        fetchProjectJson<StudioFeatureCollection<Record<string, unknown>>>(projectId, 'zone_geometry.json').then((d) => setZoneGeometry(d))
-            .catch((e) => console.error('[WorkshopMap] zone_geometry load failed:', e));
-        fetchProjectJson<CampusLocation[]>(projectId, 'campus_locations.json').then((d) => setCampusLocations(d))
-            .catch((e) => console.error('[WorkshopMap] campus_locations load failed:', e));
+        let cancelled = false;
+        hasFittedRef.current = false;
+        setZoneGeometry(null);
+        setCampusLocations([]);
+        setSceneData(null);
+
+        fetchProjectJson<StudioFeatureCollection<Record<string, unknown>>>(projectId, 'zone_geometry.json')
+            .then((data) => {
+                if (!cancelled) setZoneGeometry(data);
+            })
+            .catch((error) => console.debug('[WorkshopMap] zone_geometry load skipped or failed:', error));
+
+        fetchProjectJson<WorkshopCampusLocation[]>(projectId, 'campus_locations.json')
+            .then((data) => {
+                if (!cancelled) setCampusLocations(data);
+            })
+            .catch((error) => console.debug('[WorkshopMap] campus_locations load skipped or failed:', error));
+
+        loadWorkshopSpatialScene(projectId)
+            .then((data) => {
+                if (!cancelled) setSceneData(data);
+            })
+            .catch((error) => console.error('[WorkshopMap] spatial scene load failed:', error));
+
+        return () => {
+            cancelled = true;
+        };
     }, [projectId]);
 
-    // Fly to position when requested from outside
     useEffect(() => {
         if (!flyToPosition || !mapRef.current) return;
         mapRef.current.flyTo({
@@ -114,16 +146,59 @@ export function WorkshopMapPanel({
         });
     }, [flyToPosition]);
 
+    const mapAnchor = useMemo(
+        () => sceneData?.mapAnchor ?? deriveWorkshopMapAnchor(assetMarkers as WorkshopAssetMapMarker[], CAMPUS_CENTER),
+        [assetMarkers, sceneData],
+    );
+    const preferRecoveredHulls = Boolean(sceneData?.buildingHulls.some((hull) => hull.levelOfDetail === 'lod2'));
+    const matchingStaticGeometry = hasMatchingWorkshopZoneGeometry(zones, zoneGeometry);
+    const matchingStaticLocations = hasMatchingWorkshopCampusLocations(zones, campusLocations);
+    const effectiveZoneGeometry = useMemo(
+        () => (preferRecoveredHulls || !matchingStaticGeometry)
+            ? buildFallbackWorkshopZoneGeometry(sceneData, zones, mapAnchor)
+            : zoneGeometry,
+        [mapAnchor, matchingStaticGeometry, preferRecoveredHulls, sceneData, zoneGeometry, zones],
+    );
+    const effectiveCampusLocations = useMemo(
+        () => (preferRecoveredHulls || !matchingStaticLocations)
+            ? buildFallbackWorkshopCampusLocations(sceneData, zones, mapAnchor)
+            : campusLocations,
+        [campusLocations, mapAnchor, matchingStaticLocations, preferRecoveredHulls, sceneData, zones],
+    );
+    const usingFallbackGeometry = (!matchingStaticGeometry || preferRecoveredHulls) && Boolean(effectiveZoneGeometry?.features.length);
+    const usingFallbackLocations = (!matchingStaticLocations || preferRecoveredHulls) && effectiveCampusLocations.length > 0;
+    const useRecoveredHullLabels = usingFallbackGeometry && effectiveCampusLocations.length > 0;
+
     const geojson = useMemo(
-        () => buildWorkshopZoneFeatureCollection(zones, selectedZoneId, zoneGeometry),
-        [zones, selectedZoneId, zoneGeometry],
+        () => buildWorkshopZoneFeatureCollection(zones, selectedZoneId, effectiveZoneGeometry),
+        [zones, selectedZoneId, effectiveZoneGeometry],
     );
     const frustumGeojson = useMemo(
         () => buildWorkshopCameraFrustumCollection(assetMarkers as WorkshopAssetMapMarker[]),
         [assetMarkers],
     );
 
-    // Build a MapLibre expression for fill-color based on priority + selection
+    useEffect(() => {
+        if (flyToPosition || hasFittedRef.current || !mapRef.current) return;
+        const coordinates: Array<[number, number]> = [];
+        geojson.features.forEach((feature) => {
+            feature.geometry.coordinates[0]?.forEach((coordinate) => coordinates.push(coordinate));
+        });
+        effectiveCampusLocations.forEach((location) => coordinates.push([location.lon, location.lat]));
+        assetMarkers.forEach((marker) => coordinates.push([marker.lon, marker.lat]));
+        if (coordinates.length === 0) return;
+        const lons = coordinates.map((coordinate) => coordinate[0]);
+        const lats = coordinates.map((coordinate) => coordinate[1]);
+        mapRef.current.fitBounds(
+            [
+                [Math.min(...lons), Math.min(...lats)],
+                [Math.max(...lons), Math.max(...lats)],
+            ],
+            { padding: 48, duration: 0, maxZoom: 17.2 },
+        );
+        hasFittedRef.current = true;
+    }, [assetMarkers, effectiveCampusLocations, flyToPosition, geojson]);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fillColorExpression: any = [
         'case',
@@ -135,21 +210,21 @@ export function WorkshopMapPanel({
     ];
 
     function handleClick(e: MapMouseEvent & { features?: MapGeoJSONFeature[] }) {
-        const f = e.features?.[0];
-        if (!f) return;
-        const zoneId = f.properties?.zoneId as string | undefined;
+        const feature = e.features?.[0];
+        if (!feature) return;
+        const zoneId = feature.properties?.zoneId as string | undefined;
         if (zoneId) onSelectZone(zoneId);
     }
 
-    const selectedZone = zones.find((z) => z.id === selectedZoneId);
+    const selectedZone = zones.find((zone) => zone.id === selectedZoneId);
 
     return (
         <div className="ws-map-wrap">
             <Map
                 ref={mapRef}
                 initialViewState={{
-                    longitude: CAMPUS_CENTER.lon,
-                    latitude: CAMPUS_CENTER.lat,
+                    longitude: mapAnchor.lon,
+                    latitude: mapAnchor.lat,
                     zoom: 16.2,
                 }}
                 mapStyle={MAP_STYLE}
@@ -161,9 +236,7 @@ export function WorkshopMapPanel({
                 <NavigationControl position="top-right" showCompass visualizePitch />
                 <ScaleControl position="bottom-left" unit="metric" />
 
-                {/* Zone polygons */}
                 <Source id="zones" type="geojson" data={geojson}>
-                    {/* Fill */}
                     <Layer
                         id="zone-fill"
                         type="fill"
@@ -176,7 +249,6 @@ export function WorkshopMapPanel({
                             ],
                         }}
                     />
-                    {/* Outline */}
                     <Layer
                         id="zone-outline"
                         type="line"
@@ -195,58 +267,56 @@ export function WorkshopMapPanel({
                             ],
                         }}
                     />
-                    {/* Zone labels */}
-                    <Layer
-                        id="zone-labels"
-                        type="symbol"
-                        layout={{
-                            'text-field': ['get', 'label'],
-                            'text-size': 11,
-                            'text-font': ['Noto Sans Bold', 'Arial Unicode MS Bold'],
-                            'text-anchor': 'center',
-                            'text-max-width': 8,
-                        }}
-                        paint={{
-                            'text-color': '#1f2933',
-                            'text-halo-color': '#ffffffcc',
-                            'text-halo-width': 1.5,
-                        }}
-                    />
+                    {!useRecoveredHullLabels && (
+                        <Layer
+                            id="zone-labels"
+                            type="symbol"
+                            layout={{
+                                'text-field': ['get', 'label'],
+                                'text-size': 11,
+                                'text-font': ['Noto Sans Bold', 'Arial Unicode MS Bold'],
+                                'text-anchor': 'center',
+                                'text-max-width': 8,
+                            }}
+                            paint={{
+                                'text-color': '#1f2933',
+                                'text-halo-color': '#ffffffcc',
+                                'text-halo-width': 1.5,
+                            }}
+                        />
+                    )}
                 </Source>
 
-                {/* Popup for selected zone */}
                 {selectedZone && selectedZoneId && (
                     <SelectedZonePopup zones={zones} selectedZoneId={selectedZoneId} geojson={geojson} />
                 )}
 
-                {/* GPS photo markers */}
-                {assetMarkers.map((m) => (
-                    <Marker key={m.id} longitude={m.lon} latitude={m.lat} anchor="center">
+                {assetMarkers.map((marker) => (
+                    <Marker key={marker.id} longitude={marker.lon} latitude={marker.lat} anchor="center">
                         <button
-                            className={`ws-map-asset-marker${m.isPlaceholder ? ' ws-map-asset-marker-placeholder' : ''}${selectedAssetId === m.id ? ' ws-map-asset-marker-active' : ''}`}
+                            className={`ws-map-asset-marker${marker.isPlaceholder ? ' ws-map-asset-marker-placeholder' : ''}${selectedAssetId === marker.id ? ' ws-map-asset-marker-active' : ''}`}
                             onClick={(event) => {
                                 event.stopPropagation();
-                                onSelectAsset?.(m.id);
-                                if (m.zoneId) onSelectZone(m.zoneId);
+                                onSelectAsset?.(marker.id);
+                                if (marker.zoneId) onSelectZone(marker.zoneId);
                             }}
-                            title={`${m.title}${m.capturedAt ? ` · ${m.capturedAt.slice(0, 10)}` : ''}${m.bearing !== undefined ? ` \u2192 ${m.bearing.toFixed(0)}\u00b0` : ''}`}
+                            title={`${marker.title}${marker.capturedAt ? ` · ${marker.capturedAt.slice(0, 10)}` : ''}${marker.bearing != null ? ` → ${marker.bearing.toFixed(0)}°` : ''}`}
                             type="button"
                         >
                             <span
                                 className="ws-map-asset-marker-glyph"
-                                style={m.bearing !== undefined ? { transform: `rotate(${m.bearing}deg)` } : undefined}
+                                style={marker.bearing != null ? { transform: `rotate(${marker.bearing}deg)` } : undefined}
                             >
-                                {m.isPlaceholder ? '\ud83d\udccd' : '\ud83d\udcf7'}
+                                {marker.isPlaceholder ? '📍' : '📷'}
                             </span>
                         </button>
                     </Marker>
                 ))}
 
-                {/* Named campus anchors: buildings + parking areas */}
-                {campusLocations.map((location) => (
-                    <Marker key={location.id} longitude={location.lon} latitude={location.lat} anchor="bottom">
+                {effectiveCampusLocations.map((location) => (
+                    <Marker key={location.id} longitude={location.lon} latitude={location.lat} anchor={useRecoveredHullLabels ? 'center' : 'bottom'}>
                         <button
-                            className={`ws-map-location-marker ws-map-location-marker-${location.kind}${selectedZoneId === location.zoneId ? ' active' : ''}`}
+                            className={`ws-map-location-marker ws-map-location-marker-${location.kind}${useRecoveredHullLabels ? ' ws-map-location-marker-recovered' : ''}${selectedZoneId === location.zoneId ? ' active' : ''}`}
                             onClick={(event) => {
                                 event.stopPropagation();
                                 onSelectZone(location.zoneId);
@@ -260,7 +330,6 @@ export function WorkshopMapPanel({
                     </Marker>
                 ))}
 
-                {/* Camera frustum layer */}
                 <Source id="frustums" type="geojson" data={frustumGeojson}>
                     <Layer
                         id="frustum-fill"
@@ -275,7 +344,6 @@ export function WorkshopMapPanel({
                 </Source>
             </Map>
 
-            {/* Legend */}
             <div className="ws-map-legend">
                 <span className="ws-map-legend-title">Dokumentations-Priorität</span>
                 {Object.entries(PRIORITY_FILL).map(([key, color]) => (
@@ -294,17 +362,16 @@ export function WorkshopMapPanel({
                 </span>
             </div>
 
-            {/* Data source notice */}
             <div className="ws-map-notice">
-                Zonengrenzen: GML LoD2 (LGL BW) → UTM32N/WGS84 | GPS-Fotos: EXIF-kalibriert
+                {usingFallbackGeometry || usingFallbackLocations
+                    ? useRecoveredHullLabels
+                        ? 'Projektkarte aus wiederhergestellten Gebäudehüllen: Namen und Marker aus dem räumlichen Workshop-Modell abgeleitet.'
+                        : 'Fallback-Karte: Zonen und Marker aus räumlichem Workshop-Modell + GPS abgeleitet. Vor Ort verifizieren.'
+                    : 'Zonengrenzen: GML LoD2 (LGL BW) → UTM32N/WGS84 | GPS-Fotos: EXIF-kalibriert'}
             </div>
         </div>
     );
 }
-
-// ---------------------------------------------------------------------------
-// Helper: find approximate centroid of a zone's polygon for popup
-// ---------------------------------------------------------------------------
 
 function SelectedZonePopup({
     zones,
@@ -315,7 +382,7 @@ function SelectedZonePopup({
     selectedZoneId: string;
     geojson: StudioFeatureCollection<WorkshopZoneFeatureProperties>;
 }) {
-    const zone = zones.find((z) => z.id === selectedZoneId);
+    const zone = zones.find((item) => item.id === selectedZoneId);
     if (!zone) return null;
 
     const centroid = findWorkshopZoneCentroid(geojson, selectedZoneId);
@@ -332,8 +399,8 @@ function SelectedZonePopup({
     );
 }
 
-function docStatusLabel(s: string): string {
-    return s === 'not_started' ? 'Nicht begonnen'
-        : s === 'partial' ? 'Teilweise'
+function docStatusLabel(status: string): string {
+    return status === 'not_started' ? 'Nicht begonnen'
+        : status === 'partial' ? 'Teilweise'
             : 'Vollständig';
 }

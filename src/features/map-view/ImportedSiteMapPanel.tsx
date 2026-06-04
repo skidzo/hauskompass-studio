@@ -5,7 +5,7 @@ import type { Feature } from 'geojson';
 import type { StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Map, { NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
+import Map, { Marker, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 
 // Stable raster fallback style without external sprite dependencies.
 const MAP_STYLE = {
@@ -31,6 +31,13 @@ const MAP_STYLE = {
 
 type LngLat = [number, number];
 type BBox = [LngLat, LngLat];
+type PersistedMapView = {
+    longitude: number;
+    latitude: number;
+    zoom: number;
+    bearing: number;
+    pitch: number;
+};
 
 function toRing(pts: readonly { e: number; n: number }[]): LngLat[] {
     const ring: LngLat[] = [];
@@ -172,71 +179,19 @@ function buildPolygonFeature(
         return { feature: null, rejectionReason: 'self_intersecting_geometry' };
     }
 
-    // DEBUG: For the problematic building, dump everything
-    if (c.id === 'DEBY_LOD2_6945465') {
-        const eValsAll = pts.map((p) => p.e);
-        const nValsAll = pts.map((p) => p.n);
-        const lons = ring.map((p) => p[0]);
-        const lats = ring.map((p) => p[1]);
-        const lonSpan = Math.max(...lons) - Math.min(...lons);
-        const latSpan = Math.max(...lats) - Math.min(...lats);
-
-        // Also dump ALL point conversions to see if any are suspicious
-        const pointConversions = pts.slice(0, 10).map((p, i) => {
-            const w = utm32ToWgs84(p.e, p.n);
-            return {
-                idx: i,
-                utm: { e: p.e, n: p.n },
-                wgs84: { lon: w.lon.toFixed(6), lat: w.lat.toFixed(6) },
-                valid: isFinite(w.lon) && isFinite(w.lat) && Math.abs(w.lon) <= 180 && Math.abs(w.lat) <= 90,
-            };
-        });
-
-        console.warn('[PROBLEM-BUILDING-DEBUG] DEBY_LOD2_6945465 RAW DATA', {
-            totalPoints: pts.length,
-            utmBounds: {
-                eMin: Math.min(...eValsAll),
-                eMax: Math.max(...eValsAll),
-                nMin: Math.min(...nValsAll),
-                nMax: Math.max(...nValsAll),
-                eSpan: eSpan.toFixed(0),
-                nSpan: nSpan.toFixed(0),
-            },
-            firstPoint: pts[0],
-            secondPoint: pts[1],
-            lastPoint: pts[pts.length - 1],
-            pointConversions,
-            wgs84RingLength: ring.length,
-            wgs84Bounds: {
-                lonMin: Math.min(...lons).toFixed(6),
-                lonMax: Math.max(...lons).toFixed(6),
-                latMin: Math.min(...lats).toFixed(6),
-                latMax: Math.max(...lats).toFixed(6),
-                lonSpan: lonSpan.toFixed(6),
-                latSpan: latSpan.toFixed(6),
-            },
-            wgs84First3: ring.slice(0, 3),
-            wgs84Last2: ring.slice(-2),
-            geometryAnalysis: {
-                wgs84Area: wgs84Area.toFixed(8),
-                expectedAreaM2: expectedAreaM2.toFixed(2),
-                areaRatio: areaRatio.toFixed(4),
-                suspiciousIfRatioBig: areaRatio > 100 ? 'YES — would be REJECTED!' : 'normal',
-            },
-        });
-    }
-
     // Guarantee ALL properties have safe values FIRST (defensive initialization)
     // This MUST come before any usage to prevent null errors in MapLibre
     const confirmedRaw = Number(properties.confirmed ?? 0);
+    const selectedRaw = Number(properties.selected ?? 0);
     const safeProperties = {
         id: String(properties.id ?? ''),
         confirmed: Number.isFinite(confirmedRaw) && confirmedRaw > 0 ? 1 : 0,
+        selected: Number.isFinite(selectedRaw) && selectedRaw > 0 ? 1 : 0,
         label: String(properties.label ?? ''),
     };
 
     // FINAL VALIDATION: All properties must be non-null
-    if (!safeProperties.id || safeProperties.confirmed === null || safeProperties.label === null) {
+    if (!safeProperties.id || safeProperties.confirmed === null || safeProperties.selected === null || safeProperties.label === null) {
         console.warn(`[buildPolygonFeature] ${c.id}: FAILED SANITIZATION`, {
             before: properties,
             after: safeProperties,
@@ -251,6 +206,46 @@ function buildPolygonFeature(
     };
 
     return { feature, rejectionReason: undefined };
+}
+
+function mapViewStorageKey(projectSlug: string) {
+    return `hauskompass.importedMapView.v1.${projectSlug}`;
+}
+
+function loadPersistedMapView(projectSlug: string): PersistedMapView | null {
+    try {
+        const raw = window.localStorage.getItem(mapViewStorageKey(projectSlug));
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as Partial<PersistedMapView>;
+        if (
+            typeof parsed.longitude !== 'number' ||
+            typeof parsed.latitude !== 'number' ||
+            typeof parsed.zoom !== 'number' ||
+            typeof parsed.bearing !== 'number' ||
+            typeof parsed.pitch !== 'number'
+        ) {
+            return null;
+        }
+        return parsed as PersistedMapView;
+    } catch {
+        return null;
+    }
+}
+
+function savePersistedMapView(projectSlug: string, view: PersistedMapView) {
+    try {
+        window.localStorage.setItem(mapViewStorageKey(projectSlug), JSON.stringify(view));
+    } catch {
+        // keep map usable even if persistence is unavailable
+    }
+}
+
+function candidateCenter(candidate: Lod2Candidate) {
+    const center = utm32ToWgs84(
+        (candidate.bboxUtm32.minE + candidate.bboxUtm32.maxE) / 2,
+        (candidate.bboxUtm32.minN + candidate.bboxUtm32.maxN) / 2,
+    );
+    return { longitude: center.lon, latitude: center.lat };
 }
 
 export function ImportedSiteMapPanel({
@@ -270,10 +265,31 @@ export function ImportedSiteMapPanel({
     const [cursor, setCursor] = useState<'auto' | 'pointer'>('auto');
     const [mapLoaded, setMapLoaded] = useState(false);
     const mapRef = useRef<any>(null);
+    const persistedViewRef = useRef<PersistedMapView | null>(loadPersistedMapView(project.slug));
+
+    useEffect(() => {
+        persistedViewRef.current = loadPersistedMapView(project.slug);
+    }, [project.slug]);
 
     const confirmedCandidates = useMemo(
         () => candidates.filter((c) => confirmedIds.includes(c.id)),
         [candidates, confirmedIds],
+    );
+
+    const geocodePoint = useMemo(() => {
+        const center = utm32ToWgs84(geocode.utm32.easting, geocode.utm32.northing);
+        return { longitude: center.lon, latitude: center.lat };
+    }, [geocode]);
+
+    const confirmedMarkers = useMemo(
+        () =>
+            confirmedCandidates.map((candidate) => ({
+                ...candidateCenter(candidate),
+                id: candidate.id,
+                label: `T${confirmedIds.indexOf(candidate.id) + 1}`,
+                selected: candidate.id === selectedId,
+            })),
+        [confirmedCandidates, confirmedIds, selectedId],
     );
 
     // Single source for all buildings — confirmedSet built INSIDE useMemo
@@ -312,6 +328,7 @@ export function ImportedSiteMapPanel({
                     const result = buildPolygonFeature(c, {
                         id: c.id,
                         confirmed: isConfirmed ? 1 : 0,
+                        selected: selectedId === c.id ? 1 : 0,
                         label: isConfirmed && rank >= 0 ? `T${rank + 1}` : '',
                     });
 
@@ -358,79 +375,56 @@ export function ImportedSiteMapPanel({
                 .filter((f): f is Feature => f !== null),
         };
 
-        // SPECIAL DIAGNOSTIC: Dump selected building geometry
-        if (selectedId) {
-            const selectedFeature = geojson.features.find(f => f.properties?.id === selectedId);
-            const selectedCandidate = allCandidatesToProcess.find(c => c.id === selectedId);
-            if (selectedFeature && selectedCandidate && selectedFeature.geometry.type === 'Polygon') {
-                const ring = (selectedFeature.geometry.coordinates[0] as LngLat[]) || [];
-                const suspRectangle = stats.suspiciousRectangles.find(sr => sr.id === selectedId);
-
-                // Get min/max bounds of WGS84 ring
-                const lons = ring.map((p: LngLat) => p[0]);
-                const lats = ring.map((p: LngLat) => p[1]);
-                const lonMin = Math.min(...lons);
-                const lonMax = Math.max(...lons);
-                const latMin = Math.min(...lats);
-                const latMax = Math.max(...lats);
-                const lonSpan = lonMax - lonMin;
-                const latSpan = latMax - latMin;
-
-                console.warn('[DEBUG-SELECTED-BUILDING] ' + selectedId, {
-                    isConfirmed: selectedCandidate && confirmedIds.includes(selectedCandidate.id),
-                    ringLength: ring.length,
-                    wgs84Bounds: { lonMin: lonMin.toFixed(6), lonMax: lonMax.toFixed(6), latMin: latMin.toFixed(6), latMax: latMax.toFixed(6) },
-                    spanDegrees: { lon: lonSpan.toFixed(6), lat: latSpan.toFixed(6) },
-                    isSuspicious: !!suspRectangle,
-                    suspiciousReason: suspRectangle?.reason || 'none',
-                    firstRingPoints: ring.slice(0, 5),
-                    lastRingPoints: ring.slice(-3),
-                });
-            }
-        }
-
-        console.log('[allCandidatesGeoJSON] ANALYSIS:', {
-            stats: {
-                total: stats.total,
-                accepted: stats.accepted,
-                rejected: stats.rejected,
-                rejectionReasons: stats.rejectionReasons,
-                firstFewRejections: stats.rejectedDetails.slice(0, 10),
-            },
-            selectedId,
-            confirmedIds: confirmedIds.slice(0, 5) + (confirmedIds.length > 5 ? `... +${confirmedIds.length - 5} more` : ''),
-            totalFeatures: geojson.features.length,
-            confirmedBuildings: geojson.features.filter(f => f.properties?.confirmed === 1).length,
-            sampleFeatures: geojson.features.slice(0, 3).map(f => ({
-                id: f.properties?.id,
-                confirmed: f.properties?.confirmed,
-                coordsLength: f.geometry.type === 'Polygon' ? (f.geometry.coordinates[0]?.length) : undefined,
-            })),
-        });
-
         return geojson;
-    }, [candidates, confirmedIds]);
+    }, [candidates, confirmedIds, selectedId]);
 
-    // Initial map bounds: fit only validated, rendered features
-    const initialBounds = useMemo((): BBox => {
-        const allRenderedCoords = allCandidatesGeoJSON.features
-            .flatMap((f) => (f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : []))
+    const fallbackBounds = useMemo((): BBox => {
+        const ctr = utm32ToWgs84(geocode.utm32.easting, geocode.utm32.northing);
+        return [
+            [ctr.lon - 0.0015, ctr.lat - 0.001],
+            [ctr.lon + 0.0015, ctr.lat + 0.001],
+        ];
+    }, [geocode]);
+
+    const focusBounds = useMemo((): BBox => {
+        const selectedFeature = selectedId
+            ? allCandidatesGeoJSON.features.find((feature) => feature.properties?.id === selectedId)
+            : null;
+        const preferredFeatures = selectedFeature
+            ? [selectedFeature]
+            : allCandidatesGeoJSON.features.filter((feature) => {
+                const id = feature.properties?.id;
+                return typeof id === 'string' && confirmedIds.includes(id);
+            });
+        const sourceFeatures = preferredFeatures.length > 0 ? preferredFeatures : allCandidatesGeoJSON.features;
+        const coords = sourceFeatures
+            .flatMap((feature) => (feature.geometry.type === 'Polygon' ? feature.geometry.coordinates[0] : []))
             .filter(([lon, lat]) => Number.isFinite(lon) && Number.isFinite(lat));
 
-        if (allRenderedCoords.length === 0) {
-            const ctr = utm32ToWgs84(geocode.utm32.easting, geocode.utm32.northing);
-            return [
-                [ctr.lon - 0.0015, ctr.lat - 0.001],
-                [ctr.lon + 0.0015, ctr.lat + 0.001],
-            ];
+        if (coords.length === 0) {
+            return fallbackBounds;
         }
-        const lons = allRenderedCoords.map(([lon]) => lon);
-        const lats = allRenderedCoords.map(([, lat]) => lat);
+
+        const lons = coords.map(([lon]) => lon);
+        const lats = coords.map(([, lat]) => lat);
         return [
             [Math.min(...lons), Math.min(...lats)],
             [Math.max(...lons), Math.max(...lats)],
         ];
-    }, [allCandidatesGeoJSON, geocode]);
+    }, [allCandidatesGeoJSON, confirmedIds, fallbackBounds, selectedId]);
+
+    const initialViewState = persistedViewRef.current
+        ? {
+            longitude: persistedViewRef.current.longitude,
+            latitude: persistedViewRef.current.latitude,
+            zoom: persistedViewRef.current.zoom,
+            bearing: persistedViewRef.current.bearing,
+            pitch: persistedViewRef.current.pitch,
+        }
+        : {
+            bounds: focusBounds,
+            fitBoundsOptions: { padding: 120, maxZoom: selectedId ? 18 : 17.25 },
+        };
 
     // Set up MapLibre source and layers directly via API (not react-map-gl components)
     // This bypasses potential react-map-gl bugs with Source/Layer components
@@ -438,11 +432,6 @@ export function ImportedSiteMapPanel({
         if (!mapLoaded || !mapRef.current) return;
         const map = mapRef.current.getMap?.();
         if (!map) return;
-
-        console.log('[useEffect] Updating buildings source and layers', {
-            mapLoaded,
-            allCandidatesGeoJSON: allCandidatesGeoJSON.features.length,
-        });
 
         // WORKAROUND: Delete and recreate source/layers instead of using setData()
         // This seems to avoid a MapLibre rendering bug that happens with setData()
@@ -454,7 +443,6 @@ export function ImportedSiteMapPanel({
             // Remove source
             if (map.getSource('buildings')) map.removeSource('buildings');
 
-            console.log('[MapLibre] Removed old source and layers');
         } catch (err) {
             console.warn('[MapLibre] Error removing source/layers:', err);
         }
@@ -466,49 +454,73 @@ export function ImportedSiteMapPanel({
                 data: allCandidatesGeoJSON,
                 promoteId: 'id',
             });
-            console.log('[MapLibre] Source "buildings" created fresh');
 
             map.addLayer({
                 id: 'buildings-fill',
                 type: 'fill',
                 source: 'buildings',
                 paint: {
-                    'fill-color': '#3d9465',
-                    'fill-opacity': 0.4,
+                    'fill-color': [
+                        'case',
+                        ['==', ['to-number', ['coalesce', ['get', 'selected'], 0]], 1],
+                        '#295b88',
+                        ['==', ['to-number', ['coalesce', ['get', 'confirmed'], 0]], 1],
+                        '#3d9465',
+                        '#cfd8d2',
+                    ],
+                    'fill-opacity': [
+                        'case',
+                        ['==', ['to-number', ['coalesce', ['get', 'selected'], 0]], 1],
+                        0.62,
+                        ['==', ['to-number', ['coalesce', ['get', 'confirmed'], 0]], 1],
+                        0.42,
+                        0.14,
+                    ],
                 },
             });
-            console.log('[MapLibre] Layer "buildings-fill" created');
 
             map.addLayer({
                 id: 'buildings-outline',
                 type: 'line',
                 source: 'buildings',
                 paint: {
-                    'line-color': '#1a5c38',
-                    'line-width': 1.5,
+                    'line-color': [
+                        'case',
+                        ['==', ['to-number', ['coalesce', ['get', 'selected'], 0]], 1],
+                        '#123a61',
+                        ['==', ['to-number', ['coalesce', ['get', 'confirmed'], 0]], 1],
+                        '#1a5c38',
+                        '#8c9890',
+                    ],
+                    'line-width': [
+                        'case',
+                        ['==', ['to-number', ['coalesce', ['get', 'selected'], 0]], 1],
+                        3,
+                        ['==', ['to-number', ['coalesce', ['get', 'confirmed'], 0]], 1],
+                        2,
+                        1,
+                    ],
                 },
             });
-            console.log('[MapLibre] Layer "buildings-outline" created');
 
         } catch (err) {
             console.error('[MapLibre] Error adding source/layers:', err);
         }
     }, [mapLoaded, allCandidatesGeoJSON]);
 
-    // Re-fit bounds after layers have been created/updated (e.g., on state change)
+    // Re-fit bounds without fly animation when no persisted user view exists.
     useEffect(() => {
-        if (!mapLoaded || !mapRef.current) return;
+        if (persistedViewRef.current || !mapLoaded || !mapRef.current) return;
         const map = mapRef.current.getMap?.();
         if (!map || !map.getSource('buildings')) return;
 
-        // Small delay to ensure MapLibre has rendered the new layers
         const timer = setTimeout(() => {
-            console.log('[Map] Fitting bounds');
-            map.fitBounds(initialBounds, { padding: 80, maxZoom: 19 });
-        }, 150);
+            map.resize();
+            map.fitBounds(focusBounds, { padding: 120, maxZoom: selectedId ? 18 : 17.25, duration: 0 });
+        }, 40);
 
         return () => clearTimeout(timer);
-    }, [mapLoaded, allCandidatesGeoJSON, initialBounds]);
+    }, [focusBounds, mapLoaded, selectedId]);
 
     /** Toggle a building's confirmed status and persist via onUpdateProject. */
     function handleMapClick(e: { features?: Array<{ properties?: Record<string, unknown> }> }) {
@@ -518,13 +530,13 @@ export function ImportedSiteMapPanel({
         if (!id) return;
         const isConfirmed = (f.properties?.confirmed as number | undefined) === 1;
 
+        onSelectCandidate?.(id);
+
         if (onUpdateProject) {
             const newConfirmedIds = isConfirmed
                 ? confirmedIds.filter((cid) => cid !== id)   // abwählen
                 : [...confirmedIds, id];                      // auswählen
             onUpdateProject({ ...project, confirmedIds: newConfirmedIds });
-        } else if (onSelectCandidate && isConfirmed) {
-            onSelectCandidate(id);
         }
     }
 
@@ -533,14 +545,40 @@ export function ImportedSiteMapPanel({
             <div className="imported-map-gl">
                 <Map
                     ref={mapRef}
+                    initialViewState={initialViewState}
                     mapStyle={MAP_STYLE}
                     style={{ width: '100%', height: '100%', cursor }}
                     interactiveLayerIds={['buildings-fill']}
                     onClick={handleMapClick}
                     onLoad={() => setMapLoaded(true)}
+                    onMoveEnd={(event) => {
+                        const nextView = {
+                            longitude: event.viewState.longitude,
+                            latitude: event.viewState.latitude,
+                            zoom: event.viewState.zoom,
+                            bearing: event.viewState.bearing,
+                            pitch: event.viewState.pitch,
+                        };
+                        persistedViewRef.current = nextView;
+                        savePersistedMapView(project.slug, nextView);
+                    }}
                     onMouseEnter={() => setCursor('pointer')}
                     onMouseLeave={() => setCursor('auto')}
                 >
+                    <Marker longitude={geocodePoint.longitude} latitude={geocodePoint.latitude} anchor="center">
+                        <div aria-label="Adresse" className="imported-map-geocode-point" />
+                    </Marker>
+                    {confirmedMarkers.map((marker) => (
+                        <Marker key={marker.id} longitude={marker.longitude} latitude={marker.latitude} anchor="center">
+                            <button
+                                className={`imported-map-marker${marker.selected ? ' imported-map-marker-selected' : ''}`}
+                                onClick={() => onSelectCandidate?.(marker.id)}
+                                type="button"
+                            >
+                                {marker.label}
+                            </button>
+                        </Marker>
+                    ))}
                     <NavigationControl position="top-right" showCompass visualizePitch />
                     <ScaleControl position="bottom-left" unit="metric" />
                 </Map>

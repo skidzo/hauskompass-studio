@@ -1,7 +1,11 @@
-import { Building2, CheckCircle2, ChevronRight, CloudDownload, FileCode2, Loader2, MapPin, Upload, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { strFromU8, unzipSync } from 'fflate';
+import { Building2, CheckCircle2, ChevronRight, CloudDownload, FileCode2, Loader2, MapPin, RefreshCw, Target, Upload, X, XCircle } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { ImportedSiteMapPanel } from '../map-view/ImportedSiteMapPanel';
 import { saveProject } from '../project-store/projectStore';
 import type { ImportedProject, Lod2Candidate, ProjectGeocodeResult } from '../project-store/types';
+import { checkAddressAllowed, stateFromTile } from './addressSupport';
 import { geocodeAddress } from './geocode';
 import { parseCityGml } from './gmlParser';
 
@@ -10,6 +14,13 @@ type Step = 'address' | 'gml' | 'candidates' | 'done';
 interface Props {
     onClose: () => void;
     onProjectActivated: (slug: string) => void;
+}
+
+interface CandidateSourceFile {
+    fileName: string;
+    sourceTile: string;
+    candidates: Lod2Candidate[];
+    nearestDist: number;
 }
 
 function slugify(s: string): string {
@@ -38,65 +49,87 @@ function bwZipTile(tileId: string): { zipE: number; zipN: number; gmlName: strin
 
 function lglBwDownloadUrl(tileId: string): string {
     const { zipE, zipN } = bwZipTile(tileId);
-    return `https://opengeodata.lgl-bw.de/data/lod2/LoD2_32_${zipE}_${zipN}_2_bw.zip?customerGroup=keine-angabe`;
-}
-
-function stateFromTile(tileId: string): 'Bayern' | 'BW' | 'NRW' | 'außerhalb' | 'unbekannt' {
-    const [e, n] = tileId.split('_').map(Number);
-    // UTM32N-Bereich Deutschland: E ≈ 280–920, N ≈ 5230–6110 (in km)
-    if (e < 280 || e > 920 || n < 5230 || n > 6110) return 'außerhalb';
-    // Bayern: lon 9.9°–13.9°E → UTM32 E 555–840km, N 5249–5625km
-    if (e >= 555 && e <= 840 && n >= 5249 && n <= 5625) return 'Bayern';
-    // Baden-Württemberg: lon 7.5°–10.5°E → UTM32 E 400–595km, N 5249–5515km
-    // Westgrenze 400 statt 420, um Freiburg (E≈414km) einzuschließen
-    if (e >= 400 && e <= 595 && n >= 5249 && n <= 5515) return 'BW';
-    // NRW: E 290–470, N 5620–5810
-    if (e >= 290 && e <= 470 && n >= 5620 && n <= 5810) return 'NRW';
-    return 'unbekannt';
-}
-
-/** Prüft ob ein Bundesland-Name (aus Nominatim) erlaubt ist. */
-function isAllowedState(nominatimState: string | undefined): boolean {
-    if (!nominatimState) return false;
-    const s = nominatimState.toLowerCase();
-    return s.includes('bayern') || s.includes('bavaria') ||
-        s.includes('baden') || s.includes('württemberg') || s.includes('wuerttemberg');
-}
-
-/** Kombinierte Prüfung: Nominatim-State zuerst, UTM-Tile als Fallback. */
-function checkAddressAllowed(result: { tileId: string; nominatimState?: string }): 'allowed' | 'outside_de' | 'unsupported_state' {
-    // Nominatim-State hat Priorität (zuverlässiger als Tile-Schätzung)
-    if (result.nominatimState !== undefined) {
-        if (isAllowedState(result.nominatimState)) return 'allowed';
-        // Wenn Nominatim einen deutschen Staat zurückgibt → unsupported
-        // Wenn kein Staat → kein Land erkannt
-        const s = result.nominatimState.toLowerCase();
-        if (!s) return 'outside_de';
-        return 'unsupported_state';
+    const path = `/data/lod2/LoD2_32_${zipE}_${zipN}_2_bw.zip?customerGroup=keine-angabe`;
+    // In Dev: Vite-Proxy leitet weiter → CORS-Header werden korrekt gesetzt.
+    // In Prod: direkter Aufruf (CORS-Block führt zum manuellen Fallback).
+    if (import.meta.env.DEV) {
+        return `/api/lgl-bw${path}`;
     }
-    // Fallback: UTM-Tile-basierte Schätzung
-    const state = stateFromTile(result.tileId);
-    if (state === 'Bayern' || state === 'BW') return 'allowed';
-    if (state === 'außerhalb') return 'outside_de';
-    return 'unsupported_state';
+    return `https://opengeodata.lgl-bw.de${path}`;
 }
 
 function ldbvBayernUrl(): string {
     return 'https://www.ldbv.bayern.de/vermessung/zshh/lod2-de.html';
 }
 
+function sortCandidateFiles(entries: CandidateSourceFile[]) {
+    return [...entries].sort((a, b) => a.nearestDist - b.nearestDist || a.fileName.localeCompare(b.fileName));
+}
+
+function ensureCandidateNames(candidates: Lod2Candidate[], previous: Record<string, string>) {
+    const next = { ...previous };
+    // Only pre-name the first (nearest) candidate as the default main building.
+    // All other candidates are considered context geometry until the user names them explicitly.
+    const first = candidates[0];
+    if (first && !next[first.id]) {
+        next[first.id] = 'Hauptgebäude';
+    }
+    return next;
+}
+
+async function fetchBwCandidateFiles(geocodeResult: ProjectGeocodeResult): Promise<CandidateSourceFile[]> {
+    const response = await fetch(lglBwDownloadUrl(geocodeResult.tileId));
+    if (!response.ok) {
+        throw new Error(`BW LoD2 Download fehlgeschlagen: HTTP ${response.status}`);
+    }
+
+    const archive = unzipSync(new Uint8Array(await response.arrayBuffer()));
+    const parsed = Object.entries(archive)
+        .filter(([name]) => name.toLowerCase().endsWith('.gml'))
+        .map(([name, data]) => {
+            const result = parseCityGml(strFromU8(data), name, geocodeResult.utm32);
+            return {
+                fileName: name,
+                sourceTile: result.sourceTile,
+                candidates: result.candidates,
+                nearestDist: result.candidates[0]?.bboxDistanceToGeocodeM ?? Number.POSITIVE_INFINITY,
+            } satisfies CandidateSourceFile;
+        })
+        .filter((entry) => entry.candidates.length > 0);
+
+    if (parsed.length === 0) {
+        throw new Error('Die BW-Download-Datei enthält keine auswertbaren GML-Gebäude.');
+    }
+
+    const sorted = sortCandidateFiles(parsed);
+    if (sorted[0].nearestDist > 5000) {
+        throw new Error(
+            `Tile-Mismatch: Das nächste Gebäude ist ${(sorted[0].nearestDist / 1000).toFixed(1)} km von der Adresse entfernt. ` +
+            `Bitte die Kachel für Tile ${geocodeResult.tileId} prüfen.`,
+        );
+    }
+
+    return sorted;
+}
+
 export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
     const [step, setStep] = useState<Step>('address');
     const [address, setAddress] = useState('');
     const [geocoding, setGeocoding] = useState(false);
+    const [autoLoadingGml, setAutoLoadingGml] = useState(false);
     const [geocodeError, setGeocodeError] = useState('');
     const [geocodeResult, setGeocodeResult] = useState<ProjectGeocodeResult | null>(null);
     const [gmlParseError, setGmlParseError] = useState('');
     const [candidates, setCandidates] = useState<Lod2Candidate[]>([]);
     const [sourceTile, setSourceTile] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [focusedCandidateId, setFocusedCandidateId] = useState('');
+    const [candidateNames, setCandidateNames] = useState<Record<string, string>>({});
+    const [discoveredFiles, setDiscoveredFiles] = useState<CandidateSourceFile[]>([]);
+    const [activeFileName, setActiveFileName] = useState('');
     const [isDragging, setIsDragging] = useState(false);
     const [parsedFileName, setParsedFileName] = useState('');
+    const [radiusM, setRadiusM] = useState(100);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -107,10 +140,42 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
         return () => document.removeEventListener('keydown', handler);
     }, [onClose]);
 
+    const applyCandidateSource = useCallback((entry: CandidateSourceFile) => {
+        setCandidates(entry.candidates);
+        setSourceTile(entry.sourceTile);
+        setParsedFileName(entry.fileName);
+        setActiveFileName(entry.fileName);
+        setSelectedIds(new Set(entry.candidates[0] ? [entry.candidates[0].id] : []));
+        setFocusedCandidateId(entry.candidates[0]?.id ?? '');
+        setCandidateNames((previous) => ensureCandidateNames(entry.candidates, previous));
+        setStep('candidates');
+    }, []);
+
+    const reloadBwCandidateFiles = useCallback(async () => {
+        if (!geocodeResult) return;
+        setAutoLoadingGml(true);
+        setGmlParseError('');
+        try {
+            const files = await fetchBwCandidateFiles(geocodeResult);
+            setDiscoveredFiles(files);
+            applyCandidateSource(files[0]);
+        } catch (autoErr) {
+            setGmlParseError(
+                autoErr instanceof Error
+                    ? `${autoErr.message} Automatischer Abruf fehlgeschlagen. Bitte LoD2 GML manuell hochladen.`
+                    : 'Automatischer Abruf fehlgeschlagen. Bitte LoD2 GML manuell hochladen.',
+            );
+            setStep('gml');
+        } finally {
+            setAutoLoadingGml(false);
+        }
+    }, [applyCandidateSource, geocodeResult]);
+
     const handleGeocode = async () => {
         if (!address.trim()) return;
         setGeocoding(true);
         setGeocodeError('');
+        setGmlParseError('');
         try {
             const result = await geocodeAddress(address.trim());
             const check = checkAddressAllowed(result);
@@ -123,7 +188,27 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
                 return;
             }
             setGeocodeResult(result);
-            setStep('gml');
+            setDiscoveredFiles([]);
+            setCandidateNames({});
+            if (stateFromTile(result.tileId) === 'BW') {
+                setAutoLoadingGml(true);
+                try {
+                    const files = await fetchBwCandidateFiles(result);
+                    setDiscoveredFiles(files);
+                    applyCandidateSource(files[0]);
+                } catch (autoErr) {
+                    setGmlParseError(
+                        autoErr instanceof Error
+                            ? `${autoErr.message} Automatischer Abruf fehlgeschlagen. Bitte LoD2 GML manuell hochladen.`
+                            : 'Automatischer Abruf fehlgeschlagen. Bitte LoD2 GML manuell hochladen.',
+                    );
+                    setStep('gml');
+                } finally {
+                    setAutoLoadingGml(false);
+                }
+            } else {
+                setStep('gml');
+            }
         } catch (err) {
             setGeocodeError(err instanceof Error ? err.message : 'Unbekannter Fehler');
         } finally {
@@ -150,17 +235,21 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
                     );
                     return;
                 }
-                setCandidates(result.candidates);
-                setSourceTile(result.sourceTile);
-                setParsedFileName(file.name);
-                // Auto-select top candidate
-                setSelectedIds(new Set([result.candidates[0].id]));
-                setStep('candidates');
+                const files = sortCandidateFiles([
+                    {
+                        fileName: file.name,
+                        sourceTile: result.sourceTile,
+                        candidates: result.candidates,
+                        nearestDist,
+                    },
+                ]);
+                setDiscoveredFiles(files);
+                applyCandidateSource(files[0]);
             } catch (err) {
                 setGmlParseError(err instanceof Error ? err.message : 'Parse-Fehler');
             }
         },
-        [geocodeResult],
+        [applyCandidateSource, geocodeResult],
     );
 
     const handleDrop = useCallback(
@@ -191,7 +280,47 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
             }
             return next;
         });
+        setFocusedCandidateId(id);
+        setCandidateNames((previous) => ({
+            ...previous,
+            [id]: previous[id] || `Gebäude ${Object.keys(previous).length + 1}`,
+        }));
     };
+
+    const selectByRadius = (radius: number) => {
+        const inRadius = candidates.filter((c) => c.bboxDistanceToGeocodeM <= radius);
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            for (const c of inRadius) next.add(c.id);
+            return next;
+        });
+        // Context buildings added via radius are intentionally left unnamed —
+        // only the main building (toggled manually) gets a name.
+    };
+
+    const clearSelection = () => {
+        setSelectedIds(new Set());
+        setCandidateNames({});
+    };
+
+    const selectedCandidates = useMemo(
+        () => candidates.filter((candidate) => selectedIds.has(candidate.id)),
+        [candidates, selectedIds],
+    );
+
+    const previewProject = useMemo<ImportedProject | null>(() => {
+        if (!geocodeResult) return null;
+        return {
+            slug: `wizard-preview-${geocodeResult.tileId}`,
+            address,
+            geocode: geocodeResult,
+            sourceTile,
+            candidates,
+            confirmedIds: Array.from(selectedIds),
+            candidateNames,
+            importedAt: new Date().toISOString(),
+        };
+    }, [address, candidateNames, candidates, geocodeResult, selectedIds, sourceTile]);
 
     const [activateError, setActivateError] = useState('');
 
@@ -206,6 +335,9 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
             sourceTile,
             candidates,
             confirmedIds: Array.from(selectedIds),
+            candidateNames: Object.fromEntries(
+                Object.entries(candidateNames).filter(([candidateId, value]) => selectedIds.has(candidateId) && value.trim().length > 0),
+            ),
             importedAt: new Date().toISOString(),
         };
         try {
@@ -223,7 +355,6 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
     return (
         <div className="welcome-root" role="dialog" aria-modal="true" aria-label="Neues Projekt anlegen">
             <div className="welcome-inner wizard-inner">
-                {/* Header */}
                 <header className="welcome-header">
                     <div className="welcome-header-row">
                         <Building2 size={22} className="welcome-icon" />
@@ -232,13 +363,11 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
                             <X size={18} />
                         </button>
                     </div>
-                    {/* Step indicator */}
                     <div className="wizard-steps">
                         {(['address', 'gml', 'candidates', 'done'] as Step[]).map((s, i) => (
                             <div
                                 key={s}
-                                className={`wizard-step ${step === s ? 'wizard-step-active' : ''} ${['address', 'gml', 'candidates', 'done'].indexOf(step) > i ? 'wizard-step-done' : ''
-                                    }`}
+                                className={`wizard-step ${step === s ? 'wizard-step-active' : ''} ${['address', 'gml', 'candidates', 'done'].indexOf(step) > i ? 'wizard-step-done' : ''}`}
                             >
                                 <span className="wizard-step-num">{i + 1}</span>
                                 <span className="wizard-step-label">
@@ -250,7 +379,6 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
                     </div>
                 </header>
 
-                {/* ── Step 1: Address ── */}
                 {step === 'address' && (
                     <div className="wizard-step-body">
                         <label className="wizard-field-label">
@@ -264,14 +392,14 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') void handleGeocode();
                             }}
-                            placeholder="z.B. Büsnauer Str. 29, 70563 Stuttgart"
+                            placeholder="z.B. Demohaus BW 29, 70563 Stuttgart"
                             type="text"
                             value={address}
                         />
                         {geocodeError && <p className="wizard-error">{geocodeError}</p>}
                         <button
                             className="wizard-btn-primary"
-                            disabled={!address.trim() || geocoding}
+                            disabled={!address.trim() || geocoding || autoLoadingGml}
                             onClick={() => void handleGeocode()}
                             type="button"
                         >
@@ -279,6 +407,11 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
                                 <>
                                     <Loader2 size={15} className="wizard-spin" />
                                     Geocodiere…
+                                </>
+                            ) : autoLoadingGml ? (
+                                <>
+                                    <Loader2 size={15} className="wizard-spin" />
+                                    Lade gefundene Dateien…
                                 </>
                             ) : (
                                 <>
@@ -290,7 +423,6 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
                     </div>
                 )}
 
-                {/* ── Step 2: GML Upload ── */}
                 {step === 'gml' && geocodeResult && (
                     <div className="wizard-step-body">
                         <div className="wizard-geocode-result">
@@ -298,8 +430,7 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
                             <div>
                                 <strong>{geocodeResult.displayName.split(',').slice(0, 3).join(',')}</strong>
                                 <span>
-                                    E {geocodeResult.utm32.easting.toFixed(0)} / N {geocodeResult.utm32.northing.toFixed(0)} · Tile{' '}
-                                    <code>{geocodeResult.tileId}</code> · {state}
+                                    E {geocodeResult.utm32.easting.toFixed(0)} / N {geocodeResult.utm32.northing.toFixed(0)} · Tile <code>{geocodeResult.tileId}</code> · {state}
                                 </span>
                             </div>
                         </div>
@@ -331,8 +462,7 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
                                             — darin <code>{bw.gmlName}</code> hochladen
                                             <br />
                                             <span style={{ opacity: 0.7, fontSize: '0.85em' }}>
-                                                Liegt die Adresse auf einer Kachelgrenze? Die ZIP enthält auch{' '}
-                                                <code>{adjName}</code> — bei Gebäudemangel beide versuchen.
+                                                Liegt die Adresse auf einer Kachelgrenze? Die ZIP enthält auch <code>{adjName}</code> — bei Gebäudemangel beide versuchen.
                                             </span>
                                         </span>
                                     );
@@ -375,44 +505,174 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
                     </div>
                 )}
 
-                {/* ── Step 3: Candidate selection ── */}
-                {step === 'candidates' && (() => {
+                {step === 'candidates' && geocodeResult && previewProject && (() => {
                     const nearestDist = candidates[0]?.bboxDistanceToGeocodeM ?? 0;
+                    const isBw = state === 'BW';
                     return (
                         <div className="wizard-step-body">
                             <p className="wizard-hint">
                                 <FileCode2 size={13} />
-                                {parsedFileName} · {candidates.length} Gebäude gefunden · Bestätige das Objekt des Interesses:
+                                {parsedFileName} · {candidates.length} Gebäude gefunden · Formen prüfen, Gebäude auswählen und benennen.
                             </p>
                             {nearestDist > 30 && (
                                 <p className="wizard-hint" style={{ color: 'var(--color-warning, #b45309)' }}>
-                                    Nächstes Gebäude {nearestDist.toFixed(0)} m entfernt — Adresspunkt liegt evtl. auf Kachelgrenze oder Campus-Einfahrt. Richtige Pavillons wählen.
+                                    Nächstes Gebäude {nearestDist.toFixed(0)} m entfernt — Adresspunkt liegt evtl. auf Kachelgrenze oder Campus-Einfahrt. Richtige Gebäudeformen wählen.
                                 </p>
                             )}
-                            <div className="wizard-candidate-list">
-                                {candidates.slice(0, 20).map((c) => {
-                                    const selected = selectedIds.has(c.id);
-                                    const sizeE = Math.round(c.bboxUtm32.maxE - c.bboxUtm32.minE);
-                                    const sizeN = Math.round(c.bboxUtm32.maxN - c.bboxUtm32.minN);
-                                    return (
+
+                            <div className="wizard-review-actions">
+                                {isBw && (
+                                    <button className="wizard-btn-secondary" disabled={autoLoadingGml} onClick={() => void reloadBwCandidateFiles()} type="button">
+                                        <RefreshCw size={14} className={autoLoadingGml ? 'wizard-spin' : ''} />
+                                        Dateien für Adresse neu laden
+                                    </button>
+                                )}
+                                <button className="wizard-btn-secondary" onClick={() => setStep('gml')} type="button">
+                                    <Upload size={14} />
+                                    Andere GML-Datei wählen
+                                </button>
+                            </div>
+
+                            <div className="wizard-source-files">
+                                <span className="wizard-source-files-label">Dateien für diese Adresse</span>
+                                <div className="wizard-source-files-list">
+                                    {discoveredFiles.map((entry) => (
                                         <button
-                                            className={`wizard-candidate ${selected ? 'wizard-candidate-selected' : ''}`}
-                                            key={c.id}
-                                            onClick={() => toggleCandidate(c.id)}
+                                            key={entry.fileName}
+                                            className={`wizard-source-file ${entry.fileName === activeFileName ? 'wizard-source-file-active' : ''}`}
+                                            onClick={() => applyCandidateSource(entry)}
                                             type="button"
                                         >
-                                            <div className="wizard-candidate-top">
-                                                <span className="wizard-candidate-id">{c.id}</span>
-                                                <span className="wizard-candidate-dist">{c.bboxDistanceToGeocodeM.toFixed(0)} m</span>
-                                            </div>
-                                            <div className="wizard-candidate-meta">
-                                                {c.measuredHeightM.toFixed(1)} m · {sizeE}&thinsp;×&thinsp;{sizeN} m · {c.surfaces.roof.length} Dach · {c.surfaces.wall.length} Wand
-                                            </div>
-                                            {selected && <CheckCircle2 size={14} className="wizard-candidate-check" />}
+                                            <strong>{entry.fileName}</strong>
+                                            <span>{entry.candidates.length} Gebäude · {entry.nearestDist.toFixed(0)} m zum nächsten</span>
                                         </button>
-                                    );
-                                })}
+                                    ))}
+                                </div>
                             </div>
+
+                            <div className="wizard-review-layout">
+                                <div className="wizard-review-map">
+                                    <ImportedSiteMapPanel
+                                        project={previewProject}
+                                        terrainData={null}
+                                        selectedId={focusedCandidateId}
+                                        onSelectCandidate={setFocusedCandidateId}
+                                        onUpdateProject={(nextProject) => {
+                                            setSelectedIds(new Set(nextProject.confirmedIds));
+                                        }}
+                                    />
+                                </div>
+                                <div className="wizard-review-sidebar">
+                                    <div className="wizard-radius-bar">
+                                        <Target size={13} className="wizard-radius-icon" />
+                                        <label className="wizard-radius-label">
+                                            Umkreis
+                                            <select
+                                                className="wizard-radius-select"
+                                                value={radiusM}
+                                                onChange={(e) => setRadiusM(Number(e.target.value))}
+                                            >
+                                                <option value={50}>50 m</option>
+                                                <option value={100}>100 m</option>
+                                                <option value={200}>200 m</option>
+                                                <option value={300}>300 m</option>
+                                                <option value={500}>500 m</option>
+                                                <option value={1000}>1000 m</option>
+                                            </select>
+                                        </label>
+                                        <button
+                                            type="button"
+                                            className="wizard-btn-secondary wizard-btn-xs"
+                                            onClick={() => selectByRadius(radiusM)}
+                                        >
+                                            {(() => {
+                                                const total = candidates.filter((c) => c.bboxDistanceToGeocodeM <= radiusM).length;
+                                                const newCount = candidates.filter((c) => c.bboxDistanceToGeocodeM <= radiusM && !selectedIds.has(c.id)).length;
+                                                return newCount > 0 ? `+ ${newCount} hinzufügen (${total} im Umkreis)` : `✓ Alle ${total} im Umkreis ausgewählt`;
+                                            })()}
+                                        </button>
+                                        {selectedIds.size > 0 && (
+                                            <button
+                                                type="button"
+                                                className="wizard-btn-secondary wizard-btn-xs"
+                                                onClick={clearSelection}
+                                            >
+                                                <XCircle size={12} />
+                                                leeren
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="wizard-candidate-list">
+                                        {candidates.map((candidate) => {
+                                            const selected = selectedIds.has(candidate.id);
+                                            const active = candidate.id === focusedCandidateId;
+                                            const sizeE = Math.round(candidate.bboxUtm32.maxE - candidate.bboxUtm32.minE);
+                                            const sizeN = Math.round(candidate.bboxUtm32.maxN - candidate.bboxUtm32.minN);
+                                            return (
+                                                <div key={candidate.id} className={`wizard-candidate ${active ? 'wizard-candidate-active' : ''} ${selected ? 'wizard-candidate-selected' : ''}`}>
+                                                    <button className="wizard-candidate-main" onClick={() => setFocusedCandidateId(candidate.id)} type="button">
+                                                        <div className="wizard-candidate-top">
+                                                            <span className="wizard-candidate-id">{candidate.id}</span>
+                                                            <span className="wizard-candidate-dist">{candidate.bboxDistanceToGeocodeM.toFixed(0)} m</span>
+                                                        </div>
+                                                        <div className="wizard-candidate-meta">
+                                                            {candidate.measuredHeightM.toFixed(1)} m · {sizeE}&thinsp;×&thinsp;{sizeN} m · {candidate.surfaces.roof.length} Dach · {candidate.surfaces.wall.length} Wand
+                                                        </div>
+                                                    </button>
+                                                    <button
+                                                        aria-label={`${selected ? 'Abwählen' : 'Auswählen'} ${candidate.id}`}
+                                                        className={`wizard-candidate-toggle ${selected ? 'wizard-candidate-toggle-selected' : ''}`}
+                                                        onClick={() => toggleCandidate(candidate.id)}
+                                                        type="button"
+                                                    >
+                                                        {selected ? <CheckCircle2 size={14} /> : 'Auswählen'}
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="wizard-naming-panel">
+                                        <div className="wizard-naming-header">
+                                            <strong>Ausgewählte Gebäude benennen</strong>
+                                            <span>{selectedCandidates.length} ausgewählt</span>
+                                        </div>
+                                        {selectedCandidates.length === 0 && (
+                                            <p className="wizard-hint">Auf der Karte oder in der Liste Gebäude auswählen, dann Namen vergeben.</p>
+                                        )}
+                                        {(() => {
+                                            const named = selectedCandidates.filter((c) => candidateNames[c.id]?.trim());
+                                            const unnamedCount = selectedCandidates.length - named.length;
+                                            return (
+                                                <>
+                                                    {named.map((candidate, index) => (
+                                                        <label key={candidate.id} className="wizard-name-field">
+                                                            <span>{candidate.id}</span>
+                                                            <input
+                                                                aria-label={`Name für ${candidate.id}`}
+                                                                className="wizard-input"
+                                                                onChange={(event) => setCandidateNames((previous) => ({
+                                                                    ...previous,
+                                                                    [candidate.id]: event.target.value,
+                                                                }))}
+                                                                placeholder={`z. B. Gebäude ${index + 1}`}
+                                                                type="text"
+                                                                value={candidateNames[candidate.id] ?? ''}
+                                                            />
+                                                        </label>
+                                                    ))}
+                                                    {unnamedCount > 0 && (
+                                                        <p className="wizard-hint wizard-context-hint">
+                                                            {unnamedCount} Kontextgebäude ohne Namen — werden als Umgebungsgeometrie gespeichert.
+                                                        </p>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+                                </div>
+                            </div>
+
                             <button
                                 className="wizard-btn-primary"
                                 disabled={selectedIds.size === 0}
@@ -427,7 +687,6 @@ export function NewProjectWizard({ onClose, onProjectActivated }: Props) {
                     );
                 })()}
 
-                {/* ── Step 4: Done ── */}
                 {step === 'done' && (
                     <div className="wizard-step-body wizard-done">
                         <CheckCircle2 size={40} className="wizard-done-icon" />

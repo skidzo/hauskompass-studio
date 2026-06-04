@@ -7,22 +7,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { stateFromTile } from '../../src/features/new-project/addressSupport';
 import { tileFromUtm32, wgs84ToUtm32 } from '../../src/features/new-project/geocode';
-
-// ── Lokale Kopie der stateFromTile-Logik aus NewProjectWizard ────────────────
-// (Produktivcode-Extrakt — wenn der Wizard die Funktion exportiert, entfällt dies)
-
-function stateFromTile(tileId: string): 'Bayern' | 'BW' | 'NRW' | 'außerhalb' | 'unbekannt' {
-    const [e, n] = tileId.split('_').map(Number);
-    if (e < 280 || e > 920 || n < 5230 || n > 6110) return 'außerhalb';
-    // Verbesserte Ranges (prüft E + N): BY E 555–840, N 5249–5625
-    if (e >= 555 && e <= 840 && n >= 5249 && n <= 5625) return 'Bayern';
-    // BW E 400–595, N 5249–5515
-    if (e >= 400 && e <= 595 && n >= 5249 && n <= 5515) return 'BW';
-    // NRW: E 290–470, N 5620–5810
-    if (e >= 290 && e <= 470 && n >= 5620 && n <= 5810) return 'NRW';
-    return 'unbekannt';
-}
 
 // ── Verbesserte Klassifizierung (korrekte UTM-Bounding-Boxes) ───────────────
 

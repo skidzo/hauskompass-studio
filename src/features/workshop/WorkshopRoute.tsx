@@ -21,6 +21,13 @@ import {
     useZoneObservationCounts,
     useZones
 } from '@/features/workshop/hooks/useWorkshopData';
+import {
+    buildStudioBundleFilename,
+    formatStudioBundleCountSummary,
+    formatStudioBundleLabel,
+    formatStudioBundleTransportLabel,
+} from '@/lib/studio-core/backup/helpers';
+import { NAMED_ENTITY_DEFAULTS, NamedEntityFields, type NamedEntityValues } from '@/lib/studio-core/forms/NamedEntityFields';
 import { Camera, ChevronLeft, ChevronRight, Database, Download, Eye, HelpCircle, Layers, MapPin, MapPinned, MessageSquare, Navigation, PlusCircle, Trash2, UserPlus, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { ASSET_WARNING_LABEL, computeAssetCompleteness } from './completeness';
@@ -36,7 +43,7 @@ import { WorkshopSceneEditor } from './components/WorkshopSceneEditor';
 import { WorkshopSceneCard, WorkshopSceneDetail } from './components/WorkshopSceneViewer';
 import { ZoneList } from './components/ZoneList';
 import type { MergeResult, ObservationRecord, WorkshopBundleExport } from './db/workshopDb';
-import { deleteAsset, exportWorkshopBundle, exportWorkshopBundleZip, getAssetObjectUrl, mergeWorkshopBundle, mergeWorkshopBundleZip, saveObservation } from './db/workshopDb';
+import { deleteAsset, deleteZone, exportWorkshopBundle, exportWorkshopBundleZip, getAssetObjectUrl, mergeWorkshopBundle, mergeWorkshopBundleZip, saveObservation, saveZone } from './db/workshopDb';
 import type { ExportMode } from './export/workshopExport';
 import { buildExportBlob, buildExportFilename, downloadExportBlob } from './export/workshopExport';
 import { buildSceneExportReport } from './sceneSafety';
@@ -161,6 +168,25 @@ export function WorkshopRoute({
                             interpretationCountsByZone={interpCounts ?? {}}
                             selectedZoneId={selectedZoneId}
                             onSelectZone={(id) => { setSelectedZoneId(id); setSelectedSceneId(null); }}
+                            onCreateZone={async (values) => {
+                                const id = `z-user-${Date.now()}`;
+                                await saveZone({
+                                    id,
+                                    siteId: SITE_ID,
+                                    name: values.name.trim(),
+                                    description: values.description.trim(),
+                                    documentationPriority: values.documentationPriority,
+                                    documentationStatus: 'not_started',
+                                    openQuestionIds: [],
+                                    linkedAssetIds: [],
+                                    linkedAssessmentIds: [],
+                                    sensitivityLevel: values.sensitivityLevel,
+                                    publicationStatus: values.sensitivityLevel === 'public' ? 'needs_review' : 'internal_only',
+                                    sortOrder: (zones?.length ?? 0) + 1,
+                                });
+                                setSelectedZoneId(id);
+                                setSelectedSceneId(null);
+                            }}
                         />
                     )}
                     {tab === 'timeline' && (
@@ -271,6 +297,9 @@ function ZoneDetailPanel({
     const memories = useMemories(zoneId);
     const [showIngest, setShowIngest] = useState(false);
     const [viewerAssetId, setViewerAssetId] = useState<string | null>(null);
+    const [editing, setEditing] = useState(false);
+    const [editDraft, setEditDraft] = useState<NamedEntityValues>(NAMED_ENTITY_DEFAULTS);
+    const [deleteConfirm, setDeleteConfirm] = useState(false);
     const focusedKind = focusRequest?.zoneId === zoneId ? focusRequest.kind : null;
     const focusedId = focusRequest?.zoneId === zoneId ? focusRequest.id : null;
 
@@ -292,21 +321,67 @@ function ZoneDetailPanel({
 
     if (!zone) return <div className="ws-loading">Zone wird geladen …</div>;
 
+    function startEdit() {
+        setEditDraft({
+            name: zone!.name,
+            description: zone!.description ?? '',
+            documentationPriority: zone!.documentationPriority,
+            sensitivityLevel: zone!.sensitivityLevel,
+        });
+        setEditing(true);
+    }
+
+    async function saveEdit() {
+        if (!zone || !editDraft.name.trim()) return;
+        await saveZone({
+            ...zone,
+            name: editDraft.name.trim(),
+            description: editDraft.description.trim(),
+            documentationPriority: editDraft.documentationPriority,
+            sensitivityLevel: editDraft.sensitivityLevel,
+        });
+        setEditing(false);
+    }
+
+    async function confirmDelete() {
+        await deleteZone(zoneId);
+        onClose();
+    }
+
     return (
         <div className="ws-zone-detail">
             <button className="ws-back-btn" onClick={onClose} type="button">← Zurück</button>
 
             <div className="ws-zone-detail-header">
-                <h3 className="ws-zone-detail-name">{zone.name}</h3>
-                <div className="ws-card-badges">
-                    <SensitivityBadge level={zone.sensitivityLevel} />
-                    <span style={{ fontSize: '0.68rem', color: '#90a4ae' }}>
-                        {zone.documentationStatus === 'not_started' ? 'Nicht begonnen'
-                            : zone.documentationStatus === 'partial' ? 'Teilweise dokumentiert'
-                                : 'Vollständig'}
-                    </span>
-                </div>
-                <p className="ws-zone-detail-desc">{zone.description}</p>
+                {editing ? (
+                    <>
+                        <NamedEntityFields
+                            values={editDraft}
+                            onChange={(patch) => setEditDraft((prev) => ({ ...prev, ...patch }))}
+                            autoFocusName
+                        />
+                        <div className="ws-zone-edit-actions">
+                            <button className="ws-zone-edit-save" onClick={saveEdit} disabled={!editDraft.name.trim()} type="button">Speichern</button>
+                            <button className="ws-zone-edit-cancel" onClick={() => setEditing(false)} type="button">Abbrechen</button>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="ws-zone-detail-name-row">
+                            <h3 className="ws-zone-detail-name">{zone.name}</h3>
+                            <button className="ws-zone-edit-btn" onClick={startEdit} type="button" title="Zone bearbeiten">✎</button>
+                        </div>
+                        <div className="ws-card-badges">
+                            <SensitivityBadge level={zone.sensitivityLevel} />
+                            <span style={{ fontSize: '0.68rem', color: '#90a4ae' }}>
+                                {zone.documentationStatus === 'not_started' ? 'Nicht begonnen'
+                                    : zone.documentationStatus === 'partial' ? 'Teilweise dokumentiert'
+                                        : 'Vollständig'}
+                            </span>
+                        </div>
+                        <p className="ws-zone-detail-desc">{zone.description}</p>
+                    </>
+                )}
                 {focusedKind && focusedId && (
                     <div className="ws-focus-banner">
                         Fokus aus 3D: {focusLabel(focusedKind)} <strong>{focusedId}</strong>
@@ -421,6 +496,29 @@ function ZoneDetailPanel({
                     onClose={() => setViewerAssetId(null)}
                 />
             )}
+
+            {/* Delete zone */}
+            <div className="ws-zone-delete-section">
+                {!deleteConfirm ? (
+                    <button
+                        type="button"
+                        className="ws-zone-delete-btn"
+                        onClick={() => setDeleteConfirm(true)}
+                    >
+                        Zone löschen
+                    </button>
+                ) : (
+                    <div className="ws-zone-delete-confirm">
+                        <span>
+                            {(assets?.length ?? 0) > 0
+                                ? `Diese Zone hat ${assets!.length} Medien. Trotzdem löschen?`
+                                : 'Zone wirklich löschen?'}
+                        </span>
+                        <button type="button" className="ws-zone-delete-confirm-yes" onClick={confirmDelete}>Ja, löschen</button>
+                        <button type="button" className="ws-zone-delete-confirm-no" onClick={() => setDeleteConfirm(false)}>Abbrechen</button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
@@ -937,6 +1035,7 @@ function DataBackupBar({
     const [merging, setMerging] = useState(false);
     const [mergeResult, setMergeResult] = useState<MergeResult | null>(null);
     const [mergeError, setMergeError] = useState<string | null>(null);
+    const [backupSummary, setBackupSummary] = useState<string | null>(null);
     const mergeFileRef = useRef<HTMLInputElement>(null);
 
     async function handleMergeFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -969,8 +1068,8 @@ function DataBackupBar({
             const bundle = await exportWorkshopBundle(projectId);
             const json = JSON.stringify(bundle, null, 2);
             const blob = new Blob([json], { type: 'application/json' });
-            const date = new Date().toISOString().slice(0, 10);
-            triggerDownload(blob, `${projectTitle}-backup-${date}.json`);
+            triggerDownload(blob, buildStudioBundleFilename(bundle, 'json'));
+            setBackupSummary(`${formatStudioBundleLabel(bundle)} · ${formatStudioBundleTransportLabel(bundle.mediaTransport)} · ${formatStudioBundleCountSummary(bundle.counts)}`);
         } finally {
             setExporting(null);
         }
@@ -979,9 +1078,11 @@ function DataBackupBar({
     async function handleZipBackup() {
         setExporting('zip');
         try {
+            const bundle = await exportWorkshopBundle(projectId);
             const blob = await exportWorkshopBundleZip(projectId);
-            const date = new Date().toISOString().slice(0, 10);
-            triggerDownload(blob, `${projectTitle}-backup-${date}.zip`);
+            const zipBundle = { ...bundle, mediaTransport: 'external_blob_package' as const };
+            triggerDownload(blob, buildStudioBundleFilename(zipBundle, 'zip'));
+            setBackupSummary(`${formatStudioBundleLabel(zipBundle)} · ${formatStudioBundleTransportLabel(zipBundle.mediaTransport)} · ${formatStudioBundleCountSummary(zipBundle.counts)}`);
         } finally {
             setExporting(null);
         }
@@ -1035,6 +1136,7 @@ function DataBackupBar({
                 </span>
             )}
             {mergeError && <span className="ws-merge-error">{mergeError}</span>}
+            {backupSummary && <span className="ws-merge-result">{backupSummary}</span>}
         </div>
     );
 }

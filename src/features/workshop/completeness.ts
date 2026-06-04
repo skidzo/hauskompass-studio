@@ -40,10 +40,10 @@ export const ZONE_DOC_LEVEL_LABEL: Record<ZoneDocLevel, string> = {
 };
 
 export const ZONE_DOC_LEVEL_COLOR: Record<ZoneDocLevel, string> = {
-    empty: '#ef5350',       // red
-    assets_only: '#ffa726', // amber
-    observed: '#1565c0',    // blue
-    interpreted: '#2e7d32', // green
+    empty: '#94a3b8',        // slate grey — neutral "not started", not alarming
+    assets_only: '#d97706',  // amber — has media
+    observed: '#2563eb',     // blue — observed
+    interpreted: '#16a34a',  // green — interpreted/complete
 };
 
 // ---------------------------------------------------------------------------

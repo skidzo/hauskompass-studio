@@ -20,7 +20,20 @@ interface ProjectIndexEntry {
 
 const PROJECTS_INDEX_URL = '/projects/index.json';
 
-const RUNTIME_PROJECTS_FALLBACK: RuntimeProjectConfig[] = [];
+const RUNTIME_PROJECTS_FALLBACK: RuntimeProjectConfig[] = [
+    {
+        projectId: 'ws-pascal',
+        siteId: 'site-pascal',
+        slug: 'workshop-campus-demo',
+        mediaManifestUrl: '/local-media/workshop-campus-demo/media-manifest.json',
+    },
+    {
+        projectId: 'proj-eiermann-campus',
+        siteId: 'site-eiermann-campus',
+        slug: 'workshop-campus-demo',
+        mediaManifestUrl: '/local-media/workshop-campus-demo/media-manifest.json',
+    },
+];
 
 let projectIndexPromise: Promise<ProjectIndexEntry[]> | null = null;
 

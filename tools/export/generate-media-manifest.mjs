@@ -1,7 +1,7 @@
 /**
  * Zweck: Geprüfte lokale und Web-Bildkandidaten in das Eiermann-Media-Manifest integrieren.
  * Aufruf: node tools/export/generate-media-manifest.mjs --local output/eiermann-local-media-candidates.json --web output/eiermann-web-media-candidates.json --approve ids.json|all
- * Output: public/local-media/eiermann-campus-pascalstrasse-100/media-manifest.json und kopierte/heruntergeladene Bilder
+ * Output: public/local-media/workshop-campus-demo/media-manifest.json und kopierte/heruntergeladene Bilder
  * Abhängigkeiten: keine
  */
 
@@ -14,7 +14,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.resolve(here, '../..');
 const PROJECT_ID = 'proj-eiermann-campus';
 const SITE_ID = 'site-eiermann-campus';
-const MEDIA_SLUG = 'eiermann-campus-pascalstrasse-100';
+const MEDIA_SLUG = 'workshop-campus-demo';
 const MEDIA_ROOT = path.join(appRoot, `public/local-media/${MEDIA_SLUG}`);
 const IMAGE_ROOT = path.join(MEDIA_ROOT, 'images');
 const MANIFEST_PATH = path.join(MEDIA_ROOT, 'media-manifest.json');

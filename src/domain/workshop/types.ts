@@ -17,12 +17,10 @@ import type { ProjectCharacterProfile } from '../project/projectCharacter';
 // Sensitivity & Publication
 // ---------------------------------------------------------------------------
 
-export type SensitivityLevel =
-    | 'public'              // no restrictions
-    | 'internal'            // project members only
-    | 'sensitive_personal'  // personal data, handle with care
-    | 'restricted'          // named individuals only
-    | 'unknown';            // not yet classified
+// SensitivityLevel is mode-neutral — defined in studio-core, re-exported here
+// so all existing workshop imports remain unchanged.
+import type { SensitivityLevel } from '@/lib/studio-core/media/types';
+export type { SensitivityLevel } from '@/lib/studio-core/media/types';
 
 export type PublicationStatus =
     | 'publishable'           // cleared for public use
@@ -178,6 +176,10 @@ export interface Asset {
     gpsAlt?: number;
     /** Camera bearing in degrees clockwise from True North (0–360), from EXIF GPSImgDirection */
     gpsBearing?: number;
+    /** 'T' = True North reference, 'M' = Magnetic North (from EXIF GPSImgDirectionRef) */
+    gpsBearingRef?: 'T' | 'M';
+    /** Horizontal GPS accuracy in meters (from EXIF GPSHPositioningError); smaller = more precise */
+    gpsHAccuracyM?: number;
     /** Explicit spatial role of the asset within the workshop/site model. */
     spatialAnchorType?: AssetSpatialAnchorType;
     /** Zone the asset is looking at or describing, distinct from the capture location zone when needed. */
@@ -188,6 +190,20 @@ export interface Asset {
     bearingConfidence?: AssetBearingConfidence;
     /** Short spatial note for orientation, access, facade side, or view direction. */
     spatialNotes?: string;
+    /**
+     * Storage mode for the raw file:
+     * - 'blob'         (default) — full binary stored in IndexedDB assetBlobs table
+     * - 'fs-reference' — file stays on the user's local filesystem; only metadata +
+     *                    thumbnail are stored. Requires a linked FileSystemDirectoryHandle
+     *                    saved in the folderHandles table.
+     */
+    storageMode?: 'blob' | 'fs-reference';
+    /**
+     * Relative path of the file within the linked folder handle.
+     * Only set when storageMode === 'fs-reference'.
+     * E.g. "Besprechungsraum/IMG_20260522_132437280.jpg"
+     */
+    localPath?: string;
     createdAt: string;
     updatedAt: string;
 }

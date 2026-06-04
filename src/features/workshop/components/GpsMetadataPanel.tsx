@@ -7,6 +7,14 @@
 
 import { fetchProjectJson } from '@/features/project-data/projectDataLoader';
 import { readExifData } from '@/features/workshop/ingest/exifReader';
+import { generateThumbnail } from '@/lib/studio-core/media/thumbnail';
+import { deriveExifEvidenceTrustLevel } from '@/lib/studio-core/spatial-reference/helpers';
+import {
+    formatBearingSummary,
+    formatCaptureDate,
+    formatExifTrustLabel,
+    formatGpsPoint,
+} from '@/lib/studio-core/spatial-reference/presentation';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AlertCircle, Camera, ImageIcon, Layers, MapPin, Navigation, RefreshCw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -16,11 +24,6 @@ import { getAssetObjectUrl, updateAssetSpatialContext, workshopDb } from '../db/
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function bearingLabel(deg: number): string {
-    const dirs = ['N', 'NNO', 'NO', 'ONO', 'O', 'OSO', 'SO', 'SSO', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-    return dirs[Math.round(deg / 22.5) % 16];
-}
 
 async function repairAssetGps(asset: AssetRecord): Promise<boolean> {
     const blobRecord = await workshopDb.assetBlobs.get(asset.id);
@@ -39,6 +42,8 @@ async function repairAssetGps(asset: AssetRecord): Promise<boolean> {
     if (typeof exif.alt === 'number') patch.gpsAlt = exif.alt;
     if (exif.capturedAt) patch.capturedAt = exif.capturedAt;
     if (typeof exif.bearing === 'number') patch.gpsBearing = exif.bearing;
+    if (exif.bearingRef) patch.gpsBearingRef = exif.bearingRef;
+    if (typeof exif.hAccuracyM === 'number') patch.gpsHAccuracyM = exif.hAccuracyM;
 
     await workshopDb.assets.update(asset.id, patch);
     return true;
@@ -228,7 +233,7 @@ export function GpsMetadataPanel({
                     onFocusAsset={onFocusAsset}
                     onOpenAsset={onOpenAsset}
                 />
-                )}
+            )}
 
             {/* List */}
             <div className="ws-gps-list">
@@ -276,17 +281,22 @@ export function GpsMetadataPanel({
                                 {hasGps ? (
                                     <dl className="ws-gps-coords">
                                         <div>
-                                            <dt>Lat</dt>
-                                            <dd>{asset.gpsLat!.toFixed(6)}°</dd>
+                                            <dt>GPS</dt>
+                                            <dd>{formatGpsPoint(asset.gpsLat, asset.gpsLon) ?? 'unbekannt'}{typeof asset.gpsHAccuracyM === 'number' ? ` ±${asset.gpsHAccuracyM < 10 ? asset.gpsHAccuracyM.toFixed(1) : Math.round(asset.gpsHAccuracyM)} m` : ''}</dd>
                                         </div>
                                         <div>
-                                            <dt>Lon</dt>
-                                            <dd>{asset.gpsLon!.toFixed(6)}°</dd>
+                                            <dt>Vertrauen</dt>
+                                            <dd>{formatExifTrustLabel(deriveExifEvidenceTrustLevel({
+                                                lat: asset.gpsLat!,
+                                                lon: asset.gpsLon!,
+                                                bearing: asset.gpsBearing,
+                                                capturedAt: asset.capturedAt,
+                                            }), { lat: asset.gpsLat!, lon: asset.gpsLon!, bearing: asset.gpsBearing, capturedAt: asset.capturedAt, hAccuracyM: asset.gpsHAccuracyM, bearingRef: asset.gpsBearingRef })}</dd>
                                         </div>
                                         {typeof asset.gpsBearing === 'number' && (
                                             <div>
                                                 <dt>Richtung</dt>
-                                                <dd>{asset.gpsBearing.toFixed(0)}° {bearingLabel(asset.gpsBearing)}</dd>
+                                                <dd>{formatBearingSummary(asset.gpsBearing, asset.gpsBearingRef)}</dd>
                                             </div>
                                         )}
                                         {asset.capturedAt && (
@@ -326,15 +336,6 @@ export function GpsMetadataPanel({
             </div>
         </div>
     );
-}
-
-function formatCaptureDate(value: string): string {
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return value.slice(0, 10);
-    return d.toLocaleString('de-DE', {
-        dateStyle: 'short',
-        timeStyle: value.includes('T') ? 'short' : undefined,
-    });
 }
 
 function formatSpatialAnchorSummary(asset: AssetRecord, zoneMap: Map<string, string>): string | null {
@@ -540,32 +541,64 @@ function GpsPhotoPreview({
 function GpsAssetThumbnail({ asset, size }: { asset: AssetRecord; size: 'small' | 'large' }) {
     const [objectUrl, setObjectUrl] = useState<string | null>(null);
     const urlRef = useRef<string | null>(null);
-    const src = asset.derivates?.thumbnail ?? objectUrl;
+    const thumbnail = asset.derivates?.thumbnail;
 
     useEffect(() => {
-        if (asset.derivates?.thumbnail) return;
+        // Data-URL thumbnail available — clean up any blob URL and use it directly
+        if (thumbnail) {
+            if (urlRef.current) {
+                URL.revokeObjectURL(urlRef.current);
+                urlRef.current = null;
+                setObjectUrl(null);
+            }
+            return;
+        }
+
         let cancelled = false;
+        // Clear stale blob URL immediately so the component shows placeholder while loading
         if (urlRef.current) {
             URL.revokeObjectURL(urlRef.current);
             urlRef.current = null;
         }
-        getAssetObjectUrl(asset.id).then((url) => {
+        setObjectUrl(null);
+
+        (async () => {
+            const url = await getAssetObjectUrl(asset.id);
             if (cancelled) {
                 if (url) URL.revokeObjectURL(url);
                 return;
             }
             urlRef.current = url;
             setObjectUrl(url);
-        });
+
+            // Lazily generate and persist thumbnail — future renders use the data URL instead of blobs
+            if (url) {
+                const entry = await workshopDb.assetBlobs.get(asset.id);
+                if (!cancelled && entry) {
+                    const file = new File([entry.blob], asset.fileName ?? `${asset.id}.jpg`, { type: entry.blob.type });
+                    generateThumbnail(file).then((thumb) => {
+                        if (!cancelled && thumb) {
+                            workshopDb.assets.update(asset.id, {
+                                derivates: { ...(asset.derivates ?? {}), thumbnail: thumb },
+                            }).catch(() => { });
+                        }
+                    }).catch(() => { });
+                }
+            }
+        })();
+
         return () => {
             cancelled = true;
             if (urlRef.current) {
                 URL.revokeObjectURL(urlRef.current);
                 urlRef.current = null;
             }
+            setObjectUrl(null);
         };
-    }, [asset.derivates?.thumbnail, asset.id]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [asset.id, thumbnail]);
 
+    const src = thumbnail ?? objectUrl;
     if (src) {
         return <img className={`ws-gps-thumb ws-gps-thumb-${size}`} src={src} alt={asset.title} />;
     }

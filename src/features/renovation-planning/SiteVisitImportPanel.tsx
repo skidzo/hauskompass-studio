@@ -1,35 +1,19 @@
 import { useEffect, useState } from 'react';
 import {
+  loadSiteVisitImports,
   parseSiteVisitImportDraft,
+  saveSiteVisitImports,
   siteVisitTemplate,
   summarizeSiteVisitImport,
-  type SiteVisitImport,
 } from './siteVisitImport';
 
-const STORAGE_KEY = 'hauskompass.siteVisitImports.v1';
-
-function loadImports(): SiteVisitImport[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '[]');
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveImports(imports: SiteVisitImport[]) {
-  if (typeof window === 'undefined') return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(imports, null, 2));
-}
-
 export function SiteVisitImportPanel() {
-  const [imports, setImports] = useState<SiteVisitImport[]>(() => loadImports());
+  const [imports, setImports] = useState(() => loadSiteVisitImports());
   const [draft, setDraft] = useState(() => JSON.stringify(siteVisitTemplate, null, 2));
   const [message, setMessage] = useState('Paste or edit a local S01-S20 import JSON. Nothing is uploaded.');
 
   useEffect(() => {
-    saveImports(imports);
+    saveSiteVisitImports(imports);
   }, [imports]);
 
   function importDraft() {

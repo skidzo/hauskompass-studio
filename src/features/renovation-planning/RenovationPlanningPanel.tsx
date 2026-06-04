@@ -36,6 +36,7 @@ const PROJECT_TABS: Array<{ id: PlanningTab; label: string }> = [
   { id: 'facts', label: 'Gebäudefakten' },
   { id: 'measurements', label: 'Messungen' },
   { id: 'decisions', label: 'Entscheidungen' },
+  { id: 'package', label: 'Paket' },
   { id: 'local', label: 'Register' },
   { id: 'siteVisit', label: 'Begehung' },
 ];
@@ -251,7 +252,7 @@ export function RenovationPlanningPanel({ project }: { project?: ImportedProject
         )}
 
         {visibleTab === 'local' && <LocalRegistersPanel />}
-        {visibleTab === 'package' && <LocalAssessmentPackagePanel />}
+        {visibleTab === 'package' && <LocalAssessmentPackagePanel project={project} />}
         {visibleTab === 'siteVisit' && <SiteVisitImportPanel />}
       </div>
     );

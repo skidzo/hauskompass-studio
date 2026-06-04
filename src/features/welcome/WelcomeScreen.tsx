@@ -93,7 +93,7 @@ export function WelcomeScreen({ onClose }: Props) {
                         className="welcome-input"
                         id="welcome-address"
                         onChange={(e) => { setAddress(e.target.value); setShowGuide(false); }}
-                        placeholder="z.B. Büsnauer Str. 29, 70563 Stuttgart"
+                        placeholder="z.B. Demohaus BW 29, 70563 Stuttgart"
                         type="text"
                         value={address}
                     />

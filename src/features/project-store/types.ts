@@ -55,6 +55,35 @@ export interface ProjectGeocodeResult {
     nominatimState?: string;
 }
 
+export interface ImportedTerrainPoint {
+    dist: number;
+    z: number;
+    zSmooth: number;
+}
+
+export interface ImportedTerrainData {
+    centerZ: number;
+    nsProfile: ImportedTerrainPoint[];
+    ewProfile: ImportedTerrainPoint[];
+    reliefM: number;
+    meanElevationM: number;
+    slopePercent: number;
+    fetchedAt: string;
+    source: string;
+}
+
+export interface ProjectDerivedRecord<T> {
+    sourceFingerprint: string;
+    generatedAt: string;
+    generatorVersion: string;
+    payload: T;
+}
+
+export interface ImportedProjectDerivedData {
+    terrain?: ProjectDerivedRecord<ImportedTerrainData>;
+    ifc?: ProjectDerivedRecord<string>;
+}
+
 export interface ImportedProject {
     slug: string;
     address: string;
@@ -62,5 +91,7 @@ export interface ImportedProject {
     sourceTile: string;
     candidates: Lod2Candidate[];
     confirmedIds: string[];
+    candidateNames?: Record<string, string>;
     importedAt: string; // ISO date
+    derivedData?: ImportedProjectDerivedData;
 }

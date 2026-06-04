@@ -103,6 +103,10 @@ export interface SpatialScene {
     projectId: string;
     siteId: string;
     label: string;
+    mapAnchor?: {
+        lon: number;
+        lat: number;
+    };
     sources: SpatialSource[];
     terrain: TerrainModel[];
     buildingHulls: BuildingHullModel[];

@@ -1,7 +1,7 @@
-import type { ImportedTerrainData } from '@/features/lod2-derived/fetchTerrainProfile';
 import { fetchTerrainProfile } from '@/features/lod2-derived/fetchTerrainProfile';
-import type { ImportedProject } from '@/features/project-store/types';
-import { useEffect, useState } from 'react';
+import { computeProjectSourceFingerprint } from '@/features/project-store/derivedData';
+import type { ImportedProject, ImportedTerrainData } from '@/features/project-store/types';
+import { useEffect, useMemo, useState } from 'react';
 
 export type TerrainFetchState = 'idle' | 'loading' | 'error';
 
@@ -13,30 +13,66 @@ export interface UseTerrainDataReturn {
     resetTerrain: () => void;
 }
 
-export function useTerrainData(activeProject: ImportedProject | null): UseTerrainDataReturn {
+export function useTerrainData(
+    activeProject: ImportedProject | null,
+    updateProject: (project: ImportedProject) => void,
+): UseTerrainDataReturn {
     const [terrainData, setTerrainData] = useState<ImportedTerrainData | null>(null);
     const [terrainFetchState, setTerrainFetchState] = useState<TerrainFetchState>('idle');
     const [terrainFetchError, setTerrainFetchError] = useState('');
+    const sourceFingerprint = useMemo(
+        () => (activeProject ? computeProjectSourceFingerprint(activeProject) : null),
+        [activeProject],
+    );
 
     const resetTerrain = () => {
         setTerrainData(null);
         setTerrainFetchState('idle');
         setTerrainFetchError('');
+        if (!activeProject) return;
+        if (!activeProject.derivedData?.terrain) return;
+        updateProject({
+            ...activeProject,
+            derivedData: {
+                ...activeProject.derivedData,
+                terrain: undefined,
+            },
+        });
     };
 
-    // Terrain wird beim Projekt-Wechsel zurückgesetzt
     useEffect(() => {
-        resetTerrain();
-    }, [activeProject?.slug]);
+        const persisted = activeProject?.derivedData?.terrain;
+        if (persisted && persisted.sourceFingerprint === sourceFingerprint) {
+            setTerrainData(persisted.payload);
+            setTerrainFetchState('idle');
+            setTerrainFetchError('');
+            return;
+        }
+        setTerrainData(null);
+        setTerrainFetchState('idle');
+        setTerrainFetchError('');
+    }, [activeProject, sourceFingerprint]);
 
     const fetchTerrain = async () => {
-        if (!activeProject) return;
+        if (!activeProject || !sourceFingerprint) return;
         setTerrainFetchState('loading');
         setTerrainFetchError('');
         try {
             const data = await fetchTerrainProfile(activeProject.geocode);
             setTerrainData(data);
             setTerrainFetchState('idle');
+            updateProject({
+                ...activeProject,
+                derivedData: {
+                    ...activeProject.derivedData,
+                    terrain: {
+                        sourceFingerprint,
+                        generatedAt: new Date().toISOString(),
+                        generatorVersion: 'terrain-open-meteo-v1',
+                        payload: data,
+                    },
+                },
+            });
         } catch (e: unknown) {
             setTerrainFetchState('error');
             setTerrainFetchError(e instanceof Error ? e.message : String(e));

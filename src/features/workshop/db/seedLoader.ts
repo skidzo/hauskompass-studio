@@ -8,7 +8,7 @@
 import type { WorkshopProjectBundle } from '@/domain/workshop/types';
 import { fetchProjectSeedJson, getProjectMediaManifestUrl, resolveRuntimeProjectConfig } from '@/features/project-data/projectDataLoader';
 import { readExifData } from '@/features/workshop/ingest/exifReader';
-import { generateThumbnail } from '@/features/workshop/ingest/thumbnailGenerator';
+import { generateThumbnail } from '@/lib/studio-core/media/thumbnail';
 import { saveAsset, workshopDb, type AssetRecord } from './workshopDb';
 import { QUICK_START_MARKER, getWorkshopMediaRestoreVersionKey, getWorkshopSeedVersionKey } from './workshopProjectStorageKeys';
 
@@ -72,13 +72,16 @@ export async function seedProject(projectId: string): Promise<void> {
         return;
     }
 
-    if (alreadySeeded && storedVersion === SEED_VERSION) {
+    // Up-to-date seed OR imported from backup (storedVersion === null means user imported
+    // the project via ZIP/JSON — do NOT clear user data, just mark the version and restore media).
+    if (alreadySeeded && (storedVersion === SEED_VERSION || storedVersion === null)) {
+        localStorage.setItem(seedVersionKey, SEED_VERSION);
         await restoreProjectMediaFromManifest(projectId);
         return;
     }
 
-    // Stale version: clear and re-seed
-    if (alreadySeeded && storedVersion !== SEED_VERSION) {
+    // Stale version (previously seeded, now outdated): clear and re-seed from scratch
+    if (alreadySeeded) {
         await clearProjectSeed(projectId);
     }
 
@@ -141,6 +144,7 @@ async function restoreProjectMediaFromManifest(projectId: string): Promise<void>
     if (typeof fetch !== "function") return;
 
     const mediaManifestUrl = await getProjectMediaManifestUrl(projectId);
+    if (!mediaManifestUrl) return;
     const mediaRestoreVersionKey = getWorkshopMediaRestoreVersionKey(projectId);
     const storedVersion = localStorage.getItem(mediaRestoreVersionKey);
     let manifest: MediaManifest | null = null;

@@ -20,12 +20,12 @@
 import type { PublicationStatus, SensitivityLevel } from '@/domain/workshop/types';
 import type { AssetRecord } from '@/features/workshop/db/workshopDb';
 import { saveAsset } from '@/features/workshop/db/workshopDb';
-import { readExifData } from '@/features/workshop/ingest/exifReader';
 import {
     classifyAssetSensitivity,
     inferAssetType,
 } from '@/features/workshop/ingest/sensitivityClassifier';
-import { formatFileSize, generateThumbnail } from '@/features/workshop/ingest/thumbnailGenerator';
+import { prepareStudioMediaSelection } from '@/lib/studio-core/media/intake';
+import { formatFileSize, generateThumbnail } from '@/lib/studio-core/media/thumbnail';
 import { AlertTriangle, Camera, CheckCircle2, Loader2, MapPin, Upload, X } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 
@@ -91,52 +91,44 @@ export function AssetIngestPanel({ zoneId, projectId, onClose }: AssetIngestPane
     // ── File intake ──────────────────────────────────────────────────────────
 
     const addFiles = useCallback(async (files: FileList | File[]) => {
-        const fileArr = Array.from(files);
         const today = new Date().toISOString().slice(0, 10);
+        const prepared = await prepareStudioMediaSelection(files, { idPrefix: 'A' });
 
-        const newEntries: IngestEntry[] = fileArr.map((file) => {
-            const classification = classifyAssetSensitivity(file.type, file.name);
+        const newEntries: IngestEntry[] = prepared.map((item) => {
+            const classification = classifyAssetSensitivity(item.mimeType, item.file.name);
             return {
-                file,
+                file: item.file,
                 isPlaceholder: false,
-                id: generateAssetId(),
+                id: item.id,
                 thumbnail: null,
-                thumbnailLoading: file.type.startsWith('image/'),
-                title: file.name.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' '),
+                thumbnailLoading: item.isImage,
+                title: item.title,
                 description: '',
-                capturedAt: today,
+                capturedAt: item.capturedAt || today,
                 tags: '',
                 sensitivityLevel: classification.sensitivityLevel,
                 publicationStatus: defaultPublicationStatus(classification.sensitivityLevel),
                 sensitivityReason: classification.reason,
                 sensitivitySource: classification.source,
+                gpsLat: item.exifData?.lat,
+                gpsLon: item.exifData?.lon,
+                gpsAlt: item.exifData?.alt,
+                gpsBearing: item.exifData?.bearing,
                 saveStatus: 'pending',
             };
         });
 
         setEntries((prev) => [...prev, ...newEntries]);
 
-        // Generate thumbnails + read EXIF GPS asynchronously
         for (const entry of newEntries) {
             if (!entry.file || !entry.file.type.startsWith('image/')) continue;
-            const [thumb, exif] = await Promise.all([
-                generateThumbnail(entry.file),
-                readExifData(entry.file),
-            ]);
+            const thumb = await generateThumbnail(entry.file);
             setEntries((prev) =>
-                prev.map((e) => {
-                    if (e.id !== entry.id) return e;
-                    const patch: Partial<IngestEntry> = { thumbnail: thumb, thumbnailLoading: false };
-                    if (exif) {
-                        patch.gpsLat = exif.lat;
-                        patch.gpsLon = exif.lon;
-                        if (exif.alt !== undefined) patch.gpsAlt = exif.alt;
-                        if (exif.bearing !== undefined) patch.gpsBearing = exif.bearing;
-                        // Prefer EXIF date over filename-derived date
-                        if (exif.capturedAt) patch.capturedAt = exif.capturedAt.slice(0, 10);
-                    }
-                    return { ...e, ...patch };
-                }),
+                prev.map((e) => (
+                    e.id === entry.id
+                        ? { ...e, thumbnail: thumb, thumbnailLoading: false }
+                        : e
+                )),
             );
         }
     }, []);
@@ -199,6 +191,7 @@ export function AssetIngestPanel({ zoneId, projectId, onClose }: AssetIngestPane
         if (entries.length === 0) return;
         setSaving(true);
         const now = new Date().toISOString();
+        let hadError = false;
 
         for (const entry of entries) {
             if (entry.saveStatus === 'saved') continue;
@@ -229,7 +222,6 @@ export function AssetIngestPanel({ zoneId, projectId, onClose }: AssetIngestPane
                     createdAt: now,
                     updatedAt: now,
                 };
-                // Pass blob only for real files; placeholder assets have no blob
                 if (entry.isPlaceholder || !entry.file) {
                     await saveAsset(record);
                 } else {
@@ -237,6 +229,7 @@ export function AssetIngestPanel({ zoneId, projectId, onClose }: AssetIngestPane
                 }
                 updateEntry(entry.id, { saveStatus: 'saved' });
             } catch (err) {
+                hadError = true;
                 updateEntry(entry.id, {
                     saveStatus: 'error',
                     errorMessage: err instanceof Error ? err.message : 'Unbekannter Fehler',
@@ -245,9 +238,7 @@ export function AssetIngestPanel({ zoneId, projectId, onClose }: AssetIngestPane
         }
 
         setSaving(false);
-        const allOk = entries.every((e) => e.saveStatus === 'saved' || e.saveStatus === 'error');
-        const anyError = entries.some((e) => e.saveStatus === 'error');
-        if (allOk && !anyError) onClose();
+        if (!hadError) onClose();
     }
 
     // ── Render ────────────────────────────────────────────────────────────────

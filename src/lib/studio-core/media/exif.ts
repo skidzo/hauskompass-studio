@@ -5,7 +5,12 @@ export interface ExifGpsData {
   lon: number;
   alt?: number;
   capturedAt?: string;
+  /** Compass heading in degrees clockwise from north (GPSImgDirection) */
   bearing?: number;
+  /** 'T' = True North, 'M' = Magnetic North (GPSImgDirectionRef) */
+  bearingRef?: 'T' | 'M';
+  /** Horizontal position accuracy in meters (GPSHPositioningError) */
+  hAccuracyM?: number;
 }
 
 export async function readExifData(file: File): Promise<ExifGpsData | null> {
@@ -45,6 +50,16 @@ export async function readExifData(file: File): Promise<ExifGpsData | null> {
     const bearing: unknown = parsed.GPSImgDirection;
     if (typeof bearing === 'number' && bearing >= 0 && bearing < 360) {
       result.bearing = bearing;
+    }
+
+    const bearingRef: unknown = parsed.GPSImgDirectionRef;
+    if (bearingRef === 'T' || bearingRef === 'M') {
+      result.bearingRef = bearingRef as 'T' | 'M';
+    }
+
+    const hAccuracy: unknown = parsed.GPSHPositioningError;
+    if (typeof hAccuracy === 'number' && hAccuracy > 0) {
+      result.hAccuracyM = hAccuracy;
     }
 
     return result;

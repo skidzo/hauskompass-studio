@@ -24,6 +24,7 @@ output/
 # Local workbench project data — bring your own, not committed
 public/local-media/*
 !public/local-media/.gitkeep
+src/features/workshop/seeds/*
 
 # Private field and session docs
 docs/handoffs/
